@@ -1,0 +1,54 @@
+/** Visible website navigation/account/preferences only; no credentials, storage or request APIs. */
+export interface WebsiteConversation {
+    readonly href: string;
+    readonly title: string;
+    readonly group: string;
+}
+export interface WebsiteNavigation {
+    readonly status: 'loading' | 'ready' | 'sign-in' | 'unsupported';
+    readonly conversations: readonly WebsiteConversation[];
+    readonly selectedHref: string | null;
+    readonly canCreate: boolean;
+    readonly error: string | null;
+    readonly accountName?: string | null;
+    readonly settings?: {
+        language: string | null;
+        theme: string | null;
+        error: string | null;
+        pending?: boolean;
+        restored?: boolean;
+    };
+}
+export type WebsiteCommand = {
+    readonly type: 'snapshot';
+    readonly showOriginal: boolean;
+    readonly headerInset?: number;
+} | {
+    readonly type: 'open';
+    readonly href: string;
+} | {
+    readonly type: 'settings-read';
+} | {
+    readonly type: 'settings-close';
+} | {
+    readonly type: 'setting';
+    readonly key: 'language' | 'theme';
+    readonly value: string;
+} | {
+    readonly type: 'preferences';
+    readonly language: string;
+} | {
+    readonly type: 'logout';
+} | {
+    readonly type: 'new';
+} | {
+    readonly type: 'more';
+} | {
+    readonly type: 'restore';
+};
+export declare const emptyNavigation: () => WebsiteNavigation;
+/** This function is serialized into our isolated guest. Keep all helpers inside it. */
+export declare function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'origin' | 'pathname'>, command: WebsiteCommand): WebsiteNavigation;
+export declare function websiteCommandScript(command: WebsiteCommand): string;
+/** Treat the guest response as untrusted; keep only bounded, origin-scoped list data. */
+export declare function parseWebsiteNavigation(value: unknown): WebsiteNavigation;

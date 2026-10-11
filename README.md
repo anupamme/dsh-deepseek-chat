@@ -35,31 +35,37 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 
 ## 安装
 
+### 使用仓库地址安装（推荐）
+
+在 DSH 的插件安装输入框中粘贴：
+
+```text
+https://github.com/xingxingbk-git/dsh-chat
+```
+
+仓库同时提供源码和编译好的 `lib`，安装直接加载编译产物，无需运行构建脚本或修改 `allowBuilds`。
+
+使用命令行也可以安装：
+
+```bash
+dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-chat
+```
+
+**请使用完整仓库地址。** npm 中的 `dsh-chat` 已被另一款群聊插件占用，单独输入这个名称会安装其他项目。
+
 ### 本地安装包
 
 将构建生成的 `.tgz` 文件交给 DSH 官方插件管理器安装，或使用 CLI：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-chat-0.1.8.tgz --ignore-scripts
+dsh plugin --profile desktop add /absolute/path/dsh-chat-0.1.8.tgz
 ```
 
 将路径替换成你的实际安装包；使用其他 profile 时替换 `desktop`。**安装或更新后，完整退出并重新打开 DSH**，让新插件生效。
 
 如果之前安装过旧名称的插件，先禁用并移除旧插件，再安装 `dsh-chat`，避免重复接管界面。
 
-### 从仓库地址安装
-
-仓库地址：<https://github.com/xingxingbk-git/dsh-chat>
-
-仓库保存源码，Git 安装需要运行 `prepare` 构建入口。建议固定到已审查的提交：
-
-```bash
-dsh plugin --profile desktop add "github:xingxingbk-git/dsh-chat#<完整提交哈希>"
-```
-
-DSH 0.2.0-rc.2 内置 pnpm 11。若出现 `ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED`，按照报错中的准确 Git 包标识，在 `$DSH_HOME/profiles/desktop/pnpm-workspace.yaml` 的 `allowBuilds` 中允许该提交，保留已有配置后重试。不要使用 `--ignore-scripts` 安装 Git 源码，否则可能因缺少 `lib` 入口而出现 `failed to import`。
-
-不希望在安装时构建，可以使用预构建 `.tgz`。安装规则参见 [DSH 官方插件安装文档](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)。
+安装规则参见 [DSH 官方插件安装文档](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)。
 
 ## 开始使用
 
@@ -98,6 +104,8 @@ pnpm package:plugin
 ```
 
 生成 `artifacts/dsh-chat-0.1.8.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+
+修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 
 卸载插件：
 

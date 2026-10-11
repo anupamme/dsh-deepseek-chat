@@ -1,4 +1,31 @@
-# W024续步：标题首帧布局、紧凑切换器与截图清理 · 2026-10-11（完成本次验收）
+# W024续步：预编译仓库直装 · 2026-10-11（本地完成，公网待用户推送）
+
+归入 T10/T13，开工 main `01e671889e8f48d8f2e82f98f6155dec1663b52d`。用户要求粘贴仓库 URL 就能安装；确认 npm 的 `dsh-chat` 已属于另一位作者的群聊插件后，最新选择“暂时只做仓库地址直接安装”。保留名称 dsh-chat、private:true 与同轮版本 0.1.8，不发布 npm、不重复增号、不 stage/commit/push。
+
+## 原因与实现
+
+- 旧仓库只提交源码，Git 安装要执行 prepare 生成 lib，DSH pnpm 11.7.0 默认策略因此要求每个 Git 标识的 allowBuilds。本机先前已精确批准旧 01e 提交，不能用该本机许可证明任何用户都能直接安装。
+- 改为提交完整预编译 lib（18 个运行/声明文件和 build-manifest.json），移除 prepare/build 生命周期；只有显式 build:plugin、release:prepare、package:plugin 开发命令构建。文件白名单仍为 lib、README、patch 和 icon，没有放开整个源码目录打包，也没有修改 DSH 安装包或降低其供应链策略。
+- distribution-manifest 记录公开源码、构建输入与产物 SHA256。check:distribution 检查入口/单 lazy Client 工厂、完整哈希和无生命周期脚本；check:git-install 在创建安装 fixture 前同样验证清单，避免新源码配旧 lib 被误认为通过。
+- root 负责分发代码、README、构建与安装检查、handoff/worklog/AGENTS；build_setup 负责 Git 安装夹具；header_interaction_review 只读检查安装解析/npm 名称及代码审查，发现源码清单漏检后由 root 补齐；login_alternatives 负责需求/架构/路线/来源同步。分工已交还。
+
+## 本轮验收与产物
+
+- `node scripts/build.mjs`、`node scripts/check-distribution.mjs` 和正常 `pnpm package:plugin` 均 exit0。包 `artifacts/dsh-chat-0.1.8-636e1212353e.tgz`：23 文件、130375 bytes，SHA256 `636e1212353e1c7340ff05510d6fba8f5c1c4ae03246f0b1795b7e85e0697f42`。tar 内容只含上述分发白名单及 package.json。
+- `DSH_CHAT_INSTALL_PNPM='/Applications/DeepSeek Harness.app/Contents/Resources/runtime/pnpm/bin/pnpm.cjs' node scripts/check-git-install.mjs` 最终 exit0。独立临时 source Git 仓库、consumer 和全新 store；正常 `pnpm add git+file://…#sha`，没有 allowBuilds、build approval 或 ignore-scripts。12 包安装完成；19 个 lib 文件与 README/patch/icon 完全一致，Host import 和 Client 单 lazy 注册契约通过。fixture 在 finally 中删除，没有改变本项目 Git 状态。
+- 隔离副本负向检查通过：两个验收入口均拒绝修改源码但未更新产物、重新加入 prepare；缺失 Client 入口由 Git 检查拒绝。没有改动真实项目文件来造错，临时副本已清理。
+- Host SHA256 `1d65da67fefe7377e960e4bb84396485af5ddf2bca6f728a324309942bba12d8`、Client `b841fc2a6efafe0c14288c7ee0c947c7613651bc029b8b2e1c1e0fb996607eef`，与此前 cd07 界面验收产物相同。本轮仅分发检查，没有重新执行登录/界面/消息发送验收；下方为此前有限实机证据。
+- README 改为优先完整仓库 URL、解释裸名占用、无构建许可与显式开发发布步骤。截图仍为此前已打码的实际界面，未重复截取个人信息。验收后保留新包、源码/lib/依赖及有效文档，删除被替代的旧 cd07 tgz。
+
+## 接下来
+
+- 只读 `git ls-remote origin HEAD refs/heads/main` 确认公网仍为旧 `01e6718`，本轮本地改动没有推送。用户通过 Codex 手动提交推送时，必须包含整个新增 lib 和分发脚本/文档，不能只提交源码或 package.json。
+- 用户推送后，检查远端 package.json 无自动构建生命周期，完整 lib 已跟随提交，再用新的空 store/无构建授权环境实际验收 `https://github.com/xingxingbk-git/dsh-chat`。不要把当前 git+file fixture 或旧提交在本机已批准的安装写成新公网 URL 验收。
+- 本机既有旧提交 allowBuilds 保持原样，它不是新分发方案的前提；未改 npm 名称或发布账号。网页认证矩阵与其他平台仍保留原边界。
+
+---
+
+# W024续步：标题首帧布局、紧凑切换器与截图清理 · 2026-10-11（历史界面验收）
 
 归入 T10/T12/T13。开工 main `fc00f27`、工作区干净；同轮仍为 0.1.8，不重复涨号。用户自行提交/推送，本轮没有 stage/commit/push。
 

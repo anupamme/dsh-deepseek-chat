@@ -2,6 +2,8 @@
 
 实际开发以 DeepSeek Harness 官方文档和目标安装版本为准。本文件区分项目创建阶段记录、2026-10-09 静态复核和用户确认的产品决策，不将不同设备/工具的证据混写成同一次 live 验证。
 
+2026-10-11当前分发续步：用户选择仓库地址直装、保留dsh-chat名称。候选已通过生产构建、check-distribution、正常package:plugin打包及最终fresh pnpm11.7.0本地Git复验，无allowBuilds/ignore-scripts；19个lib与README/patch/icon一致，Host导入及lazy Client契约通过。当前636e1212353e包的Host/Client与已验cd07相同，本轮未重跑UI/登录。远端01e仍旧prepare，用户推送后公网URL尚未复验；分层证据见文末和handoff。
+
 ## 当前验证基线（2026-10-09）
 
 本轮新增实现依据：用户要求实际官网数据，采用 Desktop Browser 嵌入候选路线，详情见 architecture/requirements。旧创建阶段摘要及历史模型 API 资料不构成独立本地聊天的数据源许可。
@@ -64,7 +66,7 @@
 
 ## 后续必须补齐的官方证据
 
-2026-10-10 安装问题复核：[官方打包文档的 GitHub 构建脚本说明](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish#installing-from-github-the-build-script-catch) 明确指出 Git 只取得源码，作者必须提供自包含 prepare，用户需为 pnpm 授予该包的构建许可；预构建 tarball 不需要此许可。本机 Desktop profile 的实际安装缺少 Host/Client lib 入口，不能以先前 tarball 验证推断 Git 安装可用。
+历史源码方案（2026-10-10安装问题复核）：当时仓库不含lib，[官方打包文档的 GitHub 构建脚本说明](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish#installing-from-github-the-build-script-catch)支持通过自包含prepare补入口，用户需为pnpm授予该Git包构建许可；预构建tarball不需安装时构建。本机Desktop profile当时缺Host/Client lib入口，不能以先前tarball成功推断Git安装可用。当前用户选择改为Git包含预构建lib，最新判断与待验范围见文末，此旧记录不构成必须长期使用prepare的要求。
 
 1. 在目标设备先 Inspect `list`，获取准确的账号授权 Provider/Method，再确认读取状态、订阅登出/授权失效、账号切换和取消请求的契约。不读取原始密码/Cookie/token。
 2. 确认所有进入 CHAT 的入口及新建/快捷键路径如何统一受授权门槛约束。
@@ -192,3 +194,13 @@ Mac真实DSH的AX/截图确认顶部按钮可达、鼠标及Shift-Tab/Enter可�
 - 用户最新要求取代旧“不自动关闭”。`src/website-notice.ts` 精确匹配真实dialog中英文标题和完整固定正文、排除表单/输入/iframe，只点自身唯一可见启用X并先标记同元素；navigation确认origin后、restore外调用并序列化。header_interaction_review静态审查通过，仅处理此固定说明，不处理其他安全/验证码/认证错误。
 - 最终包 `artifacts/dsh-chat-0.1.8-f3fb874f2ae4.tgz`，22文件，SHA256 `f3fb874f2ae455f74287e6aecd992ba923d590c2463e348e1cbf6b8f6af50a98`。生产构建和CLI exit0；安装Host/Client/manifest/icon四文件逐字节MATCH。Client SHA256 `31961eb7e580dc448804976e820166a717ffb2cefc742047a861ec294478bde8`，其余三项同b4。
 - 连续两次正常quit、ps确认相关进程全无后重开，未手动点X，原提示区域无dialog，官网主页/公共模型提示与指定置顶恢复。证据 `/private/tmp/dsh-chat-env-notice-before-018.png`、`/private/tmp/dsh-chat-env-notice-after-restart-1-018.png`、`/private/tmp/dsh-chat-env-pin-restart-1-018.png`、`/private/tmp/dsh-chat-env-notice-after-restart-2-018.png`、`/private/tmp/dsh-chat-env-pin-restart-2-018.png`；仅确认固定说明两次收起，不泛化其他网页状态。第二次原生CHAT设置读回原账号已登录、已记住网页登录与简体中文，证据 `/private/tmp/dsh-chat-env-account-language-018.png`；关闭设置后原对话标题正常，证据 `/private/tmp/dsh-chat-env-final-title-018.png`。AX实读false/false，停在展开CHAT原对话，无手动点环境提示X、输入、发送或重命名。
+
+## W024仓库地址直装：包管理器来源、本地Git实测与公网边界（2026-10-11）
+
+- [pnpm11.7.0 prepare-package固定源码](https://github.com/pnpm/pnpm/blob/v11.7.0/exec/prepare-package/src/index.ts#L82)：packageShouldBeBuilt在非空prepare存在时直接要求构建；否则只有prepublish/prepack/publish存在且main文件不存在才要求构建。allowBuild拒绝点在同文件L37–46。本机DSH实际pnpm11.7.0发布bundle的preparePackage/packageShouldBeBuilt与该固定源码一致；静态依据与下方本地安装实测分别记录。
+- 本机bundle的Git fetcher和GitHub archive fetcher都先调用preparePackage再packlist。即使移除prepare，若保留prepack且Git包中main缺失，仍会触发构建许可；即使main存在，pnpm也不验证Client/其他声明入口。因此新方案须跟踪完整lib，并由发布检查核对files、manifest和源码产物对照清单。
+- [npm官方Git依赖说明](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#git-urls-as-dependencies)：workspaces或build/prepare/prepack/preinstall/install/postinstall会使Git依赖走安装开发依赖和构建路径；预构建仓库应避免这些脚本键。当前计划改用普通手动build:plugin/release:prepare/package:plugin，而不是把pnpm对main存在的条件推广到其他安装器。
+- 用户选择仅仓库地址分发，包名继续dsh-chat，本轮仍0.1.8。root已完成`node scripts/build.mjs`与`node scripts/check-distribution.mjs`，新版check-git-install用DSH pnpm11.7.0独立临时Git source/consumer和全新store，正常安装git+file固定提交；无allowBuilds/ignore-scripts，12个包安装成功，19个lib及README/patch/icon一致，Host import和lazy Client artifact契约通过，fixture finally清理。旧source-only+prepare许可验收仅保留为历史。
+- 正常pnpm package:plugin已exit0，release:prepare/check-distribution通过，当前唯一包636e1212353e，23文件、130375bytes，完整SHA256见handoff。Git检查补齐verifyDistributionManifest源码哈希验证和workspaces/postpack防护后，fresh pnpm11.7.0再次通过；两个检查拒绝旧源码/prepare hook，缺失Client亦被拒绝，临时副本清理完成。运行Host/Client与此前cd07哈希完全相同，本轮未重跑界面/登录验收。
+- 此次为本地Git fixture与正常打包证据，未执行推送后公网GitHub URL安装，不能据此宣布当前公开默认分支已更新或URL已完成直装。
+- 公开远端01e当前仍是旧prepare源码方案，用户自行审查、提交/推送本轮文件；未自动stage/commit/push。Git包含lib和新脚本须在实际公开提交核实，URL完成声明还需对应远端安装证据。本地候选、tarball或fixture成功均不自动代表当前默认分支已更新。

@@ -1,6 +1,8 @@
 # 架构与可行性
 
-当前状态：2026-10-11，W024续步 / 0.1.8，开工基线fc00f27，最终包cd07d9c360f4。本次有限验收完成：持久标题结构CSS、23px品牌控件及设置箭头12px右距已构建安装并实机观察，44项代码回归、39项浏览器自动回归通过，原生select键盘由真实DSH另测通过。完整退出确认无进程后，重开恢复已保存官网登录及简体中文。历史失败与本次边界见文末；同轮未递增版本，未提交/推送，不保证未来官网改版兼容。
+当前状态：2026-10-11，W024分发续步 / 0.1.8。预构建候选已完成生产构建、check-distribution、正常package:plugin打包及补齐检查后的fresh pnpm11.7.0本地Git复验；无allowBuilds/ignore-scripts，19个lib及README/patch/icon一致，Host导入与lazy Client契约通过。当前包636e1212353e的Host/Client与已验cd07相同，本轮未重跑界面/登录。远端01e仍旧prepare，用户推送后须独立复验公网URL，同轮不重复递增版本，产物及边界见handoff和文末。
+
+上一项有限验收：fc00f27开工，cd07d9c360f4包完成持久标题结构CSS、23px品牌控件和设置箭头12px右距的构建安装与实机观察；44项代码、39项浏览器自动回归及真实DSH原生select键盘通过，完整退出后官网登录及简体中文恢复。这些结果保留为对应UI/登录证据，不代替新分发路径验收，也不保证未来官网改版兼容。
 
 此前有限观察：13b2的前三次认证与中文恢复证据仍有效，但随后用户实报主区闪烁，显示稳定性未通过。b4bb28dde279闪烁修正版已构建安装、正常完整退出重开，恢复账号、简体中文和指定对话；首段20次、设置关闭后10次受限采样，各段内标题/置顶区域分别保持一致、未见消失，末样本文字正常。展开/折叠标题展示与圆角编辑、HARNESS/CHAT往返及关闭设置后观察已复查。这是短时观察，非长期或所有官网状态稳定保证；真实错误/主题超时分支仍仅有源码与生产构建证据。f3fb874f2ae4还按用户授权关闭固定环境说明，两次完整重启观察通过；仅该说明，其他提醒不处理。此前结果不代替本轮首帧与尺寸验收，分层证据见handoff。
 
@@ -94,7 +96,11 @@ W016登录核查：固定deepseek-account-platform默认Platform origin为platfo
 
 锁定 Cordis 4.0.4、官方 DSH 包 0.2.0-rc.2、React 18.3.1；TSX 支持，Host ESM、Client 单个 lazy-CJS factory、lib/types 声明。Client 仅共享固定 baseline 模块，第三方 Zod inline；feature 服务只通过 ctx/注入使用。build/check-artifact 校验精确 module requests、Host 依赖声明和单工厂结构，tarball 不含源码开发 harness、依赖或凭据。
 
-Git 安装与预构建 tarball 是独立交付路径。仓库不提交 lib，Git 安装通过 `prepare` 运行本包自包含构建脚本；它依赖本包已声明的开发依赖，不需要旁边的 DSH monorepo 或临时提取文件。pnpm 的构建许可必须显式授予 dsh-chat，不能把 `--ignore-scripts` 用于源码 Git 安装；预构建 tarball 无需安装时构建。DSH bundled pnpm 11.7.0 必须在 profile 的 allowBuilds 批准准确 Git 身份，单独 `--allow-build=dsh-chat` 会失败。2026-10-10 实际 Git 安装曾因没有 prepare 而缺失两个 lib 入口，先前 tarball 检查没有覆盖这一问题，修复与复验见 handoff/worklog。
+当前分发方案（本地Git及正常打包通过）：准备将lib构建产物随源码提交，由发布者手动构建/核查，安装者从仓库包取得完整入口。取消prepare及安装生命周期构建；原`build`脚本键改为`build:plugin`，`release:prepare`手动生成并核对源码与产物对照清单、manifest和files，`package:plugin`手动打包。保留包名dsh-chat。当前构建、check-distribution和正常打包已通过，本地fresh Git fixture无需allowBuilds/ignore-scripts通过；推送后的公网仓库地址仍须独立验收。
+
+依据：[pnpm11.7.0 prepare-package源码](https://github.com/pnpm/pnpm/blob/v11.7.0/exec/prepare-package/src/index.ts#L82)中非空prepare无条件触发构建；prepublish/prepack/publish仅在main文件缺失时触发。Git和GitHub archive均进入同一准备判断，再按packlist取文件。pnpm只判断main是否存在，不验证Client/types/patch/icon完整性，所以发布检查必须覆盖全部声明文件。[npm Git依赖官方说明](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#git-urls-as-dependencies)还将build等脚本视作重构建信号，故采用明确的手动脚本名称，避免把本机pnpm条件推成所有安装器的保证。
+
+旧源码分发记录：此前仓库不提交lib，Git通过自包含prepare构建，DSH pnpm11.7.0需为准确Git身份配置allowBuilds；仅--allow-build不替代该许可。2026-10-10缺prepare导致两个lib入口缺失的故障及后续源码fixture复验仍保留于handoff/worklog。该历史路线不再作为当前用户直装方案；远端01e尚未更新，仍具有旧行为。
 
 浏览器 Web profile 缺少 Desktop bridge 时保持 Harness 禁用，无未经验证的 iframe 回退。官网公开无凭据 HEAD 返回 429，不能据此断定 iframe 嵌入策略。
 
@@ -178,3 +184,13 @@ cd07已生产构建、官方CLI安装，manifest/Host/Client/icon与本地逐字
 真实DSH三个首次打开的冷对话各约4秒，仅采48px公开标题条，分别收到4/3/3个变化帧；第一帧允许为空，标题首次出现直接左上角，未见旧位/双标题。展开编辑11个、折叠编辑10个变化帧中文字没有上移；没有输入或提交新标题。ScreenCaptureKit交付变化帧，不能称完整30fps录像。模式往返、品牌尺寸、设置箭头及关闭设置回空主页通过；此次局部短时观察不保证长期或未来官网结构兼容。
 
 最终正常quit后pgrep无main/Host进程，重开main24116/Host24126；真实CHAT设置确认已登录、已记住网页登录、简体中文，无再次登录。README三图已用最终实机图并不透明打码个人信息；清理30个旧验收/临时文件2544470bytes，保留当前唯一包、lib18、node_modules、有效源码/回归/文档。全部修改仍在本地，详细产物哈希与证据见handoff；过期、退出清除、换账号、卸载、发送/跨浏览器历史及其他平台仍须独立验收。
+
+## W024续步：预构建仓库分发的本地验收与公网边界
+
+root已完成当前源码生产构建和check-distribution。新版check-git-install使用DSH bundled pnpm11.7.0，在独立临时Git source、consumer和全新store中正常安装`git+file://…#sha`，无allowBuilds、无ignore-scripts，12个包安装成功。计划提交的19个lib文件及README/patch/icon与安装结果一致，Host import和lazy Client artifact契约通过；临时fixture在finally清理。历史source-only+prepare+allowBuilds验收保留为旧路线，不与这次证据混用。
+
+Git提交产物带来源码与生成文件可能不一致的维护风险，必须在每次交付前手动release:prepare核查。Git包的文件集、tarball文件集与实际安装的入口分别验收，不能根据pnpm发现main就判定插件可用。本次正常package:plugin已exit0，release:prepare/check-distribution通过，当前唯一23文件包636e1212353e（完整元数据见handoff）。只读审查发现Git检查遗漏源码哈希后，已补verifyDistributionManifest和workspaces/postpack防护，再做fresh pnpm11.7.0 Git复验通过；两个检查拒绝临时副本中的旧源码/prepare hook，缺失Client亦被拒绝，副本已清理。
+
+当前包Host/Client SHA256与此前已验cd07完全相同；本轮只新增分发检查与本地安装证据，未重跑真实界面/登录，不将既有UI结果说成本轮新实测。正常打包及本地Git通过也不代表公网GitHub下载已验证。
+
+远端01e仍为旧源码prepare；本轮同0.1.8、未自动stage/commit/push，用户提交/推送后还需核对公开对应提交是否包含相同预构建文件。URL可直装的完成声明必须以更新后的真实远端和安装证据为准，本地fixture只证明本地候选。

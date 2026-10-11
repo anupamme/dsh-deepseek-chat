@@ -1,0 +1,81 @@
+import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
+import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js';
+import type { WebsiteSession } from './protocol.js';
+export type DshChatMode = 'chat' | 'harness';
+export interface DshChatViewportRect {
+    readonly left: number;
+    readonly top: number;
+    readonly width: number;
+    readonly height: number;
+}
+/** Only in-memory navigation metadata; never message bodies or account secrets. */
+export interface DshChatViewState {
+    readonly mode: DshChatMode;
+    readonly modeEnabled: boolean;
+    readonly authorizationStatus: 'pending' | 'authorized' | 'unauthorized' | 'unavailable';
+    readonly availabilityMessage: string;
+    readonly accountLabel: string | null;
+    readonly error: string | null;
+    readonly desktopAvailable: boolean;
+    readonly webLoading: boolean;
+    readonly webError: string | null;
+    readonly accountStorageKey: string | null;
+    readonly authorizationGeneration: number;
+    readonly websiteReloadRevision: number;
+    readonly settingsViewport: DshChatViewportRect | null;
+    readonly preferenceError: string | null;
+    readonly websiteSessionStatus: 'idle' | 'saved' | 'error';
+    readonly websiteSessionError: string | null;
+    readonly viewport: DshChatViewportRect | null;
+    readonly brandAnchor: DshChatViewportRect | null;
+    readonly sidebarAdapted: boolean | null;
+    readonly websiteNavigation: WebsiteNavigation;
+    readonly showWebsiteNavigation: boolean;
+}
+export interface DshChatUIBridge {
+    getSnapshot(): DshChatViewState;
+    subscribe(listener: () => void): () => void;
+    selectMode(mode: DshChatMode): void;
+    refreshAuthorization(): void;
+    manageAccount(): void;
+    toggleSidebar(): void;
+    attachViewport(element: HTMLElement | null): void;
+    updateViewport(rect: DshChatViewportRect | null): void;
+    updateBrandAnchor(rect: DshChatViewportRect | null): void;
+    attachSidebar(element: HTMLElement): void;
+    reloadWebsite(): void;
+    reportWebsiteState(generation: number, state: {
+        readonly loading: boolean;
+        readonly error: string | null;
+    }): void;
+    reportWebsiteNavigation(generation: number, value: unknown, newDocument?: boolean): void;
+    bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void;
+    commandWebsite(command: WebsiteCommand): void;
+    toggleWebsiteNavigation(): void;
+    updateSettingsViewport(rect: DshChatViewportRect | null): void;
+    logoutWebsite(): void;
+    loadWebsiteSession(generation: number): Promise<WebsiteSession | null>;
+    saveWebsiteSession(generation: number, session: WebsiteSession): Promise<boolean>;
+    clearWebsiteSession(generation: number): Promise<boolean>;
+    reportWebsiteSessionError(generation: number, message: string): void;
+}
+export interface DshChatBridgeProps {
+    readonly bridge: DshChatUIBridge;
+}
+export declare function useDshChat(bridge: DshChatUIBridge): DshChatViewState;
+export declare function DshChatStyles(): import("react/jsx-runtime").JSX.Element;
+export declare function DshChatModeSelector({ bridge, state, compact }: DshChatBridgeProps & {
+    readonly state: DshChatViewState;
+    readonly compact?: boolean;
+}): import("react/jsx-runtime").JSX.Element;
+/** Decorative brand content only: this slot has an aria-hidden/New Session owner. */
+export declare function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
+/** The interactive surface is outside the brand slot's hidden/button ancestry. */
+export declare function DshChatBrandControl({ bridge }: PropsRuntime<'shell.overlay'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element | null;
+/** Only the middle browsing region changes; the shipped shell and Settings stay mounted. */
+export declare function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRuntime<'sidebar.workspaces'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
+/** Measures only this plugin's own element; website content lives in the retained overlay. */
+export declare function DshChatChatPanel({ bridge }: PropsRuntime<'main'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
+/** Same public primitive icons, geometry and tooltip behavior as native rc.2 chrome. */
+export declare function DshChatLeadingControls({ bridge }: PropsRuntime<'shell.leading'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
+export declare function DshChatChatSettings({ bridge }: PropsRuntime<'settings.section'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;

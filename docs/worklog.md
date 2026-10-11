@@ -462,3 +462,14 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - 真实 DSH 三个本次启动未加载过的对话，各4秒受限标题条观察共4/3/3变化帧，出现时已左上角；展开/折叠原生edit共11/10变化帧文字不动、圆角框正常，没有输入或提交改名。模式往返与控件通过。正常完整quit后pgrep无main/Host，重启main24116/Host24126，原账号已登录/已记住网页登录/简体中文恢复，无用户重新登录。有限观察不宣称未来改版兼容或其他认证矩阵完成。
 - README三张最终实机图已重截，个人导航/昵称/头像按用户选择本地不透明实色遮挡，逐张复查；RGB仅ICC元数据，未打码临时原图删除。验收后清理30个可再生成旧文件2544470bytes：19旧包、2旧duo模拟图、8临时浏览器记录、根DSStore；保留cd07当前包、lib18文件、依赖/锁文件、源码/回归和仍引用的备用方案。只关闭本轮测试浏览器，DSH留展开CHAT空主页，AX false/false。
 - 分工与证据路径见handoff顶部；需求/架构/路线同步有限验收边界。未stage/commit/push；本地成果待用户审查与手动发布。 最终生产重构建通过且安装四文件仍逐字节一致，README及主要文档15个本地链接有效，图片元数据/唯一包/清理状态复核通过，git diff --check通过、暂存区为空。
+
+### W024续步：Git 仓库预编译分发与默认策略安装（2026-10-11）
+
+- 开工 main 01e671889e8f48d8f2e82f98f6155dec1663b52d；用户报 pnpm11 ERR_PNPM_GIT_DEP_PREPARE_NOT_ALLOWED，希望复制仓库地址就安装。本机此前按精确报错 Git 标识只批准该旧提交并保留原 allowBuilds，官方 CLI 旧链接安装通过；这只是本机排障，不能满足任意用户无需授权的分发需求。
+- 官方 DSH 发布说明和 pnpm11.7 prepare-package 源码确认：已有 main 且没有 prepare 等生命周期可直接装预编译 Git 包。npm v11 对 Git 包还可能因 build/prepack/install 等键触发重建，因此本轮同时移除自动 prepare 与 build，改为显式 build:plugin/release:prepare，不使用 --ignore-scripts 或 --allow-build 绕过安装策略。
+- 公共 npm registry 实读：dsh-chat 属于 baixianger 的群聊插件，latest 0.1.0-rc.36；dsh-deepseek-chat 查询404，仅表示当时未存在，未抢占或发布。DSH rc.2 界面/CLI原样解析输入包名，不补前缀。用户已明确只做完整仓库地址直装，保留 dsh-chat/private:true；未进入 npm 发布流程或读取凭据。
+- .gitignore 移除 lib 排除；build 写 lib/build-manifest.json 的公开源码/构建输入/产物 hashes。check:distribution 检查无构建 hooks/无workspaces、限定包文件、Host/Client/声明/patch与清单一致；正常 package:plugin 先显式 release:prepare，再 pack。README 将完整仓库 URL 置顶，加入开发者源码与 lib 同步提交步骤，截图保持原打码版本。
+- build_setup 更新全新临时 Git 夹具，全部 lib 在 fixture 中确实受 Git 管理，source/consumer/store 三个独立目录；DSH pnpm11.7.0正常add固定git+file spec，无allowBuilds/ignore-scripts，12包安装、全19lib/README/patch/icon bytes、Host import和lazyClient契约通过。header_interaction_review审查指出单独Git检查未校验源码清单，root补verifyDistributionManifest、workspaces/postpack检查，再跑同样全新安装通过。临时fixture在finally清理，没有stage/commit本项目。
+- 隔离副本负向检查：源码变而lib不变，两个检查入口均拒绝；缺失Client由Git检查拒绝；重新加入prepare两个入口均拒绝。副本已清理。未运行通用代码/浏览器测试或重启DSH，本轮没有新增网页登录验收结论。
+- 正常 pnpm package:plugin exit0。当前23文件包 artifacts/dsh-chat-0.1.8-636e1212353e.tgz，130375bytes，SHA256 636e1212353e1c7340ff05510d6fba8f5c1c4ae03246f0b1795b7e85e0697f42；tar核对只含分发白名单。Host/Client hashes仍为1d65da67…/b841fc2a…，与此前界面已验cd07一致。已用哈希路径区别同版本旧缓存；验收后清理被替代旧cd07包，保留新包与19lib。
+- root只读核实远端HEAD/main仍01e6718，旧prepare尚在公网；代码/文档都留本地供用户手动提交和推送。必须提交整个lib，用户推送后才验完整GitHub URL，不把本地Git fixture成功写成当前公网已修复。同轮0.1.8续步不重复增号；分工及下一步见handoff顶部。
