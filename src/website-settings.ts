@@ -88,11 +88,14 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
       if (logout) {root.removeAttribute(attr('request'));root.removeAttribute(attr('phase'));logout.click()}
       else if (!phase) {closeDialog();root.setAttribute(attr('phase'), 'menu');openProfileMenu()}
     } else if (!dialog) {
-      const settings = exact(doc.body, /^(Settings|设置|系统设置)$/i)
-      if (settings) {root.setAttribute(attr('phase'), 'opening');settings.click()}
-      else if (!phase) {root.setAttribute(attr('phase'), 'menu');openProfileMenu()}
+      // Wait for the site's pending open/selection commit, bounded by the deadline.
+      if (phase !== 'opening' && phase !== 'verify') {
+        const settings = exact(doc.body, /^(Settings|设置|系统设置)$/i)
+        if (settings) {root.setAttribute(attr('phase'), 'opening');settings.click()}
+        else if (!phase) {root.setAttribute(attr('phase'), 'menu');openProfileMenu()}
+      }
     } else if (!languageRow) {
-      if (phase !== 'general') {root.setAttribute(attr('phase'), 'general');exact(dialog, general)?.click()}
+      if (phase !== 'general' && phase !== 'verify') {root.setAttribute(attr('phase'), 'general');exact(dialog, general)?.click()}
     } else if (goal === 'read') {
       if (language) finish()
     } else {
@@ -100,8 +103,9 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
       const values: Record<string, RegExp> = {'zh-CN':/^(简体中文|中文|Chinese|中文（简体）|Chinese \(Simplified\))$/i,en:/^(English|英语)$/i,dark:/^(Dark|深色|深色模式)$/i,system:/^(System|跟随系统|系统|Follow system)$/i}
       const regex = values[value], current = key === 'language' ? language : theme
       if (regex && current && regex.test(current)) finish()
-      else if (key === 'theme') {const option = regex && exact(dialog, regex);if (option) {root.setAttribute(attr('phase'), 'verify');option.click()}}
-      else if (regex && control) {
+      // After one option click, only observe the visible value or fixed timeout.
+      else if (key === 'theme' && phase !== 'verify') {const option = regex && exact(dialog, regex);if (option) {root.setAttribute(attr('phase'), 'verify');option.click()}}
+      else if (regex && control && phase !== 'verify') {
         // Preserve the previously verified global public-option lookup: the site's
         // language options can be portalled outside its settings modal.
         const option = [...doc.querySelectorAll<HTMLElement>('[role="option"],.ds-select-option,.ds-dropdown-menu-option,.ds-dropdown-menu div,.ds-dropdown-menu span,.ds-select-dropdown div,label,button,[role="button"],.ds-button')].find(el => regex.test(el.textContent?.trim() ?? '') && el !== control && !control.contains(el) && !themeButtons.includes(el))

@@ -28,9 +28,14 @@ export const emptyNavigation = (): WebsiteNavigation => ({ status: 'loading', co
 export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'origin' | 'pathname'>, command: WebsiteCommand): WebsiteNavigation {
   const origin = 'https://chat.deepseek.com'
   const marker = 'data-dsh-chat-navigation'
+  const presentedMarker = 'data-dsh-chat-presented'
+  const missingSidebarMarker = 'data-dsh-chat-sidebar-missing-at'
+  const fallbackMarker = 'data-dsh-chat-fallback'
+  const fallbackErrorMarker = 'data-dsh-chat-fallback-error'
+  const conversationError = '该对话不在当前官网列表，请刷新列表。'
   const styleId = 'dsh-chat-website-navigation-style'
   const preparingStyleId = 'dsh-chat-website-preparing-style'
-  const owned = [marker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-profile', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-expanding', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor']
+  const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-profile', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-expanding', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor']
   const empty = (status: WebsiteNavigation['status']): WebsiteNavigation => ({ status, conversations: [], selectedHref: null, canCreate: false, error: null })
   const clearSettings = () => {
     for (const attr of [...doc.documentElement.attributes]) if (/^data-dsh-chat-(settings-|language$|theme$|dark-complete$)/.test(attr.name)) doc.documentElement.removeAttribute(attr.name)
@@ -46,11 +51,25 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     doc.documentElement.removeAttribute('data-dsh-chat-preparing')
     owned.forEach(attr => doc.querySelectorAll(`[${attr}]`).forEach(node => node.removeAttribute(attr)))
   }
-  if (page.origin !== origin) { restore(); return empty('unsupported') }
+  const fallback = (error: 'open' | null = null): WebsiteNavigation => {
+    restore()
+    if (page.origin === origin && /^\/sign_in\/?$/.test(page.pathname)) return empty('sign-in')
+    if (!(command.type === 'snapshot' && command.showOriginal)) {
+      doc.documentElement.setAttribute(fallbackMarker, '')
+      if (error) doc.documentElement.setAttribute(fallbackErrorMarker, error)
+    }
+    return { ...empty('unsupported'), error: error === 'open' ? conversationError : null }
+  }
+  if (page.origin !== origin) return fallback()
   if (command.type === 'restore' || (command.type === 'snapshot' && command.showOriginal)) {
     doc.dispatchEvent(new Event('dsh-chat-stop-adapting'))
+    if (command.type === 'restore') return fallback()
     restore()
-    if (command.type === 'restore') return empty('unsupported')
+  }
+  // A failed adapter stays on the original website until an explicit reset or
+  // a new document. Polling must not restart the first-paint/compact flow.
+  if (doc.documentElement.hasAttribute(fallbackMarker) && !/^\/sign_in\/?$/.test(page.pathname)) {
+    return { ...empty('unsupported'), error: doc.documentElement.getAttribute(fallbackErrorMarker) === 'open' ? conversationError : null }
   }
   // Own observer runs in the same DOM microtask checkpoint as the site's React
   // commit, before paint. No app globals or data stores cross the guest boundary.
@@ -74,9 +93,10 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     }, {once:true})
   }
   if (/^\/sign_in\/?$/.test(page.pathname)) { restore(); return empty('sign-in') }
-  // Login SPA commits can precede the host navigation event. Gate that guest
-  // paint locally as well, then reveal only the adapted, dark page.
-  if (!(command.type==='snapshot' && command.showOriginal) && !doc.documentElement.hasAttribute('data-dsh-chat-dark-complete')) {
+  // Gate only the document's first adapted paint. Later appearance checks must
+  // leave the presented website and its environment/security notices visible.
+  if (!(command.type==='snapshot' && command.showOriginal) && !doc.documentElement.hasAttribute(presentedMarker)
+    && !doc.documentElement.hasAttribute('data-dsh-chat-dark-complete')) {
     doc.documentElement.setAttribute('data-dsh-chat-preparing','')
     if (!doc.getElementById(preparingStyleId)) {
       const style=doc.createElement('style'); style.id=preparingStyleId
@@ -128,7 +148,18 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
       if (isNavigationColumn(candidate) && findNew(candidate)) { sidebar = candidate; break }
     }
   }
-  if (!sidebar) {
+  const newChat = sidebar ? findNew(sidebar) : null
+  if (!sidebar || !newChat) {
+    if (!(command.type === 'snapshot' && command.showOriginal) && doc.documentElement.hasAttribute(presentedMarker)) {
+      // React may replace the sidebar during a same-document route/locale commit.
+      // Keep the confirmed layout and settings until a fixed recovery boundary.
+      const now = Date.now()
+      const previous = Number(doc.documentElement.getAttribute(missingSidebarMarker))
+      const started = Number.isFinite(previous) && previous > 0 ? previous : now
+      if (started !== previous) doc.documentElement.setAttribute(missingSidebarMarker, String(started))
+      if (now - started < 5000) return empty('loading')
+      return fallback()
+    }
     // A narrow viewport can initially mount only the site's compact controls.
     // Open its own navigation once, while the guest is still paint-gated.
     if (!(command.type === 'snapshot' && command.showOriginal)) {
@@ -152,9 +183,9 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
         if (Date.now() - started < 5000) return empty('loading')
       }
     }
-    restore(); return empty('unsupported')
+    return fallback()
   }
-  const newChat = findNew(sidebar)
+  doc.documentElement.removeAttribute(missingSidebarMarker)
   // The navigation's outer track can outlive an inner sidebar hidden with
   // display:none. Hide the whole bounded track and let its sibling fill it.
   let track = sidebar
@@ -200,7 +231,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   if (command.type === 'open') {
     const target = safeHref(command.href)
     const link = [...sidebar.querySelectorAll<HTMLAnchorElement>('a[href]')].find(item => safeHref(item.getAttribute('href')) === target)
-    if (!target || !link) { restore(); return { ...empty('unsupported'), error: '该对话不在当前官网列表，请刷新列表。' } }
+    if (!target || !link) return fallback('open')
     link.click()
   } else if (command.type === 'new') {
     if (!newChat) return empty('unsupported')
@@ -236,8 +267,13 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   }
   const selected = conversations.find(item => item.href === safeHref(page.pathname))
   if (!(command.type === 'snapshot' && command.showOriginal)) adaptWebsiteHeader(doc, content, selected?.title ?? null, command.type === 'snapshot' ? command.headerInset ?? (Number.parseInt(settingsRoot.style.getPropertyValue('--dsh-chat-title-inset')) || 24) : Number.parseInt(settingsRoot.style.getPropertyValue('--dsh-chat-title-inset')) || 24)
-  const ready=settingsRoot.hasAttribute('data-dsh-chat-dark-complete') || (command.type==='snapshot' && command.showOriginal)
-  if (ready) settingsRoot.removeAttribute('data-dsh-chat-preparing')
+  // A failed appearance sync must reveal the legitimate website and its own
+  // environment/security notices. Keep the error retryable; do not claim dark mode.
+  const ready=settingsRoot.hasAttribute('data-dsh-chat-dark-complete') || Boolean(settings.error) || (command.type==='snapshot' && command.showOriginal)
+  if (ready) {
+    settingsRoot.removeAttribute('data-dsh-chat-preparing')
+    if (!(command.type === 'snapshot' && command.showOriginal)) settingsRoot.setAttribute(presentedMarker, '')
+  }
   return { status: ready ? 'ready' : 'loading', conversations, selectedHref: safeHref(page.pathname), canCreate: newChat !== null, error: null, accountName, settings }
 }
 

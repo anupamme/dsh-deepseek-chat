@@ -1,0 +1,309 @@
+--- a/apps/desktop/src/browser-guests.ts
++++ b/apps/desktop/src/browser-guests.ts
+@@ -1,5 +1,5 @@
+ /** Main-process ownership and fixed isolation policy for Sidebar webview guests. */
+-import { randomUUID } from 'node:crypto'
++import { createHash, randomUUID } from 'node:crypto'
+ import { app, session, type BrowserWindow, type Session, type WebContents } from 'electron'
+ import type { DesktopBrowserLeaseId, DesktopBrowserOpenRequest, DesktopBrowserReservation } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
+ import { DESKTOP_IPC } from './ipc.ts'
+@@ -7,8 +7,11 @@
+ interface GuestLease {
+   readonly owner: WebContents
+   readonly partition: string
++  /** Defined only for the opt-in, account-bound Chat website guest. */
++  readonly origin?: string
+   attached: boolean
+   guest?: WebContents
++  closing?: Promise<void>
+   releaseInput?: () => void
+ }
+ 
+@@ -16,28 +19,100 @@
+ export class DesktopBrowserGuests {
+   private readonly partitions = new Map<string, string>()
+   private readonly leases = new Map<DesktopBrowserLeaseId, GuestLease>()
++  private account: { origin: string; userId: string } | null = null
++  private readonly persistentPartitions = new Set<string>()
++  private readonly cleanup = new Map<string, Promise<void>>()
++  private readonly configured = new Set<string>()
+ 
+   /** @param hostUrl - current authenticated DSH Host, which guests cannot request. */
+   constructor(private readonly hostUrl: () => string | undefined) {}
+ 
++  /** Identity comes only from the existing private Host-to-main account IPC, never the renderer. */
++  setAccount(next: { origin: string; userId: string | null } | null): void {
++    const before = this.account
++    this.account = next !== null && typeof next.userId === 'string' && next.userId.length > 0
++      ? { origin: next.origin, userId: next.userId } : null
++    const changed = before !== null && (before.origin !== this.account?.origin || before.userId !== this.account?.userId)
++    if (!changed) return
++    // Loss of Host identity (including normal shutdown) immediately revokes mounted views.
++    // Only an explicit sign-out/expiry or a confirmed different account erases their storage.
++    if (this.account === null) {
++      for (const [id, lease] of this.leases) {
++        if (lease.origin !== undefined) void this.release(lease.owner, id).catch(() => {
++          console.error('desktop browser: website view release failed')
++        })
++      }
++    } else {
++      void this.clearPartition(this.chatPartition(before)).catch(() => {
++        console.error('desktop browser: previous website session cleanup failed')
++      })
++    }
++  }
++
++  /** Explicit sign-out/expiry or a future uninstall hook: close guests before erasing their own data. */
++  async clearPersistent(): Promise<void> {
++    if (this.account !== null) this.persistentPartitions.add(this.chatPartition(this.account))
++    await Promise.all([...this.persistentPartitions].map(partition => this.clearPartition(partition)))
++  }
++
++  private chatPartition(account: { origin: string; userId: string }): string {
++    const identity = ['dsh-chat', 'https://chat.deepseek.com', account.origin, account.userId]
++    return `persist:dsh-chat-${createHash('sha256').update(JSON.stringify(identity)).digest('hex')}`
++  }
++
++  private clearPartition(partition: string): Promise<void> {
++    const pending = this.cleanup.get(partition)
++    if (pending !== undefined) return pending
++    // Publish the gate before asynchronous destruction; acquisitions stay blocked on a cleanup failure.
++    const operation = Promise.resolve().then(async () => {
++      await Promise.all([...this.leases].filter(([, lease]) => lease.partition === partition)
++        .map(([id, lease]) => this.release(lease.owner, id)))
++      const storage = session.fromPartition(partition)
++      await storage.closeAllConnections()
++      await Promise.all([storage.clearStorageData(), storage.clearCache(), storage.clearAuthCache()])
++      this.persistentPartitions.delete(partition)
++      this.cleanup.delete(partition)
++    })
++    this.cleanup.set(partition, operation)
++    return operation
++  }
++
+   /**
+-   * Reserve one guest in a workspace's process-lifetime partition.
++   * Reserve a process-local guest, or opt in to the trusted account's fixed Chat partition.
+    * @param owner - authenticated primary application WebContents.
+    * @param workspace - workspace identity received over IPC.
+    * @returns opaque lease and the partition approved for it.
+    */
+-  acquire(owner: WebContents, workspace: unknown): DesktopBrowserReservation {
++  acquire(owner: WebContents, workspace: unknown, persistence?: unknown): DesktopBrowserReservation {
+     if (typeof workspace !== 'string' || workspace.length === 0 || workspace.length > 4096) {
+       throw new Error('desktop browser: a workspace storage identity is required')
+     }
+-    let partition = this.partitions.get(workspace)
++    let origin: string | undefined
++    let partition: string | undefined
++    if (persistence !== undefined) {
++      if (typeof persistence !== 'object' || persistence === null
++        || Reflect.get(persistence, 'plugin') !== 'dsh-chat'
++        || Reflect.get(persistence, 'origin') !== 'https://chat.deepseek.com'
++        || Object.keys(persistence).some(key => key !== 'plugin' && key !== 'origin')
++        || this.account === null || workspace !== `dsh-chat:website:${this.account.userId}`) {
++        throw new Error('desktop browser: persistent website reservation rejected')
++      }
++      origin = 'https://chat.deepseek.com'
++      partition = this.chatPartition(this.account)
++      if (this.cleanup.has(partition)) throw new Error('desktop browser: website cleanup pending or failed')
++      this.persistentPartitions.add(partition)
++      if (!this.configured.has(partition)) {
++        this.configureSession(session.fromPartition(partition), origin)
++        this.configured.add(partition)
++      }
++    } else partition = this.partitions.get(workspace)
+     if (partition === undefined) {
+       partition = `dsh-sidebar-browser-${randomUUID()}`
+       this.configureSession(session.fromPartition(partition))
+       this.partitions.set(workspace, partition)
+     }
+     const lease = randomUUID() as DesktopBrowserLeaseId
+-    this.leases.set(lease, { owner, partition, attached: false })
++    this.leases.set(lease, { owner, partition, origin, attached: false })
+     return { lease, partition }
+   }
+ 
+@@ -53,13 +128,16 @@
+     if (lease === undefined) return
+     if (lease.owner !== owner) throw new Error('desktop browser: guest belongs to another window')
+     lease.releaseInput?.()
+-    this.leases.delete(key)
++    lease.releaseInput = undefined
+     const guest = lease.guest
+     if (guest !== undefined && !guest.isDestroyed()) {
+-      const destroyed = new Promise<void>((resolve) => { guest.once('destroyed', resolve) })
+-      guest.close({ waitForBeforeUnload: false })
+-      await destroyed
+-    }
++      if (lease.closing === undefined) {
++        lease.closing = new Promise<void>((resolve) => { guest.once('destroyed', resolve) })
++        guest.close({ waitForBeforeUnload: false })
++      }
++      await lease.closing
++    }
++    this.leases.delete(key)
+   }
+ 
+   /**
+@@ -111,17 +189,19 @@
+       guest.setWindowOpenHandler(({ url, postBody }) => {
+         const lease = attachedLease === undefined ? undefined : this.leases.get(attachedLease)
+         if (attachedLease !== undefined && lease?.guest === guest && lease.owner === owner && !owner.isDestroyed()
+-          && postBody === undefined && this.allowedNavigation(url)) {
++          && postBody === undefined && this.allowedNavigation(url, lease.origin)) {
+           const request: DesktopBrowserOpenRequest = { lease: attachedLease, url: new URL(url).href }
+           owner.send(DESKTOP_IPC.browserOpenRequested, request)
+         }
+         return { action: 'deny' }
+       })
+       guest.on('will-frame-navigate', (event) => {
+-        if (event.isMainFrame && !this.allowedNavigation(event.url)) event.preventDefault()
++        const lease = attachedLease === undefined ? undefined : this.leases.get(attachedLease)
++        if (event.isMainFrame && !this.allowedNavigation(event.url, lease?.origin)) event.preventDefault()
+       })
+       guest.on('will-redirect', (event, url, _inPlace, mainFrame) => {
+-        if (mainFrame && !this.allowedNavigation(url)) event.preventDefault()
++        const lease = attachedLease === undefined ? undefined : this.leases.get(attachedLease)
++        if (mainFrame && !this.allowedNavigation(url, lease?.origin)) event.preventDefault()
+       })
+       guest.on('will-attach-webview', (event) => { event.preventDefault() })
+       guest.on('login', (event, _details, _authInfo, callback) => { event.preventDefault(); callback() })
+@@ -138,7 +218,7 @@
+     owner.once('destroyed', releaseAll)
+   }
+ 
+-  private configureSession(browserSession: Session): void {
++  private configureSession(browserSession: Session, origin?: string): void {
+     browserSession.setPermissionRequestHandler((_contents, _permission, callback) => { callback(false) })
+     browserSession.setPermissionCheckHandler(() => false)
+     browserSession.setDevicePermissionHandler(() => false)
+@@ -149,15 +229,16 @@
+       const network = ['http:', 'https:', 'ws:', 'wss:'].includes(url.protocol)
+       callback({ cancel: network
+         ? url.username !== '' || url.password !== '' || this.isApplicationHost(url)
++          || (origin !== undefined && details.resourceType === 'mainFrame' && url.origin !== origin)
+         : !['about:', 'data:', 'blob:'].includes(url.protocol) })
+     })
+   }
+ 
+-  private allowedNavigation(value: string): boolean {
++  private allowedNavigation(value: string, origin?: string): boolean {
+     if (!URL.canParse(value)) return false
+     const url = new URL(value)
+     return ['http:', 'https:'].includes(url.protocol) && url.username === '' && url.password === ''
+-      && !this.isApplicationHost(url)
++      && !this.isApplicationHost(url) && (origin === undefined || url.origin === origin)
+   }
+ 
+   private isApplicationHost(url: URL): boolean {
+--- a/apps/desktop/src/ipc.ts
++++ b/apps/desktop/src/ipc.ts
+@@ -19,6 +19,7 @@
+   bootFailed: 'dsh-desktop:boot-failed',
+   browserAcquire: 'dsh-desktop:browser-acquire',
+   browserRelease: 'dsh-desktop:browser-release',
++  browserClearPersistent: 'dsh-desktop:browser-clear-persistent',
+   browserOpenRequested: 'dsh-desktop:browser-open-requested',
+   directoryPick: 'dsh-desktop:directory-pick',
+   deviceInfo: 'dsh-desktop:device-info',
+--- a/apps/desktop/src/main.ts
++++ b/apps/desktop/src/main.ts
+@@ -446,7 +446,11 @@
+     const host = new DesktopHostProcess(resources.node, resources.dsh, activeProject,
+       hostInspectPort, { ...hostEnvironment, DSH_CLIENT_VERSION: desktopClientVersion() }, onFailure,
+       primaryRuntime,
+-      resources, (next) => { platformView.setSession(next) })
++      resources, (next) => {
++        platformView.setSession(next)
++        // Only copy confirmed public identity; credentials stay on the existing private channel.
++        browserGuests.setAccount(next === null ? null : { origin: next.origin, userId: next.userId })
++      })
+     return {
+       start: async () => {
+         const ready = await host.start()
+@@ -473,6 +477,9 @@
+           }
+           if (state.status === 'credential-stored' && attempt?.phase === 'succeeded' && welcomeWindow !== undefined) void enterWorkspace({ activate: false }).catch(() => undefined)
+           if (previousAccountStatus === 'credential-stored' && state.status === 'signed-out') {
++            void browserGuests.clearPersistent().catch(() => {
++              console.error('desktop browser: signed-out website cleanup failed')
++            })
+             void readWelcomeState().then(async (value) => {
+               if (needsWelcome(value) && !quitting) {
+                 enteredWorkspace = false
+@@ -486,6 +493,9 @@
+         }, () => {
+           // The stream reconnects; a transport failure does not change account state.
+         }, () => {
++          void browserGuests.clearPersistent().catch(() => {
++            console.error('desktop browser: expired website cleanup failed')
++          })
+           void readWelcomeState().then(async (value) => {
+             if (!needsWelcome(value) || quitting) return
+             pendingWelcomeNotice = 'session-expired'
+@@ -700,13 +710,17 @@
+     reportFatal(new Error(message), 'web-boot')
+   })
+ 
+-  ipcMain.handle(DESKTOP_IPC.browserAcquire, (event, workspace: unknown) => {
++  ipcMain.handle(DESKTOP_IPC.browserAcquire, (event, workspace: unknown, persistence: unknown) => {
+     assertProductSender(event)
+-    return browserGuests.acquire(event.sender, workspace)
++    return browserGuests.acquire(event.sender, workspace, persistence)
+   })
+   ipcMain.handle(DESKTOP_IPC.browserRelease, (event, lease: unknown) => {
+     assertProductSender(event)
+     return browserGuests.release(event.sender, lease)
++  })
++  ipcMain.handle(DESKTOP_IPC.browserClearPersistent, (event) => {
++    assertProductSender(event)
++    return browserGuests.clearPersistent()
+   })
+ 
+   session.defaultSession.webRequest.onBeforeSendHeaders({ urls: ['ws://127.0.0.1/*', 'wss://127.0.0.1/*'] }, (details, callback) => {
+--- a/apps/desktop/src/preload-browser.ts
++++ b/apps/desktop/src/preload-browser.ts
+@@ -17,7 +17,8 @@
+     }
+   })
+   return {
+-    acquire: workspace => ipcRenderer.invoke(DESKTOP_IPC.browserAcquire, workspace) as ReturnType<DesktopBrowserBridge['acquire']>,
++    acquire: (workspace, persistence) => ipcRenderer.invoke(DESKTOP_IPC.browserAcquire, workspace, persistence) as ReturnType<DesktopBrowserBridge['acquire']>,
++    clearPersistent: () => ipcRenderer.invoke(DESKTOP_IPC.browserClearPersistent) as Promise<void>,
+     release: lease => ipcRenderer.invoke(DESKTOP_IPC.browserRelease, lease) as Promise<void>,
+     onOpenRequested(lease, listener) {
+       let callbacks = listeners.get(lease)
+--- a/packages/client/ui-sidebar-browser/src/types.ts
++++ b/packages/client/ui-sidebar-browser/src/types.ts
+@@ -4,7 +4,7 @@
+ /** Main-issued identity of one guest reservation. */
+ export type DesktopBrowserLeaseId = Branded<'DesktopBrowserLeaseId'>
+ 
+-/** A guest's approved, process-local storage partition. */
++/** A guest's main-approved storage partition, which the renderer cannot choose. */
+ export interface DesktopBrowserReservation {
+   readonly lease: DesktopBrowserLeaseId
+   readonly partition: string
+@@ -16,10 +16,19 @@
+   readonly url: string
+ }
+ 
+-/** Origin-scoped operations; no Electron objects or arbitrary IPC cross this interface. */
++/** A deliberately narrow, optional persistent website request. */
++export interface DesktopBrowserPersistence {
++  /** This candidate enables only the named Chat integration and exact website. */
++  readonly plugin: 'dsh-chat'
++  readonly origin: 'https://chat.deepseek.com'
++}
++
++/** Application-origin operations; the shared renderer is not a per-plugin security boundary. */
+ export interface DesktopBrowserBridge {
+   /** @param workspace - resolved storage account. @returns one approved guest reservation. */
+-  acquire(workspace: string): Promise<DesktopBrowserReservation>
++  acquire(workspace: string, persistence?: DesktopBrowserPersistence): Promise<DesktopBrowserReservation>
++  /** Explicitly forget this integration's website data. Ordinary release preserves it. */
++  clearPersistent(): Promise<void>
+   /** @param lease - the caller's reservation. @returns after its guest has been destroyed. */
+   release(lease: DesktopBrowserLeaseId): Promise<void>
+   /** @param lease - originating guest. @param listener - approved URL consumer. @returns unsubscribe callback. */

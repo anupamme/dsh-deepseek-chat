@@ -1,3 +1,60 @@
+# W024登录记忆与CHAT闪烁修复 · 2026-10-11
+
+用户指出 dsh-codex-subscription 能记住多个授权；此前“插件无法做到，必须改 DSH”的结论范围过大，已更正。主线为插件保存自己的 CHAT 授权；未批准部署定制 DSH。0.1.8 同轮已从 0.1.7 递增一次，不重复涨号；基线 cb0662f，保留所有未提交修改，未 stage/commit/push。
+
+## 当前实现与分工
+
+- 官方 `ctx.credentials` 保存本插件自有 CHAT grant，按可信 DSH accountId 哈希与 epoch 隔离。官网白名单只有 userToken、__appKit_userInfo 的 id、deepseek-device-id:chat；不复用 DSH/Codex 凭据，不读取 Cookie、其他存储或聊天正文。启动恢复仅 reload 一次，由官网验证。语言偏好另存官方 Config。
+- session_capability 完成 Host/protocol/store；login_alternatives 完成标准存储模块及公开设置阶段/导航回退；header_interaction_review 完成主框架事件、文档代次与偏好恢复；root 集成、构建、安装、实机检查；layout_fix 静态复查并同步主要文档。子任务已交还。
+- 闪烁原因是普通加载/页内变化被当作整页重载，清空列表并重复恢复外观/语言；临时侧栏缺失又清掉准备标记，形成遮罩重放。现在只有主框架真实文档变化重置呈现与偏好，旧文档迟到结果丢弃；同文档临时 loading 保留已有页面/导航。公开设置选项只点击一次后等待验证；已呈现页面不再重新整体隐藏。侧栏缺失等待最多5秒，失败后保持官网原布局和 unsupported，直到明确恢复原网页或真实刷新，不反复展开/隐藏。
+- 标题展示/编辑统一文字行盒，圆角矩形保持垂直位置；真实展开/折叠均已复查。合法导航存在但设置同步失败时揭示官网并保留错误，不伪造暗色完成，不隐藏或自动关闭官网安全/环境提示。
+
+## 当前产物与构建安装
+
+- 最终本机包：`artifacts/dsh-chat-0.1.8-b4bb28dde279.tgz`，21文件，SHA256 `b4bb28dde2791acc7ae1ca0365eb5d78e0df945f9d91983c6f9f60626fe482f5`。
+- `node scripts/build.mjs` 通过生产类型检查、Host ESM、Client 单 lazy 工厂/4共享模块契约；未新增或运行测试。官方 CLI desktop 安装 exit0（+1/-2，泛化 peer warning 保留）。manifest、Host、Client、用户SVG 与本地逐字节一致。
+- Host SHA256 `1d65da67fefe7377e960e4bb84396485af5ddf2bca6f728a324309942bba12d8`；Client `bb35347ab644cf8c5b7a1f75d74d764bd5290b88c5ed77cac36f5c39039fabcd`；manifest `e26ef3aab7500dd4bb70dcfa11d33055d50059c512b6d5afcb01446fb556e3a5`；SVG `ad1b0fda90c1c1f2a0b9208bc86f5fe8c21d505a1208576be4e3110b26b4f79c`。
+- 官方 rc.2 更新已有插件要求 `restart-required`；磁盘安装成功不等于运行 Host 更新。b4bb安装后已正常 quit，查询确认所有相关进程结束，再重开完成激活。早期未重启时保存失败不是 credentials 不支持的证据，方法缺失只显示固定重启升级提示。
+- aef/90f/13b2 是阶段包：前三次完整退出重开的认证/中文恢复通过，13b2随后实机主区闪烁，界面稳定性失败。e948只完成构建/安装，静态审查发现5秒回退可能重遮后，未重启激活即被b4bb替代；不把它当实机通过。
+
+## 本机真实检查与证据边界
+
+- b4bb完整重启后，无需账号/验证码输入，官网恢复指定置顶“DSH插件查询”；原生CHAT设置显示原账号已登录、已记住网页登录、简体中文。此前三次认证恢复的第二次出现官网“使用环境异常”说明，正常X关闭后确认登录；官网提示仍可能出现，未绕过或自动关闭。
+- 打开指定既有对话后，约半分钟20次限定标题/置顶行采样各只有1个像素状态；关闭设置后再10次，各仍只有1个状态，末样本标题正常。该观察证明本次采样没有再次清空/闪烁，不证明长期或所有网页场景绝无问题。
+- 展开/折叠下展示与编辑均为圆角矩形、文字不再上移；Harness/CHAT往返保持原标题。没有输入、发送消息或重命名。
+- 证据只在 `/private/tmp`：`dsh-chat-flashfix-account-language-018.png`、`dsh-chat-flashfix-title-display-018.png`、`dsh-chat-flashfix-title-edit-018.png`、`dsh-chat-flashfix-collapsed-display-018.png`、`dsh-chat-flashfix-collapsed-edit-018.png`、`dsh-chat-flashfix-roundtrip-title-018.png`，及 `dsh-chat-flashfix-observe-018`、`dsh-chat-flashfix-final-observe-018` 受限采样目录。每段内部各区域一致；合并两段各有2个像素状态，不能写为全部30次像素完全相同。未采集聊天正文或授权值，不纳入Git。
+- DSH已留在展开CHAT指定原对话；AX标志实读 false/false。代码和文档保留本地，用户自行审查/提交/推送；仓库URL及其他设备未获得这些未提交代码。打包README包含前三次认证结果，后续稳定性是打包后记录，运行代码与当前构建一致。
+
+## 尚未验收
+
+过期授权、真实退出清除、DSH账号切换、卸载、另一设备、官网发送及另一浏览器历史一致性仍独立待验；设置/加载超时和同文档失配回退仅源码/构建/静态复核，未故障注入。官网存储格式并非稳定OAuth契约，服务端过期/撤销/环境要求仍可能需要正常重新登录，不承诺永久免登录。宿主草案未构建或部署，也未获批准。下面均为历史证据。
+
+---
+
+# W023标题修复与原登录研究 · 2026-10-10
+
+用户要求编辑态恢复圆角矩形且不再上移，并继续研究通过DSH已登录账号自动登录CHAT。当前基线cb0662f（上一轮0.1.7已由用户侧提交）；版本0.1.7→0.1.8一次。layout_fix仅改website-header样式，session_capability只读SSO研究，login_alternatives在临时目录制作宿主源码草案，root集成/安装/实机检查/记录；所有子任务均已交还。
+
+## 已完成的标题修复
+
+- 展示/编辑统一字体属性和20px文字行盒；48px顶行垂直居中，编辑框28px、1px边框、3px竖向padding保持内容位置。恢复蓝色圆角矩形，向左补偿内边距，支持时field-sizing按文字自适应、最大320px。清理标题专属包装残留定位/高度。没有改变顶行/分享识别与官网改名处理，也没有读取输入值。
+- 生产类型检查、Host ESM、Client lazy工厂及4共享模块构建通过；未新增或运行测试。包artifacts/dsh-chat-0.1.8-6d1f65736bf9.tgz，19文件，SHA256 6d1f65736bf96dcd9e7ea09db95f2c1b53cf7ee44b8fa5bca2a0620c32c21f54。
+- 官方CLI desktop安装exit0（+1/-2，pnpm11.7.0，泛化peer warning存在）。安装0.1.8的Host/Client/用户SVG与本地逐字节一致；Host 72fc3b73309f22d174d374351db3806332d96c15f4744649a752a72669653ad9，Client 96344b33daa355b7176a27c8236f27ad0478ce35daa33cbbe5f3f7be149eb28d，SVG ad1b0fda90c1c1f2a0b9208bc86f5fe8c21d505a1208576be4e3110b26b4f79c。
+- 实机打开既有指定对话，展开/收起分别点击标题，圆角矩形保持左侧且文字与展示态同一垂直位置；点击顶行空白结束编辑后标题正常。证据为/private/tmp/dsh-chat-title-expanded-static-018.png、expanded-edit-018.png、collapsed-static-018.png、collapsed-edit-018.png和title-final-018.png（共同前缀dsh-chat-title-）。恢复展开CHAT及原false辅助功能标志；未修改原标题、发送消息或主动退出应用。不把本轮当真实跨退出登录验收。
+
+## 登录研究的具体结果
+
+- 官方最新master仍为d743267388641bc76f17c45ce8b4c231aed1d32c（0.2.1-alpha.2）。已查官方源码及无登录公共Chat/Platform脚本，未读取本机凭据或请求账号私有接口。
+- getPlatformSession确实能为Platform提供Host凭据，但预加载桥只允许issuer同源主frame、usage/top-up；resolveToken只针对配置推理来源。不能说插件绝对取不到凭据，也不能说它已能让Chat登录。
+- /dsh/authorized是DSH授权完成页，回到dsh://open；Platform进入Chat只是普通外链。已检查的Chat /authorized只处理GOOGLE/WECHAT的nonce/provider兑换；共享组件client_type=DSH表示来源，不能当已存grant兑换凭据的证据。当前公开桥/启动代码没有可用Chat会话转换契约；没有遍历全部动态块或验证服务器接受同token，保留这项不确定性。
+- 因此当前可控方向是首次官网正常登录后由宿主持久Session保留。稳定persist分区需主进程提供，当前插件不能单独兑现；不向Chat复制DSH令牌。
+- 已保存docs/proposals/persistent-browser/{DESIGN.md,dsh-chat-persistent-browser-candidate.patch,manifest.json}。基于d743267的5个上游文件草案，固定Chat origin/主进程可信账号与稳定partition，保留lease/sandbox校验、正常释放保留、明确退出/换账号清理。补丁SHA256 06eb353149a35c6f0cde499bcc7aa6f3801edf35eb2be7d6f4a307516d4eaf09；git apply --check只证明补丁可应用，不是运行测试/宿主编译。
+- 草案未构建、未部署、未实机退出重启。DESIGN明确列出逐插件身份、卸载索引、账号代次、清理失败持久标记、退出等待和官网登录链的部署前缺口。已询问用户是否接受独立定制DSH路线，因为这超出插件升级范围；收到答复前不推进依赖该授权的宿主构建/安装。没有改已安装DSH、发外部issue/PR或自动提交推送。
+
+下面W022及更早记录均为历史。
+
+---
+
 # W022当前修复 · 2026-10-10
 
 用户反馈点击标题后又出现居中圆角框。W021只查看了展示状态，漏了官网重命名状态；本轮已在真实DSH复现，版本0.1.6→0.1.7一次，保留上一轮中文偏好修复与登录持久化限制。

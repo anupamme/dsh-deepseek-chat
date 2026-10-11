@@ -10,7 +10,7 @@ export const Config = schema.object({
 export const name = 'dsh-chat'
 
 /** Host-half entry. Browser UI is declared separately by the `dsh.client` manifest. */
-export const inject = ['deepseekAccount', 'typert']
+export const inject = ['deepseekAccount', 'typert', 'credentials']
 
 export function apply(ctx: Context): void { new DshChatController(ctx)
   ctx.inject(['settings'], child => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })

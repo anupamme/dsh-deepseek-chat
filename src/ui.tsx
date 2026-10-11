@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { chatStyles } from './styles.js'
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js'
+import type { WebsiteSession } from './protocol.js'
 
 export type DshChatMode = 'chat' | 'harness'
 
@@ -32,6 +33,8 @@ export interface DshChatViewState {
   readonly websiteReloadRevision: number
   readonly settingsViewport: DshChatViewportRect | null
   readonly preferenceError: string | null
+  readonly websiteSessionStatus: 'idle' | 'saved' | 'error'
+  readonly websiteSessionError: string | null
   readonly viewport: DshChatViewportRect | null
   readonly brandAnchor: DshChatViewportRect | null
   readonly sidebarAdapted: boolean | null
@@ -52,12 +55,16 @@ export interface DshChatUIBridge {
   attachSidebar(element: HTMLElement): void
   reloadWebsite(): void
   reportWebsiteState(generation: number, state: { readonly loading: boolean; readonly error: string | null }): void
-  reportWebsiteNavigation(generation: number, value: unknown): void
+  reportWebsiteNavigation(generation: number, value: unknown, newDocument?: boolean): void
   bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void
   commandWebsite(command: WebsiteCommand): void
   toggleWebsiteNavigation(): void
   updateSettingsViewport(rect: DshChatViewportRect | null): void
   logoutWebsite(): void
+  loadWebsiteSession(generation: number): Promise<WebsiteSession | null>
+  saveWebsiteSession(generation: number, session: WebsiteSession): Promise<boolean>
+  clearWebsiteSession(generation: number): Promise<boolean>
+  reportWebsiteSessionError(generation: number, message: string): void
 }
 
 export interface DshChatBridgeProps { readonly bridge: DshChatUIBridge }
@@ -262,6 +269,7 @@ export function DshChatChatSettings({bridge}: PropsRuntime<'settings.section'> &
   return <section className="dsh-chat-settings"><DshChatStyles/><h2>CHAT设置</h2>
     {enabled && navigation.status==='ready' && <div className="dsh-chat-settings-card">
       <div className="dsh-chat-settings-account"><div><strong>{navigation.accountName || 'DeepSeek Chat'}</strong><p>已登录</p></div><button type="button" onClick={()=>bridge.logoutWebsite()} disabled={settings?.pending}>退出登录</button></div>
+      {state.websiteSessionStatus==='saved' && <p role="status">已记住网页登录。下次启动会由官网验证并恢复；授权失效时需重新登录。</p>}
       <label className="dsh-chat-settings-language">系统语言<select aria-label="CHAT系统语言" value={language} disabled={settings?.pending} onChange={event=>bridge.commandWebsite({type:'setting',key:'language',value:event.target.value})}>
         {!language && <option value="" hidden></option>}<option value="system">跟随系统</option><option value="zh-CN">简体中文</option><option value="en">English</option>
       </select></label>
@@ -269,6 +277,7 @@ export function DshChatChatSettings({bridge}: PropsRuntime<'settings.section'> &
       {settings?.pending && <p className="dsh-chat-settings-progress" role="status">正在同步网页设置…</p>}
       {settings?.error && <p className="dsh-chat-settings-error" role="alert">{settings.error} <button type="button" onClick={()=>bridge.commandWebsite({type:'settings-read'})}>重试</button></p>}
       {state.preferenceError && <p className="dsh-chat-settings-error" role="alert">{state.preferenceError}</p>}
+      {state.websiteSessionError && <p className="dsh-chat-settings-error" role="alert">{state.websiteSessionError}</p>}
     </div>}
     {!enabled && <p role="status">{state.desktopAvailable ? state.availabilityMessage : '需要 DSH 桌面版的官方网页容器。'}</p>}
     {enabled && navigation.status!=='ready' && navigation.status!=='sign-in' && <p role="status">{state.webError || (navigation.status==='unsupported' ? '暂时无法连接官网。' : '正在连接 DeepSeek 官网…')} <button type="button" onClick={()=>bridge.reloadWebsite()}>重试</button></p>}

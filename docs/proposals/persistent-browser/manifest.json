@@ -1,0 +1,27 @@
+{
+  "baseline": "d743267388641bc76f17c45ce8b4c231aed1d32c",
+  "files": {
+    "apps/desktop/src/browser-guests.ts": {
+      "baseSHA256": "5911d6bcbce79b68bd951d27da40bf8b8c9ab57b7d715dd0586d5e74e8e515f4",
+      "candidateSHA256": "6f5823de2a36252850ff36791589b88a438afbb0871ae7721ca92efc7a243837"
+    },
+    "apps/desktop/src/ipc.ts": {
+      "baseSHA256": "b7ee202112d7485c524741ffcfe257c5c4f6dca18281aa5ac01c4510b69c6a08",
+      "candidateSHA256": "483f6dca5ece1105e1742a84358bd76dbb22c08cc3e96fb27f31be80c9b559f7"
+    },
+    "apps/desktop/src/main.ts": {
+      "baseSHA256": "19aae691feeb41e459f2de0c1000f02d6bea02a4b9f5d3c59f3b02b7a628edac",
+      "candidateSHA256": "67b3f1eb6f136fa580dbc1795c7a39084bb2eb27447ceb5f3e3803ffbd1e381e"
+    },
+    "apps/desktop/src/preload-browser.ts": {
+      "baseSHA256": "17c386171796e77f6a2bfa3c86382a20cce36013275beca978f31b424ef25e9e",
+      "candidateSHA256": "3b79db7818a42f85123ee6f9f3667404bb348f7ada0eaa2d64f98e3e7997e671"
+    },
+    "packages/client/ui-sidebar-browser/src/types.ts": {
+      "baseSHA256": "8a5f9a5219091b4bb530edfae282e231cf489945d47813e007a2c8b8584b0f2f",
+      "candidateSHA256": "16f1019be4ff6dc2b748ff3a9651637102638766203abf86754ae15fe705964a"
+    }
+  },
+  "patchSHA256": "06eb353149a35c6f0cde499bcc7aa6f3801edf35eb2be7d6f4a307516d4eaf09",
+  "status": "static candidate; not compiled, installed, or verified with real website login/restart"
+}

@@ -1,6 +1,6 @@
 {
   "name": "dsh-chat",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "private": true,
   "description": "CHAT / HARNESS mode switcher for DeepSeek Harness",
   "type": "module",
@@ -54,6 +54,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "4.0.4",
+    "@deepseek-ai/dsh-credentials": "0.2.0-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.2",
     "@deepseek-ai/dsh-typert-registry": "0.2.0-rc.2",
     "@deepseek-ai/schemastery": "3.18.4"

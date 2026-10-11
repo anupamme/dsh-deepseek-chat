@@ -144,3 +144,43 @@ Mac真实DSH的AX/截图确认顶部按钮可达、鼠标及Shift-Tab/Enter可�
 - [最新固定官方Browser限制](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/client/ui-sidebar-browser/README.md#known-limitations-and-deferred-work)：Cookie与网页存储不跨应用重启。GitHub网页抓取Cache miss；只读代理通过原始公开源码及GitHub API核对固定SHA，未将失败网页抓取写成成功。
 - [同SHA browser-guests.ts](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/apps/desktop/src/browser-guests.ts)：随机内存partition与强制lease匹配。本机DSH0.2.0-rc.2发布产物主进程同实现；稳定workspace键只保证进程内隔离/复用。
 - Playwright独立浏览器可以打开官网公开登录页面；未输入凭据或登录，不能据此判断官网已登录聊天顶栏。布局适配依据用户截图和现有公开标题/分享节点；当前DSH查看结果见handoff。
+
+
+## W023登录研究来源（2026-10-10）
+
+- [官方Platform账户服务](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/credentials/deepseek-account-platform/src/index.ts#L359)：getPlatformSession/resolveToken的来源约束；[Platform预加载桥](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/apps/desktop/src/preload-platform-account.ts#L5)：仅同issuer主frame。
+- 无登录公共脚本：Chat main.8d6a4f4bfa.js SHA256 f0953f4d9054db295b269914bf3e39fdb2d82d70639356ff52e282bb8c9d1a9f；default-vendors.df13be609e.js 7af105d175559a592678d8d51e9ab4d3a8744e7709412e37d80c66037462a3ea；Platform main.1c97ecbfe0.js 736ed7b9d461bce6feabce707ab5e25cb911d5dd981e152c66c2021dda7a51b3；9500.e576e9b5c1.js b3ff14264db995ccbbe2d0ee7d6629a15d73feec64d9509a6fd25442e68da33a。资源位于官方fe-static.deepseek.com/chat/static或platform/static；只分析公开启动/授权逻辑，不带Cookie，不请求账户接口。结论不覆盖全部动态块和服务端未公开能力。
+- [Electron Session partition](https://www.electronjs.org/docs/latest/api/session#sessionfrompartitionpartition-options)：persist前缀与内存分区的区别。
+
+
+## W023续步：插件自己的官网grant（2026-10-11）
+
+以下是公开源码的静态证据。它们证明凭据存储API和当前官网bootstrap形态；真实保存与跨退出恢复的独立证据见下方W024实机记录，不能将静态源码本身当作实机验证。最终安装结果以handoff最新分层为准。
+
+- 官方固定master `d743267388641bc76f17c45ce8b4c231aed1d32c`：[Credentials API](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/credentials/credentials/src/index.ts)、[record与grant类型](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/credentials/credentials/src/types.ts)、[credentials-local Provider](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/credentials/credentials-local/README.md)。Host可readRecord/modifyRecord/deleteRecord；默认本地文件mode0600，不作Keychain/加密承诺。目标rc.2使用匹配发布包，不把master当已安装升级。
+- [官方Authorization flow](https://github.com/deepseek-ai/deepseek-harness/blob/d743267388641bc76f17c45ce8b4c231aed1d32c/packages/credentials/authorization/README.md)支持插件自己的授权流程和提交record，但不自带Chat授权协议，也不提供DSH到CHAT兑换。
+- 对照：[dsh-codex-subscription v2.3.0 / DshOAuthAccountVault](https://github.com/WSL043/dsh-codex-subscription/blob/a3e1fc1f771b31348d8966439b4379c5e52f0a53/lib/index.js#L2119)，tag commit `a3e1fc1f771b31348d8966439b4379c5e52f0a53`；本机包源码Git blob一致为`f54777f26bb43316e16cb361832de6c820b94dcb`。静态read/modify/delete自己的grant、OAuth登录与刷新路径均可见；它保存access/refresh等授权，直接走provider请求，不内嵌ChatGPT官网。不读取其实际credentials记录，不能以它证明Chat网页恢复必定成功。
+- 官网公开资产：[main.8d6a4f4bfa.js](https://fe-static.deepseek.com/chat/static/main.8d6a4f4bfa.js)，SHA256 `f0953f4d9054db295b269914bf3e39fdb2d82d70639356ff52e282bb8c9d1a9f`；[default-vendors.df13be609e.js](https://fe-static.deepseek.com/chat/static/default-vendors.df13be609e.js)，SHA256 `7af105d175559a592678d8d51e9ab4d3a8744e7709412e37d80c66037462a3ea`。无登录重新下载哈希一致；首页429/403，未确认当前首页仍引用这两个资源。静态AppKit使用userToken和__appKit_userInfo的id；StorageHandle wrapper为{value,__version:'0'}；设备key为deepseek-device-id:chat的raw UUID。
+- 同bundle的bootstrap有token时由官网自身current-user验证；没有看到refresh-token路线。客户端请求可能仍携带服务端Cookie/风控状态，不能因静态最小字段成立保证全认证策略兼容。IDB包含MFA不可导出密钥和聊天缓存，新候选不读取这些数据。
+- 本项目候选对应src/website-session.ts、website-session-store.ts、protocol.ts、server.ts、client.ts、web-surface.tsx：固定origin与三key、官方自有grant、strict内部RPC、可信账号/epoch栅栏、一次恢复reload与失效正常登录。属于实现与静态依据；W024同账号三次完整退出重开已有独立实机证据，不由这些源码证明。
+- 此前Browser无persist的观察只针对完整Session；不能推导插件无法记住自己的授权。[宿主源码草案](proposals/persistent-browser/DESIGN.md)仍未编译/部署/重启验证，是可选备用，不是当前实现前置条件。
+
+
+## W024登录恢复与标题复查实机证据（2026-10-11）
+
+- 目标为用户本机DSH 0.2.0-rc.2、插件0.1.8。用户本人在官网正常登录后，CHAT设置显示固定“已记住网页登录”。前两次正常quit均按进程名确认相关进程全部退出，再重开；均无需再次登录或验证码，官网验证后恢复同一公开账号及简体中文。第2次官网出现“使用环境异常”说明，仅正常点击X关闭后读回已登录；插件未自动关闭或掩盖该提示。
+- 登录保存截图 `/private/tmp/dsh-chat-auth-saved-before-restart-018.png`；两轮恢复截图 `/private/tmp/dsh-chat-full-restart-1-ready-018.png`、`/private/tmp/dsh-chat-full-restart-2-after-notice-018.png`。第1次最初空白，等待官网验证后才读回成功。截图仅作本机验收证据，不提交Git，不读取或输出实际授权payload。
+- 仅选择已加载导航中用户指定的置顶对话、确认恢复原标题；证据 `/private/tmp/dsh-chat-restored-known-conversation-018.png`。展开/折叠展示与编辑位置证据 `/private/tmp/dsh-chat-title-restored-display-018.png`、`/private/tmp/dsh-chat-title-restored-edit-018.png`、`/private/tmp/dsh-chat-title-restored-collapsed-display-018.png`、`/private/tmp/dsh-chat-title-restored-collapsed-edit-018.png`。没有输入、发送或重命名，不保存个人正文/历史到仓库，不据此证明另一浏览器消息一致性。
+- 最新两文件修正为 `src/website-navigation.ts` 设置同步错误时解除无限paint gate并保留错误/重试、不伪造暗色；`src/web-surface.tsx` 恢复验证及登录加载时保留原生连接/重试入口。静态源码可见，没有官网提示关闭逻辑；13b2包已完成第三次认证/中文恢复与启动反馈复验，但用户随后实报主区闪烁，显示稳定性未通过；当前b4修正版有限结果见下节。设置同步真实错误/主题超时分支仅有源码与生产构建证据，未故障注入实测。过期、实际退出清除、换账号与卸载仍待独立验收。
+
+- 历史13b2包（认证/中文通过、后续显示失败） `artifacts/dsh-chat-0.1.8-13b2b6bdb426.tgz`，21文件，SHA256 `13b2b6bdb426d214befdc7c87a8e5dd80101416a85d6d53e076324780718a372`；官方desktop CLI exit0、+1/-2、pnpm11.7.0，generic peer warning保留。安装manifest/Host/Client/icon与本地逐字节一致；Host仍为 `1d65da67fefe7377e960e4bb84396485af5ddf2bca6f728a324309942bba12d8`，Client SHA256 `43775fdfcd83a5cb64a43a9f953e4c7774a3f46b6a53727d3fc6a68e3bf10661`。
+- 第3次正常quit确认相关进程全部退出后重开，main显示打开官网、原生CHAT设置显示“正在连接…”和重试；截图 `/private/tmp/dsh-chat-final-package-startup-018.png`、`/private/tmp/dsh-chat-final-package-restored-018.png`。关闭设置使官网前台完成验证后，未输入登录信息/验证码，也未再次关闭官网说明弹窗，读回原账号已登录、已记住网页登录和简体中文，证据 `/private/tmp/dsh-chat-final-package-confirmed-018.png`；置顶导航恢复证据 `/private/tmp/dsh-chat-final-package-nav-ready-018.png`。至此连续3次完整重启恢复通过，最后一次运行最终加载反馈代码；这不证明官网不会再显示环境提示或所有流程已验收。
+- 本次第三轮验收的文档更新晚于上述artifact。包内README记录打包时的两次通过，仍为有效阶段证据；代码与当前安装一致，不因验收文档增加重打包或安装。
+
+
+## W024闪烁修正版b4与受限观察证据（2026-10-11）
+
+- 闪烁修正区分新主文档与后台/子frame/SPA加载，Client仅明确新文档/sign-in复位偏好；网站presented标记避免后续偏好重遮，opening/verify阶段等待公开值。导航暂缺5秒回退后置同文档fallback，阻止后续轮询重新gate/compact。layout_fix只读复核该循环及登录页/新文档/原官网/固定错误可达；静态结论不代替实机。
+- 中间e948b579e901包仅生产构建和安装，未重启激活即由b4替代；此前13b2的前三次认证/中文恢复证据仍有效，显示稳定性未通过。当前包 `artifacts/dsh-chat-0.1.8-b4bb28dde279.tgz`，21文件，SHA256 `b4bb28dde2791acc7ae1ca0365eb5d78e0df945f9d91983c6f9f60626fe482f5`。生产构建与官方CLI exit0通过；安装manifest/Host/Client/icon均与本地逐字节匹配。Client SHA256 `bb35347ab644cf8c5b7a1f75d74d764bd5290b88c5ed77cac36f5c39039fabcd`，Host仍为 `1d65da67fefe7377e960e4bb84396485af5ddf2bca6f728a324309942bba12d8`，manifest/icon沿用原版本。
+- 正常quit后ps确认相关进程全无，再重开，指定置顶和标题恢复。首段20次、设置关闭后10次受限像素采样，各段内标题/置顶区域分别保持一致、未见消失；末样本直接看图文字正常。合并后每区域共30次有2个像素状态，不声称跨阶段所有像素相同。证据目录 `/private/tmp/dsh-chat-flashfix-observe-018`、`/private/tmp/dsh-chat-flashfix-final-observe-018`。不读取正文或实际授权payload；这些短时采样不证明长时或所有官网状态绝无闪烁。
+- 公开顶行/指定导航、展开/折叠展示与编辑、模式往返和账号语言证据分别为 `/private/tmp/dsh-chat-flashfix-start-pin-018.png`、`/private/tmp/dsh-chat-flashfix-title-display-018.png`、`/private/tmp/dsh-chat-flashfix-title-edit-018.png`、`/private/tmp/dsh-chat-flashfix-collapsed-display-018.png`、`/private/tmp/dsh-chat-flashfix-collapsed-edit-018.png`、`/private/tmp/dsh-chat-flashfix-roundtrip-title-018.png`、`/private/tmp/dsh-chat-flashfix-account-language-018.png`。root确认圆角编辑框文字不移位，原生设置读回同账号已登录/已记住网页登录/简体中文，无重新登录。AX标志直接读回false/false，停在展开CHAT指定原对话。截图仅本机证据，不提交Git；真正错误/主题超时、过期、退出清除、换账号、卸载及消息跨浏览器一致性仍待验。

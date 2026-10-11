@@ -4,6 +4,7 @@ import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { DesktopBrowserBridge, DesktopBrowserReservation } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { DshChatStyles, useDshChat, type DshChatBridgeProps } from './ui.js'
 import { emptyNavigation, parseWebsiteNavigation, websiteCommandScript, type WebsiteCommand } from './website-navigation.js'
+import { parseWebsiteSession, websiteSessionCaptureScript, websiteSessionRestoreScript } from './website-session.js'
 
 const WEBSITE_URL = 'https://chat.deepseek.com/'
 
@@ -48,6 +49,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
   const previousMode = useRef(state.mode)
   const guest = useRef<WebsiteWebview | null>(null)
   const guestEvents = useRef<AbortController | null>(null)
+  const retryGuestSession = useRef<(() => void) | null>(null)
   const lastReload = useRef(state.websiteReloadRevision)
 
   useEffect(() => {
@@ -87,6 +89,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
       guestEvents.current?.abort()
       guestEvents.current = null
       guest.current = null
+      retryGuestSession.current = null
       if (held !== undefined) release(held)
     }
   }, [bridge, nativeBrowser, requestedGeneration, state.authorizationGeneration, state.accountStorageKey, recoveryRevision])
@@ -95,6 +98,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     guestEvents.current?.abort()
     guestEvents.current = null
     guest.current = null
+    retryGuestSession.current = null
     if (element === null || reservation === null || nativeBrowser === undefined) return
     const current = element as WebsiteWebview
     const events = new AbortController()
@@ -104,32 +108,108 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     let bootstrapped = false
     let lastError: string | null = null
     let navigationRevision = 0
+    let documentRevision = 0
+    let documentPresented = false
+    let restorationAttempted = false
+    let restoredFromVault = false
+    let restoreDeadline = 0
+    let websiteHadSession = false
+    let savedSessionFingerprint: string | null = null
+    retryGuestSession.current=()=>{restorationAttempted=false;restoredFromVault=false;restoreDeadline=0}
     const report = (loading: boolean, error: string | null = null) => {
       if (loading) lastError = null
       else if (error !== null) lastError = error
       if (!events.signal.aborted) bridge.reportWebsiteState(generation, { loading, error: lastError })
     }
+    const resetDocumentPresentation = () => {
+      documentRevision++
+      documentPresented=false
+      setPresentationReady(false)
+      bridge.reportWebsiteNavigation(generation, emptyNavigation(), true)
+    }
     let reading = false
     let queued = Promise.resolve()
-    const execute = async (command: WebsiteCommand) => {
+    const executeScript = async (script: string) => {
       let timer: ReturnType<typeof setTimeout> | undefined
       try {
-        return await Promise.race([current.executeJavaScript(websiteCommandScript(command)), new Promise<never>((_resolve, reject) => {
+        return await Promise.race([current.executeJavaScript(script), new Promise<never>((_resolve, reject) => {
           timer = setTimeout(() => reject(new Error('Website navigation deadline exceeded')), 8000)
         })])
       } finally { clearTimeout(timer) }
     }
+    const execute = (command: WebsiteCommand) => executeScript(websiteCommandScript(command))
+    const active = () => {
+      const snapshot=bridge.getSnapshot()
+      return !events.signal.aborted && snapshot.authorizationGeneration===generation && snapshot.authorizationStatus==='authorized'
+    }
+    const approvedOrigin = () => {
+      try { return new URL(current.getURL()).origin==='https://chat.deepseek.com' } catch { return false }
+    }
+    const prepareSession = async (): Promise<boolean> => {
+      if(restorationAttempted) return true
+      restorationAttempted=true
+      try {
+        const present=parseWebsiteSession(await executeScript(websiteSessionCaptureScript()))
+        if(!active()) return false
+        if(present) return true
+        const saved=await bridge.loadWebsiteSession(generation)
+        if(!active() || !approvedOrigin()) return false
+        if(!saved) return true
+        const result=await executeScript(websiteSessionRestoreScript(saved))
+        if(!active()) return false
+        if(result==='restored') {
+          restoredFromVault=true;restoreDeadline=Date.now()+15_000
+          setPresentationReady(false);report(true);current.reload();return false
+        }
+        if(result!=='present') bridge.reportWebsiteSessionError(generation,'当前官网未能恢复已保存的登录，请在网页中重新登录。')
+        return true
+      } catch {
+        if(active()) bridge.reportWebsiteSessionError(generation,'网页登录恢复暂时不可用，请重试网页；也可以直接登录。')
+        return active()
+      }
+    }
     const adapt = async (command: WebsiteCommand) => {
       const snapshot = bridge.getSnapshot()
+      const requestDocumentRevision=documentRevision
+      const currentDocument=()=>active() && requestDocumentRevision===documentRevision
       if(command.type==='snapshot') command={...command,headerInset:headerInset(snapshot.viewport)}
       if (events.signal.aborted || snapshot.authorizationGeneration !== generation || (snapshot.mode !== 'chat' && !snapshot.settingsViewport)
         || (!snapshot.modeEnabled && !snapshot.settingsViewport) || snapshot.authorizationStatus !== 'authorized') return
       try {
-        if(!current.getURL().startsWith('https://chat.deepseek.com/')) return
+        if(!approvedOrigin() || !await prepareSession() || !currentDocument()) return
         const result = parseWebsiteNavigation(await execute(command))
-        if (!events.signal.aborted) { bridge.reportWebsiteNavigation(generation, result); setPresentationReady(result.status !== 'loading') }
+        if(!currentDocument()) return
+        // Keep this document's first usable presentation through transient DOM
+        // loading. Only a real document replacement clears navigation and paint.
+        if(documentPresented && result.status==='loading') return
+        if(result.status==='ready') {
+          websiteHadSession=true;restoredFromVault=false
+          let session: ReturnType<typeof parseWebsiteSession> = null
+          let captureFailed=false
+          try {session=parseWebsiteSession(await executeScript(websiteSessionCaptureScript()))}
+          catch {captureFailed=true;if(currentDocument()) bridge.reportWebsiteSessionError(generation,'网页登录保存暂时不可用，请重试网页。')}
+          if(!currentDocument()) return
+          if(session) {
+            // This private comparison is discarded with the guest; no grant enters UI state.
+            const fingerprint=JSON.stringify(session)
+            if(fingerprint!==savedSessionFingerprint && await bridge.saveWebsiteSession(generation,session)) savedSessionFingerprint=fingerprint
+          } else if(!captureFailed) bridge.reportWebsiteSessionError(generation,'当前官网的登录格式尚无法保存；重启后可能需要重新登录。')
+        } else if(result.status==='sign-in') {
+          // Give the website's own current-user verification time after the one reload.
+          if(restoredFromVault && Date.now()<restoreDeadline) return
+          if(websiteHadSession || restoredFromVault) {
+            await bridge.clearWebsiteSession(generation)
+            if(!currentDocument()) return
+            websiteHadSession=false;restoredFromVault=false;savedSessionFingerprint=null
+          }
+        }
+        if (currentDocument()) {
+          if(result.status!=='loading') documentPresented=true
+          bridge.reportWebsiteNavigation(generation, result); setPresentationReady(result.status !== 'loading')
+        }
       } catch {
-        if (!events.signal.aborted) {
+        if (currentDocument()) {
+          documentPresented=true
           bridge.reportWebsiteNavigation(generation, { ...emptyNavigation(), status: 'unsupported' })
           setPresentationReady(!snapshot.settingsViewport)
           try { await execute({type:'restore'}) } catch { /* The next ready event retries a recovered guest. */ }
@@ -159,10 +239,20 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     }
     current.addEventListener('dom-ready', () => {
       if (!bootstrapped) { bootstrapped = true; navigate(WEBSITE_URL) }
-      else { bridge.reportWebsiteNavigation(generation, emptyNavigation()); syncNavigation() }
+      else { resetDocumentPresentation(); syncNavigation() }
     }, { signal: events.signal })
-    current.addEventListener('did-start-loading', () => { setPresentationReady(false); report(true) }, { signal: events.signal })
-    current.addEventListener('did-navigate-in-page', () => { setPresentationReady(false); syncNavigation() }, { signal: events.signal })
+    current.addEventListener('did-start-navigation', event => {
+      const navigation = event as Event & { readonly isMainFrame?: boolean; readonly isInPlace?: boolean }
+      // Only a new main document loses its adapter/preference markers. Loading
+      // activity in other frames must not hide or clear an already ready page.
+      if (navigation.isMainFrame !== true || navigation.isInPlace !== false) return
+      resetDocumentPresentation(); report(true)
+    }, { signal: events.signal })
+    current.addEventListener('did-start-loading', () => { report(true) }, { signal: events.signal })
+    current.addEventListener('did-navigate-in-page', event => {
+      if ((event as Event & { readonly isMainFrame?: boolean }).isMainFrame !== true) return
+      syncNavigation()
+    }, { signal: events.signal })
     current.addEventListener('did-stop-loading', () => { report(false); syncNavigation() }, { signal: events.signal })
     current.addEventListener('did-fail-load', event => {
       const failure = event as Event & { readonly isMainFrame?: boolean; readonly errorCode?: number }
@@ -197,6 +287,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
       return
     }
     bridge.reportWebsiteState(reservation.generation, { loading: true, error: null })
+    retryGuestSession.current?.()
     try {
       if (current.getURL().startsWith('about:blank')) {
         void current.loadURL(WEBSITE_URL).catch(() => bridge.reportWebsiteState(reservation.generation, { loading: false, error: 'DeepSeek 网页加载失败。' }))
@@ -215,7 +306,9 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
 
   const inSettings = state.settingsViewport !== null
   const rect = inSettings && state.websiteNavigation.status!=='sign-in' ? {left:0,top:0,width:globalThis.innerWidth,height:globalThis.innerHeight} : state.settingsViewport ?? state.viewport
-  const visible = (inSettings && state.websiteNavigation.status==='sign-in' || !inSettings && state.mode === 'chat' && state.modeEnabled) && state.authorizationStatus === 'authorized' && rect !== null
+  // Leave native connection/retry controls visible while the sign-in guest
+  // is still loading or being verified after a session restore.
+  const visible = (inSettings && state.websiteNavigation.status==='sign-in' && presentationReady || !inSettings && state.mode === 'chat' && state.modeEnabled) && state.authorizationStatus === 'authorized' && rect !== null
   const activeReservation = reservation !== null && reservation.generation === state.authorizationGeneration
     && reservation.storageKey === state.accountStorageKey ? reservation : null
   const clearance = 0
@@ -232,6 +325,8 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     borderRadius: inSettings ? 12 : 0, overflow: 'hidden',
   }}>
     <DshChatStyles />
+    {state.websiteSessionStatus==='saved' && <span className="dsh-chat-sr-only" role="status" aria-label="CHAT 网页登录状态已保存">CHAT 网页登录状态已保存</span>}
+    {state.websiteSessionError && <p className="dsh-chat-session-error" role="alert">{state.websiteSessionError}</p>}
     <div className="dsh-chat-web-content">
       {activeReservation !== null && createElement('webview', {
         key: activeReservation.native.lease,

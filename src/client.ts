@@ -7,7 +7,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { DesktopBrowserBridge } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { CHAT_PANEL, ModeController } from './core/mode.js'
 import { authorizationSchema, DSH_CHAT_REMOTE_CONTRIBUTION } from './protocol.js'
-import type { AuthorizationState, DshChatClientMetadata } from './protocol.js'
+import type { AuthorizationState, DshChatClientMetadata, WebsiteSession } from './protocol.js'
 import { DshChatBrandName, DshChatBrandControl, DshChatChatNavigation, DshChatChatPanel, DshChatLeadingControls, DshChatChatSettings } from './ui.js'
 import type { DshChatUIBridge, DshChatViewState, DshChatViewportRect } from './ui.js'
 import { DshChatWebSurface } from './web-surface.js'
@@ -53,7 +53,12 @@ export function apply(ctx: Context): void {
   let restorationSeen = false
   let websiteSignedOut = false
   let logoutRequested = false
+  let forgettingWebsiteSession = false
+  let logoutTimer: ReturnType<typeof setTimeout> | undefined
   let websiteHadSession = false
+  let websiteSessionStatus: DshChatViewState['websiteSessionStatus'] = 'idle'
+  let websiteSessionError: string | null = null
+  let pendingSessionSave: Promise<boolean> | null = null
   const pendingPreferences = new Map<string,string>()
   let viewport: DshChatViewportRect | null = null
   let brandAnchor: DshChatViewportRect | null = null
@@ -91,6 +96,7 @@ export function apply(ctx: Context): void {
       availabilityMessage: availability(), accountLabel: state.authorization.status === 'authorized' ? 'DSH 账号已授权' : null,
       error: state.error ?? connectionError ?? (state.authorization.error ? 'DSH 账号状态刷新遇到网络或服务问题。' : null),
       desktopAvailable: Boolean(nativeBrowser), webLoading, webError, settingsViewport, preferenceError, viewport, brandAnchor, sidebarAdapted,
+      websiteSessionStatus, websiteSessionError,
       accountStorageKey: state.authorization.status === 'authorized' && state.authorization.accountId
         ? `dsh-chat:website:${state.authorization.accountId}` : null,
       authorizationGeneration, websiteReloadRevision, websiteNavigation, showWebsiteNavigation,
@@ -103,6 +109,9 @@ export function apply(ctx: Context): void {
     const previous = mode.getSnapshot().authorization
     if (next.accountId !== previous.accountId || next.epoch !== previous.epoch) {
       authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; showWebsiteNavigation = false;websiteSignedOut=false;logoutRequested=false;websiteHadSession=false;preferencesGeneration=-1
+      websiteSessionStatus='idle';websiteSessionError=null
+      forgettingWebsiteSession=false
+      clearTimeout(logoutTimer);logoutTimer=undefined
     }
     connectionError = null
     mode.updateAuthorization(next)
@@ -193,6 +202,61 @@ export function apply(ctx: Context): void {
     })().finally(() => { refreshing = null })
     return refreshing
   }
+  // Authorization records travel only between our guest and the Host vault.
+  // They never enter the published UI snapshot, settings, console or error text.
+  function sessionFence(generation: number): { accountId: string; epoch: string } | null {
+    const current=mode.getSnapshot().authorization
+    return !disposed && generation===authorizationGeneration && current.status==='authorized' && current.accountId
+      ? {accountId:current.accountId,epoch:current.epoch} : null
+  }
+  function sameSessionFence(generation: number, fence: {accountId:string;epoch:string}): boolean {
+    const current=sessionFence(generation)
+    return current!==null && current.accountId===fence.accountId && current.epoch===fence.epoch
+  }
+  function sessionFailure(code: string='unknown'): void {
+    websiteSessionStatus='error'
+    // Only fixed carrier codes choose a product message. Never display error details.
+    if(code==='gateway/invocation-unavailable' || code==='gateway/definition-unavailable' || code==='gateway/method-unavailable') {
+      websiteSessionError='网页登录保存服务尚未更新，请重启 DSH 完成插件升级。'
+    } else if(code==='fence') {
+      websiteSessionError='DSH 账号状态暂未确认，无法保存网页登录，请重试授权检查。'
+    } else {
+      websiteSessionError='网页登录状态未能保存或恢复，请重试；当前网页仍可正常使用。'
+    }
+    publish()
+  }
+  async function websiteRequest<T>(operation: (signal: AbortSignal) => Promise<T>): Promise<T> {
+    const request=new AbortController()
+    const cancel=()=>request.abort()
+    lifetime.signal.addEventListener('abort',cancel,{once:true})
+    if(lifetime.signal.aborted) request.abort()
+    let timer: ReturnType<typeof setTimeout> | undefined
+    try {
+      return await Promise.race([operation(request.signal),new Promise<never>((_resolve,reject)=>{
+        const abort=()=>reject(new Error('Website session request cancelled'))
+        request.signal.addEventListener('abort',abort,{once:true})
+        if(request.signal.aborted) abort()
+        timer=setTimeout(()=>request.abort(),12_000)
+      })])
+    } finally {clearTimeout(timer);lifetime.signal.removeEventListener('abort',cancel);request.abort()}
+  }
+  async function clearWebsiteSession(generation: number): Promise<boolean> {
+    const fence=sessionFence(generation)
+    if(!fence) return false
+    try {
+      // Explicit logout sets its flag first, so no new save can pass this barrier.
+      if(pendingSessionSave) await pendingSessionSave
+      const result=await websiteRequest(async signal=>{
+        await connectRemote()
+        if(!remoteContext || signal.aborted || !sameSessionFence(generation,fence)) throw new Error('Website session invalidated')
+        return remoteContext.remote.dshChat.clearWebsiteSession(metadata,fence.epoch,signal)
+      })
+      if(!sameSessionFence(generation,fence)) return false
+      if(!result.ok){sessionFailure(result.error.code);return false}
+      if(!result.value){sessionFailure('fence');return false}
+      websiteSessionStatus='idle';websiteSessionError=null;publish();return true
+    } catch {if(sameSessionFence(generation,fence)) sessionFailure();return false}
+  }
   bridge = {
     getSnapshot: () => cached,
     subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener) } },
@@ -225,16 +289,22 @@ export function apply(ctx: Context): void {
       webLoading = state.loading; webError = state.error; publish()
     },
     reloadWebsite: () => { websiteReloadRevision++; publish() },
-    reportWebsiteNavigation: (generation, value) => {
+    reportWebsiteNavigation: (generation, value, newDocument = false) => {
       if (disposed || generation !== authorizationGeneration) return
       try { websiteNavigation = parseWebsiteNavigation(value) } catch { websiteNavigation = { ...emptyNavigation(), status: 'unsupported' } }
-      // A new website document has lost its temporary adapter markers. Apply
-      // the saved language again after login/reload, even for the same DSH account.
-      if ((websiteNavigation.status === 'loading' && !websiteNavigation.settings) || websiteNavigation.status === 'sign-in') {
+      // Only confirmed document changes or sign-in reset the guest's preferences.
+      // Temporary loading snapshots must not restart language/appearance restoration.
+      if (newDocument === true || websiteNavigation.status === 'sign-in') {
         preferencesGeneration = -1; restoringPreferences = false; restorationSeen = false
       }
-      if ((logoutRequested || websiteHadSession) && websiteNavigation.status === 'sign-in') { logoutRequested=false;websiteHadSession=false;websiteSignedOut=true;mode.select('harness') }
+      if ((logoutRequested || websiteHadSession) && websiteNavigation.status === 'sign-in') { clearTimeout(logoutTimer);logoutTimer=undefined;logoutRequested=false;forgettingWebsiteSession=false;websiteHadSession=false;websiteSignedOut=true;mode.select('harness') }
       if (websiteNavigation.status === 'ready') { websiteHadSession=true;websiteSignedOut=false }
+      if(logoutRequested && logoutTimer!==undefined && websiteNavigation.settings?.error && !websiteNavigation.settings.pending) {
+        clearTimeout(logoutTimer);logoutTimer=undefined
+        logoutRequested=false
+        websiteSessionError='官网退出未完成，请重试。此设备已清除登录记忆。'
+        websiteSessionStatus='error'
+      }
       restorePreferences()
       readSettingsWhenReady()
       const settings = websiteNavigation.settings
@@ -272,7 +342,63 @@ export function apply(ctx: Context): void {
       if(!next && navigationHandler) void navigationHandler({type:'settings-close'})
       else readSettingsWhenReady()
     },
-    logoutWebsite: () => {logoutRequested=true;bridge.commandWebsite({type:'logout'})},
+    logoutWebsite: () => {
+      if(logoutRequested || !navigationHandler || websiteNavigation.status!=='ready') return
+      const generation=authorizationGeneration
+      clearTimeout(logoutTimer);logoutTimer=undefined
+      logoutRequested=true;forgettingWebsiteSession=true
+      void clearWebsiteSession(generation).then(cleared=>{
+        if(disposed || generation!==authorizationGeneration) return
+        if(cleared) {
+          bridge.commandWebsite({type:'logout'})
+          logoutTimer=setTimeout(()=>{
+            logoutTimer=undefined
+            if(disposed || generation!==authorizationGeneration || !logoutRequested) return
+            logoutRequested=false;websiteSessionStatus='error'
+            websiteSessionError='官网退出未完成，请重试。此设备已清除登录记忆。';publish()
+          },20_000)
+        }
+        else {logoutRequested=false;websiteSessionError='无法清除已保存的网页登录，请重试退出登录。';publish()}
+      })
+    },
+    loadWebsiteSession: async generation => {
+      const fence=sessionFence(generation)
+      if(!fence || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return null
+      try {
+        const result=await websiteRequest(async signal=>{
+          await connectRemote()
+          if(!remoteContext || signal.aborted || !sameSessionFence(generation,fence)) throw new Error('Website session invalidated')
+          return remoteContext.remote.dshChat.loadWebsiteSession(metadata,fence.epoch,signal)
+        })
+        if(!sameSessionFence(generation,fence) || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return null
+        if(!result.ok){sessionFailure(result.error.code);return null}
+        return result.value
+      } catch {if(sameSessionFence(generation,fence)) sessionFailure();return null}
+    },
+    saveWebsiteSession: (generation,session) => {
+      const fence=sessionFence(generation)
+      if(!fence || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return Promise.resolve(false)
+      const saving=(async()=>{try {
+        const result=await websiteRequest(async signal=>{
+          await connectRemote()
+          if(!remoteContext || signal.aborted || !sameSessionFence(generation,fence) || logoutRequested || forgettingWebsiteSession) throw new Error('Website session invalidated')
+          return remoteContext.remote.dshChat.saveWebsiteSession(metadata,fence.epoch,session,signal)
+        })
+        if(!sameSessionFence(generation,fence) || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return false
+        if(!result.ok){sessionFailure(result.error.code);return false}
+        if(!result.value){sessionFailure('fence');return false}
+        websiteSessionStatus='saved';websiteSessionError=null;publish();return true
+      } catch {if(sameSessionFence(generation,fence)) sessionFailure();return false}})()
+      pendingSessionSave=saving
+      void saving.finally(()=>{if(pendingSessionSave===saving) pendingSessionSave=null})
+      return saving
+    },
+    clearWebsiteSession,
+    reportWebsiteSessionError: (generation,message) => {
+      if(!sessionFence(generation)) return
+      if(websiteSessionStatus==='error' && websiteSessionError===message) return
+      websiteSessionStatus='error';websiteSessionError=message;publish()
+    },
   }
   function readSettingsWhenReady(): void {
     if(!settingsViewport || !navigationHandler || websiteNavigation.status!=='ready' || settingsReadRequested) return
@@ -327,6 +453,7 @@ export function apply(ctx: Context): void {
     void refreshAuthorization()
     return () => {
       navigationAttempt++
+      clearTimeout(logoutTimer)
       mode.dispose(); sidebar?.dispose(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
       globalThis.removeEventListener('focus', refreshOnFocus)
     }
