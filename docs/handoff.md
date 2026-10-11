@@ -1,3 +1,30 @@
+# W024续步：启动环境说明自动收起 · 2026-10-11
+
+用户最新明确要求去掉每次启动的“使用环境异常”说明弹窗；此前不自动关闭环境说明属于旧范围，已被本请求替代。本次只处理该固定、带正常X的说明，不扩大到验证码、认证失败或其他提醒。开工main已由用户提交至 `e3b9b90`（工作区干净）；仍为同轮0.1.8续步，不重复涨号，未stage/commit/push。
+
+## 实现与来源
+
+- 新增 `src/website-notice.ts`：在批准官网origin的自有guest内，精确匹配同一真实dialog中的中英标题及完整固定正文，排除表单/输入/iframe，只点击该dialog自身唯一、可见、启用的正常关闭按钮。点击前标记该节点，普通布局restore不清掉此标记，避免重复触发；文案/结构失配时保留官网原提示。
+- `website-navigation.ts` 在精确origin检查后、restore命令之外调用并序列化helper；现有DOM observer或轮询处理稍后挂载的弹窗。不改UA、环境检测、网页安全策略、Host授权及存储白名单，不注入关闭偏好；官网自己的X handler负责记录关闭状态。
+- 缓存公开 `main.8d6a4f4bfa.js` 的usageEnvUnsafeTitle/Warn、Electron/Tauri检测、wM/onClose和closeUnsafeEnvWarn持久偏好提供静态依据。内存Browser新建后没有该偏好，所以会重复出现。今日公开网页浏览为403/资源不可访问，仅用此前缓存和本机实际UI验证，不称fresh下载成功。
+- root实现、构建、安装与实机操作；login_alternatives只读公共JS研究，header_interaction_review只读精确匹配/事件复查无阻塞，layout_fix更新6份主要文档；子任务已交还。
+
+## 构建、安装与当前产物
+
+- 最终包 `artifacts/dsh-chat-0.1.8-f3fb874f2ae4.tgz`，22文件，SHA256 `f3fb874f2ae455f74287e6aecd992ba923d590c2463e348e1cbf6b8f6af50a98`。生产类型检查、Host ESM及Client单lazy工厂/4共享模块契约通过；未新增或运行测试。
+- 官方CLI desktop安装exit0，+1/-2，泛化peer warning保留。manifest/Host/Client/用户SVG与本地逐字节匹配；Client SHA256 `31961eb7e580dc448804976e820166a717ffb2cefc742047a861ec294478bde8`，Host `1d65da67fefe7377e960e4bb84396485af5ddf2bca6f728a324309942bba12d8`；manifest与图标同上一b4包。
+
+## 本机实际检查
+
+- 更新前真实CHAT显示该固定提示，未手动关闭，限定证据 `/private/tmp/dsh-chat-env-notice-before-018.png`。
+- 更新后连续两次正常完整quit，均确认相关进程全部结束再重开。进入CHAT仅点击模式按钮，不手动点X；原提示区域均正常显示官网主页、没有该dialog，指定置顶项恢复。证据 `/private/tmp/dsh-chat-env-notice-after-restart-1-018.png`、`dsh-chat-env-pin-restart-1-018.png`、`dsh-chat-env-notice-after-restart-2-018.png`、`dsh-chat-env-pin-restart-2-018.png`。
+- 第二次CHAT设置显示原账号已登录、已记住网页登录及简体中文，见 `/private/tmp/dsh-chat-env-account-language-018.png`。收尾已关闭设置、恢复展开CHAT原对话，原标题正常，见 `dsh-chat-env-final-title-018.png`；AX实读false/false。无输入、发送或重命名，也未读取授权payload/聊天正文。
+- 这两次证明本机目标版本下固定说明自动收起成立，不宣称环境检测被解决、长期或所有网站状态覆盖。其他验证码/认证提示、官网改文案/结构、超时、过期、退出清除、换账号及卸载仍须各自验证。文档更新晚于打包，运行代码与当前构建一致；修改留本地供用户自行提交，仓库URL和其他设备尚未同步。
+
+下面b4及更早记录是历史阶段；当前环境说明关闭行为以本节为准。
+
+---
+
 # W024登录记忆与CHAT闪烁修复 · 2026-10-11
 
 用户指出 dsh-codex-subscription 能记住多个授权；此前“插件无法做到，必须改 DSH”的结论范围过大，已更正。主线为插件保存自己的 CHAT 授权；未批准部署定制 DSH。0.1.8 同轮已从 0.1.7 递增一次，不重复涨号；基线 cb0662f，保留所有未提交修改，未 stage/commit/push。

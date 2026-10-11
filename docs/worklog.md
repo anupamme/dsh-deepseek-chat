@@ -424,3 +424,13 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - root正常quit并用ps确认相关进程全无后重开，指定置顶与原标题恢复；约半分钟受限采样标题/置顶行各20次，每项仅1个像素状态，末样本直接看图文字正常。展开/折叠的展示与圆角编辑框文字位置一致、不上移；HARNESS/CHAT往返标题保持。证据 `/private/tmp/dsh-chat-flashfix-start-pin-018.png`、`/private/tmp/dsh-chat-flashfix-title-display-018.png`、`/private/tmp/dsh-chat-flashfix-title-edit-018.png`、`/private/tmp/dsh-chat-flashfix-collapsed-display-018.png`、`/private/tmp/dsh-chat-flashfix-collapsed-edit-018.png`、`/private/tmp/dsh-chat-flashfix-roundtrip-title-018.png`及 `/private/tmp/dsh-chat-flashfix-observe-018`。
 - 原生CHAT设置读回xxbk、已登录、固定“已记住网页登录”和简体中文，无需重新登录；截图 `/private/tmp/dsh-chat-flashfix-account-language-018.png`。关闭设置后追加标题/置顶行各10次采样，该段内两区域分别保持一致、未见消失，末样本标题正常，证据目录 `/private/tmp/dsh-chat-flashfix-final-observe-018`。首段20次、设置关闭后10次分别一致；合并30次每区域有2个像素状态，不写跨阶段所有像素相同。AX标志已直接读回false/false，DSH停在展开CHAT指定原对话。
 - 上述仅证明本次重开及短时、受限区域观察未复现闪烁，不保证长期绝无闪烁或全部官网状态覆盖。真正错误/主题超时分支仅源码与生产构建确认；退出清除、换账号、过期、卸载、发送和另一浏览器历史一致性仍待独立验收。没有读取授权payload/正文、输入、发送或重命名；未新增/运行测试，未stage/commit/push。本次文档验收更新晚于b4打包，root维护AGENTS/handoff/browser-session-capability。
+
+
+### W024续步：用户授权固定环境说明自动关闭，f3两次重启观察
+
+- 用户已提交上一轮，root开工基线e3b9b90且工作区干净；继续同一W024、0.1.8不重复增号。用户最新明确要求去掉每次打开的“使用环境异常”固定说明，替代此前“不自动关闭”的旧范围；历史保留描述只记录当时决定，不覆盖最新授权，也不推广到其他安全/验证码/认证错误。
+- root新增 `src/website-notice.ts`：只在chat.deepseek.com同一真实dialog精确匹配中英标题与完整固定说明，排除表单/input/iframe，仅其自身唯一可见启用X；点击前标记同元素避免重复，由官网自己onClose处理关闭偏好。navigation在确认origin后、restore命令外调用并序列化。没有改UA/检测或新增storage白名单；header_interaction_review静态审查通过。
+- 公开说明依据来自此前缓存的官方main bundle：Electron/Tauri触发、closeUnsafeEnvWarn关闭偏好由官网持久化；当前DSH内存Browser分区不保留该偏好，故重开仍可能出现。本轮公共网页403/不可访问，未声称今日fresh下载成功或取得最新官网脚本。
+- 当前最终包 `artifacts/dsh-chat-0.1.8-f3fb874f2ae4.tgz`，22文件，SHA256 `f3fb874f2ae455f74287e6aecd992ba923d590c2463e348e1cbf6b8f6af50a98`。生产构建及CLI exit0，安装Host/Client/manifest/icon四文件逐字节MATCH；Client SHA256 `31961eb7e580dc448804976e820166a717ffb2cefc742047a861ec294478bde8`，其他三项同b4。未新增/运行测试，未stage/commit/push。
+- 第1次正常quit、ps确认相关进程全无后重开，未手动点X，原提示区域无dialog、指定置顶恢复；证据 `/private/tmp/dsh-chat-env-notice-before-018.png`、`/private/tmp/dsh-chat-env-notice-after-restart-1-018.png`、`/private/tmp/dsh-chat-env-pin-restart-1-018.png`。第2次同样完整quit/ps确认后重开，未点X，原区域只显示官网主页输入框/公共模型提示、无dialog，指定置顶恢复；证据 `/private/tmp/dsh-chat-env-notice-after-restart-2-018.png`、`/private/tmp/dsh-chat-env-pin-restart-2-018.png`。
+- 连续2次完整重启的固定说明自动收起观察通过，不扩大为官网其他状态通过。第二次原生CHAT设置已读回原xxbk、已登录、已记住网页登录与简体中文，证据 `/private/tmp/dsh-chat-env-account-language-018.png`；关闭设置后原指定对话标题正常，证据 `/private/tmp/dsh-chat-env-final-title-018.png`。AX实读false/false，停在展开CHAT原对话，无手动点环境提示X、输入、发送或重命名。截图仅本机证据，不读取/输出实际授权payload或正文。此次仅6份文档最小同步；root维护AGENTS/handoff/browser-session-capability。

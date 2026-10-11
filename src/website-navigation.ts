@@ -1,5 +1,6 @@
 import { adaptWebsiteHeader } from './website-header.js'
 import { adaptWebsiteSettings } from './website-settings.js'
+import { dismissWebsiteEnvironmentNotice } from './website-notice.js'
 /** Visible website navigation/account/preferences only; no credentials, storage or request APIs. */
 export interface WebsiteConversation {
   readonly href: string
@@ -61,6 +62,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     return { ...empty('unsupported'), error: error === 'open' ? conversationError : null }
   }
   if (page.origin !== origin) return fallback()
+  if (command.type !== 'restore') dismissWebsiteEnvironmentNotice(doc)
   if (command.type === 'restore' || (command.type === 'snapshot' && command.showOriginal)) {
     doc.dispatchEvent(new Event('dsh-chat-stop-adapting'))
     if (command.type === 'restore') return fallback()
@@ -278,7 +280,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
 }
 
 export function websiteCommandScript(command: WebsiteCommand): string {
-  return `(() => { const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
+  return `(() => { const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
 }
 
 /** Treat the guest response as untrusted; keep only bounded, origin-scoped list data. */
