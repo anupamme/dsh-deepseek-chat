@@ -7,21 +7,32 @@ import path from 'node:path'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const adapter = (await build({ absWorkingDir: root, entryPoints: ['src/website-settings.ts'], bundle: true, write: false, format: 'esm', platform: 'browser', target: 'chrome130' })).outputFiles[0].text
 const headerAdapter=(await build({absWorkingDir:root,entryPoints:['src/website-header.ts'],bundle:true,write:false,format:'esm',platform:'browser',target:'chrome130'})).outputFiles[0].text
+const navigationAdapter=(await build({absWorkingDir:root,entryPoints:['src/website-navigation.ts'],bundle:true,write:false,format:'esm',platform:'browser',target:'chrome130'})).outputFiles[0].text
+const styles=(await build({absWorkingDir:root,entryPoints:['src/styles.ts'],bundle:true,write:false,format:'esm',platform:'browser',target:'chrome130'})).outputFiles[0].text
+const manualKeyboard=process.argv.includes('--manual-keyboard')
+const expectedCases=manualKeyboard?40:39
 const files = {
   '/': ['text/html; charset=utf-8', await readFile(path.join(root, 'tests/browser/website-settings.fixture.html'))],
   '/fixture.js': ['text/javascript; charset=utf-8', await readFile(path.join(root, 'tests/browser/website-settings.fixture.js'))],
   '/header.js': ['text/javascript; charset=utf-8', headerAdapter],
+  '/navigation.js': ['text/javascript; charset=utf-8', navigationAdapter],
+  '/styles.js': ['text/javascript; charset=utf-8', styles],
   '/adapter.js': ['text/javascript; charset=utf-8', adapter],
 }
 const server = createServer(async (req, res) => {
+  if (req.method === 'POST' && req.url === '/keyboard-ready') {
+    console.log(JSON.stringify({keyboardReady:true,control:'Fixture native language',keys:['ArrowDown','ArrowDown','Enter'],nextValue:'zh-CN',expectedCases}))
+    res.writeHead(200).end('ready')
+    return
+  }
   if (req.method === 'POST' && req.url === '/results') {
     let body = ''
     for await (const chunk of req) { body += chunk; if (body.length > 16000) { res.writeHead(413).end(); return } }
     try {
       const results = JSON.parse(body)
-      const valid = Array.isArray(results) && results.length === 15 && results.every(result => typeof result.name === 'string' && typeof result.passed === 'boolean')
+      const valid = Array.isArray(results) && results.length === expectedCases && results.every(result => typeof result.name === 'string' && typeof result.passed === 'boolean')
       const passed = valid && results.every(result => result.passed)
-      console.log(JSON.stringify({ passed, results }, null, 2))
+      console.log(JSON.stringify({ passed, mode:manualKeyboard?'manual-keyboard':'automatic', expectedCases, actualCases:results.length, results }, null, 2))
       res.writeHead(200).end('ok')
       server.close(() => { process.exitCode = passed ? 0 : 1 })
     } catch { res.writeHead(400).end() }
@@ -31,5 +42,5 @@ const server = createServer(async (req, res) => {
   if (!file) { res.writeHead(404).end(); return }
   res.writeHead(200, { 'Content-Type': file[0] }).end(file[1])
 })
-server.listen(0, '127.0.0.1', () => console.log(`Open the local regression fixture: http://127.0.0.1:${server.address().port}/`))
+server.listen(0, '127.0.0.1', () => console.log(`Open the local regression fixture (${expectedCases} checks, ${manualKeyboard?'manual keyboard included':'automatic; native keyboard verified separately'}): http://127.0.0.1:${server.address().port}/${manualKeyboard?'?keyboard=manual':''}`))
 process.on('SIGINT', () => server.close())

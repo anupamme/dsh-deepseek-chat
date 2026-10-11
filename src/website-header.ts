@@ -5,12 +5,13 @@ export function adaptWebsiteHeader(doc: Document, content: HTMLElement | undefin
   const shareMarker = 'data-dsh-chat-header-share'
   const hostMarker = 'data-dsh-chat-header-title-host'
   const editorMarker = 'data-dsh-chat-header-editor'
+  const depthMarker = 'data-dsh-chat-header-native-depth'
   const markers = [rowMarker, titleMarker, shareMarker, hostMarker, editorMarker]
   const editors = 'input:not([type]),input[type="text"],[contenteditable="true"],[contenteditable="plaintext-only"]'
   const clearMarkers = () => {
     for (const marker of markers) doc.querySelectorAll(`[${marker}]`).forEach(el => el.removeAttribute(marker))
   }
-  if (!content || !title) { clearMarkers(); return }
+  if (!content) { clearMarkers(); return }
   const inTopRow = (el: HTMLElement, maxHeight = 80) => {
     const r = el.getBoundingClientRect()
     return content.contains(el) && r.top >= 0 && r.top <= 48 && r.width > 0 && r.height > 0 && r.height <= maxHeight
@@ -38,13 +39,73 @@ export function adaptWebsiteHeader(doc: Document, content: HTMLElement | undefin
           && !el.closest('[data-dsh-chat-web-chrome]')
       })
   }
-  let row = doc.querySelector<HTMLElement>(`[${rowMarker}]`)
+  // The public website keeps this same branch while history is fetching:
+  // title -> skeleton -> title/input; its share button may temporarily be absent.
+  // Confirm the real bounded row once, then retain its direct depth in the main
+  // content. CSS will apply to replacement nodes before any observer/poll runs.
+  const nativeRows = [...content.querySelectorAll<HTMLElement>('._2be88ba')].filter(candidate =>
+    inTopRow(candidate) && candidate.getBoundingClientRect().width >= content.getBoundingClientRect().width * .6
+    && !!candidate.querySelector(':scope > .the-header > ._9fcbeda') && !candidate.querySelector('textarea,pre,code'))
+  const nativeRow = nativeRows.length === 1 ? nativeRows[0] : undefined
+  // The same row also contains a hidden mobile .the-header. Keep it hidden:
+  // only the desktop branch directly owning the editable title is adapted.
+  const nativeHeader = nativeRow?.querySelector<HTMLElement>(':scope > .the-header:has(> ._9fcbeda)')
+  if (nativeRow) {
+    let ancestor: HTMLElement | null = nativeRow
+    let depth = 0
+    while (ancestor && ancestor !== content && depth < 12) { ancestor = ancestor.parentElement; depth++ }
+    if (ancestor === content && depth >= 1) doc.documentElement.setAttribute(depthMarker, String(depth))
+  }
+  const installStyle = () => {
+    const left = Math.max(24, Math.min(320, Math.ceil(inset)))
+    doc.documentElement.style.setProperty('--dsh-chat-title-inset', `${left}px`)
+    const scope = 'html:not([data-dsh-chat-settings-view])'
+    const depth = Number(doc.documentElement.getAttribute(depthMarker))
+    const nativeRowSelector = Number.isInteger(depth) && depth >= 1 && depth <= 12
+      ? `[data-dsh-chat-content]${' > *'.repeat(depth - 1)} > ._2be88ba:has(> .the-header > ._9fcbeda):not([role="dialog"],[role="dialog"] *,.ds-modal-content,.ds-modal-content *)` : null
+    const withNative = (marker: string, branch: string) => `${scope} :is([${marker}]${nativeRowSelector ? `,${nativeRowSelector}${branch}` : ''})`
+    const rowSelector = withNative(rowMarker, '')
+    const hostSelector = withNative(hostMarker, ' > .the-header:has(> ._9fcbeda)')
+    const labelSelector = withNative(titleMarker, ' > .the-header > ._9fcbeda > .afa34042')
+    const shareSelector = withNative(shareMarker, ' > ._57370c5')
+    const editorSelector = `${scope} [${editorMarker}],${hostSelector} :is(${editors})`
+    // Text uses a 20px line box centered in the 48px row. An editor has a
+    // matching content box: 28px minus two 1px borders and two 3px paddings.
+    // Its outside edge extends 9px left, so the text keeps the display inset.
+    // Set font properties separately: inheriting the host's shorthand would
+    // also inherit its 48px display line height when the host is the title.
+    const styleText = `
+      ${nativeRowSelector ? `${scope} ${nativeRowSelector} > ._1aa2651.the-header{display:none!important}` : ''}
+      ${rowSelector}{box-sizing:border-box!important;height:48px!important;min-height:48px!important;max-height:48px!important;flex-shrink:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
+      ${hostSelector}{position:fixed!important;top:0!important;right:auto!important;bottom:auto!important;left:var(--dsh-chat-title-inset,24px)!important;box-sizing:border-box!important;height:48px!important;min-height:0!important;max-height:48px!important;width:auto!important;max-width:calc(100% - var(--dsh-chat-title-inset,24px) - 64px)!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;flex:none!important;text-align:left!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;transform:none!important;white-space:nowrap!important;z-index:10!important}
+      ${hostSelector} :is(div,span,label):not([contenteditable],.ds-skeleton,.ds-skeleton *,.ds-input__mirror,.ds-input__mirror *){position:static!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;box-sizing:border-box!important;height:auto!important;min-height:0!important;max-height:28px!important;width:auto!important;min-width:0!important;max-width:100%!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;flex:0 1 auto!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;text-align:left!important;transform:none!important}
+      ${hostSelector} .ds-input::before,${hostSelector} .ds-input::after{border:0!important;background:transparent!important;outline:0!important;box-shadow:none!important}
+      ${labelSelector}:not([${hostMarker}]){position:static!important;height:20px!important;min-height:20px!important;max-height:20px!important;width:auto!important;max-width:100%!important;min-width:0!important;display:block!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;flex:0 1 auto!important;margin:0!important;padding:0!important;text-align:left!important;text-overflow:ellipsis!important;white-space:nowrap!important;overflow:hidden!important}
+      ${scope} [${titleMarker}][${hostMarker}]{display:block!important;line-height:48px!important;text-overflow:ellipsis!important;overflow:hidden!important}
+      ${editorSelector}{position:static!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;display:block!important;box-sizing:border-box!important;height:28px!important;min-height:28px!important;max-height:28px!important;width:min(320px,calc(100vw - var(--dsh-chat-title-inset,24px) - 64px))!important;min-width:0!important;max-width:100%!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;color:inherit!important;margin:0!important;margin-left:-9px!important;padding:3px 8px!important;border:1px solid #7d98ed!important;border-radius:6px!important;background:rgba(77,107,254,.04)!important;outline:0!important;box-shadow:none!important;text-align:left!important;white-space:nowrap!important;transform:none!important}
+      @supports (field-sizing:content){${editorSelector}{field-sizing:content!important;width:auto!important;min-width:min(96px,calc(100vw - var(--dsh-chat-title-inset,24px) - 64px))!important;max-width:min(320px,calc(100vw - var(--dsh-chat-title-inset,24px) - 64px))!important}}
+      ${scope} [${editorMarker}][${hostMarker}]{position:fixed!important;top:10px!important;left:calc(var(--dsh-chat-title-inset,24px) - 9px)!important;margin-left:0!important;display:block!important}
+      ${shareSelector}{position:fixed!important;top:10px!important;right:12px!important;bottom:auto!important;left:auto!important;box-sizing:border-box!important;width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;max-width:28px!important;max-height:28px!important;margin:0!important;transform:none!important;z-index:11!important}
+    `
+    let style = doc.getElementById('dsh-chat-header-style')
+    if (!style) {
+      style = doc.createElement('style')
+      style.id = 'dsh-chat-header-style'
+      doc.head.append(style)
+    }
+    if (style.textContent !== styleText) style.textContent = styleText
+  }
+  installStyle()
+  // A missing navigation title is normal during loading. It must not discard
+  // the verified native header contract or detach the website's own controls.
+  if (!nativeRow && !title) { clearMarkers(); return }
+  let row = nativeRow ?? doc.querySelector<HTMLElement>(`[${rowMarker}]`)
   if (row && (!inTopRow(row) || row.querySelector('textarea,pre,code'))) row = null
   let share = row ? findShare(row) : undefined
-  let editor = row && share ? findEditor(row) : undefined
-  let label: HTMLElement | undefined
+  let editor = nativeHeader ? findEditor(nativeHeader) : row && share ? findEditor(row) : undefined
+  let label = nativeHeader?.querySelector<HTMLElement>(':scope > ._9fcbeda > .afa34042') ?? undefined
 
-  if (!editor) {
+  if (!nativeRow && !editor) {
     label = [...content.querySelectorAll<HTMLElement>(`[${titleMarker}],header,div,span,h1,h2`)].find(el => {
       if (!inTopRow(el, 48) || el.matches(editors) || el.querySelector(`${editors},textarea,pre,code,p,button,[role="button"]`)) return false
       return el.textContent?.trim() === title && ![...el.children].some(child => child.textContent?.trim() === title)
@@ -74,14 +135,14 @@ export function adaptWebsiteHeader(doc: Document, content: HTMLElement | undefin
       }
     }
   }
-  const target = editor ?? label
-  if (!row || !share || !target) { clearMarkers(); return }
+  const target = editor ?? label ?? nativeHeader
+  if (!row || (!nativeRow && !share) || !target) { clearMarkers(); return }
 
   // Keep the highest title-only wrapper in place. Replacing a text child with
   // an input then inherits the same position before the next adapter pass.
-  let host = target
-  for (let parent = host.parentElement, depth = 0; parent && parent !== row && depth < 7; parent = parent.parentElement, depth++) {
-    if (!inTopRow(parent) || parent.contains(share) || parent.querySelector('button,[role="button"],textarea,pre,code,p')) break
+  let host = nativeHeader ?? target
+  for (let parent = host.parentElement, depth = 0; !nativeHeader && parent && parent !== row && depth < 7; parent = parent.parentElement, depth++) {
+    if (!inTopRow(parent) || (share && parent.contains(share)) || parent.querySelector('button,[role="button"],textarea,pre,code,p')) break
     if ([...parent.querySelectorAll(editors)].some(el => el !== editor)) break
     host = parent
   }
@@ -91,32 +152,4 @@ export function adaptWebsiteHeader(doc: Document, content: HTMLElement | undefin
     doc.querySelectorAll(`[${marker}]`).forEach(el => { if (el !== element) el.removeAttribute(marker) })
     if (element && !element.hasAttribute(marker)) element.setAttribute(marker, '')
   })
-  const left = Math.max(24, Math.min(320, Math.ceil(inset)))
-  doc.documentElement.style.setProperty('--dsh-chat-title-inset', `${left}px`)
-  const scope = 'html:not([data-dsh-chat-settings-view])'
-  const hostSelector = `${scope} [${hostMarker}]`
-  const editorSelector = `${scope} [${editorMarker}],${hostSelector} :is(${editors})`
-  // Text uses a 20px line box centered in the 48px row. An editor has a
-  // matching content box: 28px minus two 1px borders and two 3px paddings.
-  // Its outside edge extends 9px left, so the text keeps the display inset.
-  // Set font properties separately: inheriting the host's shorthand would
-  // also inherit its 48px display line height when the host is the title.
-  const styleText = `
-    ${scope} [${rowMarker}]{box-sizing:border-box!important;height:48px!important;min-height:48px!important;max-height:48px!important;flex-shrink:0!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
-    ${hostSelector}{position:fixed!important;top:0!important;right:auto!important;bottom:auto!important;left:var(--dsh-chat-title-inset,24px)!important;box-sizing:border-box!important;height:48px!important;min-height:0!important;max-height:48px!important;width:auto!important;max-width:calc(100% - var(--dsh-chat-title-inset,24px) - 64px)!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;flex:none!important;text-align:left!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;transform:none!important;white-space:nowrap!important;z-index:10!important}
-    ${hostSelector} :is(div,span,label):not([contenteditable]){position:static!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;display:flex!important;align-items:center!important;justify-content:flex-start!important;box-sizing:border-box!important;height:auto!important;min-height:0!important;max-height:28px!important;width:auto!important;min-width:0!important;max-width:100%!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;flex:0 1 auto!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;outline:0!important;box-shadow:none!important;text-align:left!important;transform:none!important}
-    ${scope} [${titleMarker}]:not([${hostMarker}]){position:static!important;height:20px!important;min-height:20px!important;max-height:20px!important;width:auto!important;max-width:100%!important;min-width:0!important;display:block!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;flex:0 1 auto!important;margin:0!important;padding:0!important;text-align:left!important;text-overflow:ellipsis!important;white-space:nowrap!important;overflow:hidden!important}
-    ${scope} [${titleMarker}][${hostMarker}]{display:block!important;line-height:48px!important;text-overflow:ellipsis!important;overflow:hidden!important}
-    ${editorSelector}{position:static!important;top:auto!important;right:auto!important;bottom:auto!important;left:auto!important;display:block!important;box-sizing:border-box!important;height:28px!important;min-height:28px!important;max-height:28px!important;width:min(320px,calc(100vw - var(--dsh-chat-title-inset,24px) - 64px))!important;min-width:0!important;max-width:100%!important;font-family:inherit!important;font-size:inherit!important;font-weight:inherit!important;font-style:inherit!important;letter-spacing:inherit!important;line-height:20px!important;color:inherit!important;margin:0!important;margin-left:-9px!important;padding:3px 8px!important;border:1px solid #7d98ed!important;border-radius:6px!important;background:rgba(77,107,254,.04)!important;outline:0!important;box-shadow:none!important;text-align:left!important;white-space:nowrap!important;transform:none!important}
-    @supports (field-sizing:content){${editorSelector}{field-sizing:content!important;width:auto!important;min-width:min(96px,calc(100vw - var(--dsh-chat-title-inset,24px) - 64px))!important;max-width:min(320px,calc(100vw - var(--dsh-chat-title-inset,24px) - 64px))!important}}
-    ${scope} [${editorMarker}][${hostMarker}]{position:fixed!important;top:10px!important;left:calc(var(--dsh-chat-title-inset,24px) - 9px)!important;margin-left:0!important;display:block!important}
-    ${scope} [${shareMarker}]{position:fixed!important;top:10px!important;right:12px!important;bottom:auto!important;left:auto!important;box-sizing:border-box!important;width:28px!important;height:28px!important;min-width:28px!important;min-height:28px!important;max-width:28px!important;max-height:28px!important;margin:0!important;transform:none!important;z-index:11!important}
-  `
-  let style = doc.getElementById('dsh-chat-header-style')
-  if (!style) {
-    style = doc.createElement('style')
-    style.id = 'dsh-chat-header-style'
-    doc.head.append(style)
-  }
-  if (style.textContent !== styleText) style.textContent = styleText
 }

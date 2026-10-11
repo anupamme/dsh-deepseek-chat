@@ -451,3 +451,14 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - README三图全部按最新安装重截：docs/images/chat-overview.png（1600×1025）、mode-switch.png（540×108）、chat-settings.png（1280×702）。本地PNG压缩，仅保留ICC色彩信息，无原始图或私人文本旁文件进入项目。设置截图读回已登录、已记住网页登录与简体中文；不将其扩大为其它授权状态或发送验收。未新增/运行测试，未stage/commit/push；后续检查/清理收尾记录如下。
 
 - 收尾：README的3张图片及2份本地说明链接均存在，3张PNG均为RGB且仅ICC元数据，最终个人标题/昵称/头像遮挡逐张复查通过。已删除本轮chat-overview-raw.png和chat-settings-raw.png未打码原图，项目images目录仅3张成品。git diff --check通过；已关闭设置，DSH留在展开CHAT空白主页，AX实读false/false。修改保留本地供用户自行提交/推送。
+
+
+### W024续步：标题首帧、23px 切换器、下拉箭头与验收后整理（2026-10-11）
+
+- 开工 main fc00f27 干净；用户要求未加载对话标题不回旧位、使用官网原交互、切换器降低 2–4px、箭头右留距、重截打码图并在验收后清理。仍同轮 0.1.8，不重复增号，用户手动提交/推送。
+- 旧 header 依赖 selected 标题/composer/share 出现后再标记，原生加载与标题/编辑组件替换时 CSS 空窗；保存已确认原生行的主区深度并使用持续定位规则，补无 composer 时的主区识别，observer 保留 inset。保留官网原标题/input/handler，限定桌面标题分支、收起同一行移动分支、保留 DSInput 隐藏 mirror 的宽度测量，清额外伪元素边框。没有同文档整页反复遮挡。品牌 26→23px、按钮21px，1px padding/圆角保留；原生 select 装饰箭头右12px。
+- 788 中间包双标题失败，ba010 第一次导航采样无标题没有作为通过；0085 公开类名/几何临时诊断定位到镜像节点误入布局，最终 source/lib/包完全移除。最终 cd07d9c360f4 包构建/官方CLI exit0及四文件一致，包 SHA256 cd07d9c360f4610aaf8208517665a7156545ee6dd94c0bcdbae0180245aa3cd8，Client b841fc2a6efafe0c14288c7ee0c947c7613651bc029b8b2e1c1e0fb996607eef。
+- 最终44/44 Node；同步旧授权 mock/descriptor 并补保存/清除失败、账号 epoch 隔离、退出屏障、超时/迟到回归。39/39 浏览器自动项（含 first rAF、loading/skeleton、整行/编辑替换、隐藏移动分支、mirror、恢复与控件几何）exit0。Mac Chrome 自动 native keyboard 无 change 的旧第40项如实失败，拆为可选 --manual-keyboard；真实 DSH ↓Return 到 English 的控件截图及 ↑Return 恢复中文另测通过，不伪造事件。
+- 真实 DSH 三个本次启动未加载过的对话，各4秒受限标题条观察共4/3/3变化帧，出现时已左上角；展开/折叠原生edit共11/10变化帧文字不动、圆角框正常，没有输入或提交改名。模式往返与控件通过。正常完整quit后pgrep无main/Host，重启main24116/Host24126，原账号已登录/已记住网页登录/简体中文恢复，无用户重新登录。有限观察不宣称未来改版兼容或其他认证矩阵完成。
+- README三张最终实机图已重截，个人导航/昵称/头像按用户选择本地不透明实色遮挡，逐张复查；RGB仅ICC元数据，未打码临时原图删除。验收后清理30个可再生成旧文件2544470bytes：19旧包、2旧duo模拟图、8临时浏览器记录、根DSStore；保留cd07当前包、lib18文件、依赖/锁文件、源码/回归和仍引用的备用方案。只关闭本轮测试浏览器，DSH留展开CHAT空主页，AX false/false。
+- 分工与证据路径见handoff顶部；需求/架构/路线同步有限验收边界。未stage/commit/push；本地成果待用户审查与手动发布。 最终生产重构建通过且安装四文件仍逐字节一致，README及主要文档15个本地链接有效，图片元数据/唯一包/清理状态复核通过，git diff --check通过、暂存区为空。

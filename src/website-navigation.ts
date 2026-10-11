@@ -36,7 +36,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   const conversationError = '该对话不在当前官网列表，请刷新列表。'
   const styleId = 'dsh-chat-website-navigation-style'
   const preparingStyleId = 'dsh-chat-website-preparing-style'
-  const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-profile', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-expanding', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor']
+  const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-profile', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-expanding', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor', 'data-dsh-chat-header-native-depth']
   const empty = (status: WebsiteNavigation['status']): WebsiteNavigation => ({ status, conversations: [], selectedHref: null, canCreate: false, error: null })
   const clearSettings = () => {
     for (const attr of [...doc.documentElement.attributes]) if (/^data-dsh-chat-(settings-|language$|theme$|dark-complete$)/.test(attr.name)) doc.documentElement.removeAttribute(attr.name)
@@ -84,7 +84,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
       queueMicrotask(() => {
         queued = false
         if (!doc.documentElement.hasAttribute('data-dsh-chat-observing')) return
-        adaptWebsiteNavigation(doc, doc.defaultView!.location, { type: 'snapshot', showOriginal: false })
+        adaptWebsiteNavigation(doc, doc.defaultView!.location, { type: 'snapshot', showOriginal: false, headerInset: Number.parseInt(doc.documentElement.style.getPropertyValue('--dsh-chat-title-inset')) || 24 })
       })
     })
     // Observe site edit-mode switches, but exclude our data/style attributes
@@ -198,7 +198,14 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     track = parent
   }
   const layout = track.parentElement
-  const content = layout ? [...layout.children].find(el => el !== track && el.querySelector('textarea,[contenteditable="true"]')) as HTMLElement | undefined : undefined
+  // A new route can mount its main track before its composer. The confirmed
+  // sidebar/layout boundary identifies that sibling without reading messages.
+  const siblings = layout ? [...layout.children].filter(el => el !== track
+    && !el.matches('script,style,[role="dialog"],.ds-modal-content')) as HTMLElement[] : []
+  const content = siblings.find(el => el.hasAttribute('data-dsh-chat-content'))
+    ?? siblings.find(el => el.querySelector('textarea,[contenteditable="true"]'))
+    ?? siblings.find(el => el.querySelector('._2be88ba > .the-header > ._9fcbeda'))
+    ?? (siblings.length === 1 ? siblings[0] : undefined)
   const avatars = [...track.querySelectorAll<HTMLImageElement>('img')].filter(img => !img.closest('a[href]'))
   const avatar = avatars.find(img => {
     const r = img.getBoundingClientRect()

@@ -270,9 +270,9 @@ export function DshChatChatSettings({bridge}: PropsRuntime<'settings.section'> &
     {enabled && navigation.status==='ready' && <div className="dsh-chat-settings-card">
       <div className="dsh-chat-settings-account"><div><strong>{navigation.accountName || 'DeepSeek Chat'}</strong><p>已登录</p></div><button type="button" onClick={()=>bridge.logoutWebsite()} disabled={settings?.pending}>退出登录</button></div>
       {state.websiteSessionStatus==='saved' && <p role="status">已记住网页登录。下次启动会由官网验证并恢复；授权失效时需重新登录。</p>}
-      <label className="dsh-chat-settings-language">系统语言<select aria-label="CHAT系统语言" value={language} disabled={settings?.pending} onChange={event=>bridge.commandWebsite({type:'setting',key:'language',value:event.target.value})}>
+      <label className="dsh-chat-settings-language">系统语言<span className="dsh-chat-settings-select"><select aria-label="CHAT系统语言" value={language} disabled={settings?.pending} onChange={event=>bridge.commandWebsite({type:'setting',key:'language',value:event.target.value})}>
         {!language && <option value="" hidden></option>}<option value="system">跟随系统</option><option value="zh-CN">简体中文</option><option value="en">English</option>
-      </select></label>
+      </select><svg className="dsh-chat-settings-select-arrow" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none"><path d="m2 4 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span></label>
       {!language && !settings?.pending && !settings?.error && <p className="dsh-chat-settings-progress" role="status">尚未读取到官网语言。<button type="button" onClick={()=>bridge.commandWebsite({type:'settings-read'})}>重试</button></p>}
       {settings?.pending && <p className="dsh-chat-settings-progress" role="status">正在同步网页设置…</p>}
       {settings?.error && <p className="dsh-chat-settings-error" role="alert">{settings.error} <button type="button" onClick={()=>bridge.commandWebsite({type:'settings-read'})}>重试</button></p>}

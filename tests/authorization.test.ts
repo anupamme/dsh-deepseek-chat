@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { AuthorizationAuthority } from '../src/authorization.js'
 import type { AccountReader } from '../src/authorization.js'
-import { DSH_CHAT_DESCRIPTORS, authorizationSchema, clientMetadataSchema } from '../src/protocol.js'
+import { DSH_CHAT_DESCRIPTORS, authorizationSchema, clientMetadataSchema, websiteSessionSchema } from '../src/protocol.js'
 
 const metadata = { version: '0.2.0-rc.2', locale: 'zh-CN', timezoneOffsetSeconds: 28_800 }
 type Profile = Awaited<ReturnType<AccountReader['getProfile']>>
@@ -151,11 +151,38 @@ test('authorization stream starts closed, publishes confirmation and logout, the
   assert.equal((await end).done, true)
 })
 
-test('the public descriptor surface has only authorization and strict credential-free payloads', () => {
-  assert.deepEqual(DSH_CHAT_DESCRIPTORS.map(item => item.method), ['authorization', 'watchAuthorization'])
-  assert.ok(DSH_CHAT_DESCRIPTORS.every(item => item.parameters.every(parameter => parameter.codec.mode === 'strict')))
+test('public descriptors keep authorization credential-free and strictly declare the separate website session seam', () => {
+  assert.deepEqual(DSH_CHAT_DESCRIPTORS.map(item => item.method), [
+    'authorization', 'watchAuthorization', 'loadWebsiteSession', 'saveWebsiteSession', 'clearWebsiteSession',
+  ])
+  for (const descriptor of DSH_CHAT_DESCRIPTORS) {
+    assert.ok(descriptor.parameters.every(parameter => parameter.codec.mode === 'strict'))
+    assert.equal(descriptor.result?.mode, 'strict')
+    assert.deepEqual(descriptor.cancellation, { parameter: 'signal' })
+    const expected = descriptor.method === 'saveWebsiteSession' ? ['metadata', 'epoch', 'session']
+      : descriptor.method.endsWith('WebsiteSession') ? ['metadata', 'epoch'] : ['metadata']
+    assert.deepEqual(descriptor.parameters.map(parameter => parameter.name), expected)
+  }
   assert.throws(() => clientMetadataSchema.parse({ ...metadata, token: 'fixture-only' }))
   assert.throws(() => authorizationSchema.parse({
     status: 'authorized', accountId: 'account-a', epoch: 'epoch-1', error: null, cookie: 'fixture-only',
   }))
+})
+
+test('website session payload permits exactly the three fictional website values', () => {
+  const session = {
+    token: 'fictional-website-token', userId: 'fictional-website-user',
+    deviceId: '00000000-0000-4000-8000-000000000001',
+  }
+  assert.deepEqual(websiteSessionSchema.parse(session), session)
+  for (const extra of ['cookie', 'password', 'origin', 'accountId', 'credentialKey']) {
+    assert.throws(() => websiteSessionSchema.parse({ ...session, [extra]: 'fixture-only' }))
+  }
+  for (const key of ['token', 'userId', 'deviceId'] as const) {
+    const missing = { ...session }
+    delete (missing as Partial<typeof session>)[key]
+    assert.throws(() => websiteSessionSchema.parse(missing))
+    assert.throws(() => websiteSessionSchema.parse({ ...session, [key]: '' }))
+  }
+  assert.throws(() => websiteSessionSchema.parse({ ...session, deviceId: 'not-a-uuid' }))
 })

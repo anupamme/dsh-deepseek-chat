@@ -1,4 +1,34 @@
-# W024续步：README图文与品牌选中态1px间距 · 2026-10-11
+# W024续步：标题首帧布局、紧凑切换器与截图清理 · 2026-10-11（完成本次验收）
+
+归入 T10/T12/T13。开工 main `fc00f27`、工作区干净；同轮仍为 0.1.8，不重复涨号。用户自行提交/推送，本轮没有 stage/commit/push。
+
+## 实现
+
+- 官网切换历史时会替换标题、加载骨架和编辑分支；旧逻辑依赖已选标题、分享按钮和输入框出现后再标记，产生未适配的绘制窗口。本轮在已确认的主区边界保存原生标题行深度，由持续 CSS 在替换节点第一绘制帧就定位；内容区识别不再依赖聊天输入框先出现，observer 保留折叠时的 inset。加载不再触发整页遮挡。
+- 继续使用官网标题、真实输入框及原 click/blur/keydown handler，不复制标题或重建编辑组件。限定桌面标题分支，隐藏同一行的移动分支，保留 DSInput 隐藏宽度测量节点；清掉输入包装的额外伪元素边框。原生编辑仍为圆角矩形，文字位置不变。恢复原官网时移除本轮 CSS、depth 和标记。
+- 品牌切换器外高 26→23px、按钮 21px；父级 padding 1px、外框 5px/选中块 4px 圆角。语言控件保留原生 select、三个值和事件，装饰箭头 12×12px，距右边 12px。
+- header_interaction_review 负责 header/navigation 和授权测试修正；layout_fix 负责 styles/ui 和浏览器夹具；login_alternatives 负责清理盘点及需求/架构/路线；root 集成、构建安装、实机检查、截图与限定清理。所有分工已交还。
+
+## 分层验收
+
+- `node scripts/build.mjs` 通过：类型检查、Host ESM、Client lazy CJS/单 factory 契约。`node scripts/test.mjs` 最终 **44/44**；旧授权测试的 mock/descriptor 已与既有网页登录保存契约同步，增加账号/epoch 隔离、存储失败、退出保存屏障、超时与迟到结果回归，本轮不改变生产授权代码。
+- `node scripts/check-website-settings-browser.mjs` 默认 **39/39**，独立已缓存 Chromium headless shell 执行，服务 exit0。包括 skeleton→标题→原生 editor、整行替换/无 composer、首次 rAF 定位、隐藏 mobile、mirror 不入布局、展开/折叠、清理恢复及控件尺寸。结果 `/private/tmp/dsh-chat-browser-automatic-39-018.json`。
+- Mac Chrome 的 native select 自动化尝试只得到可信按键而没有 change，旧 40 项服务最后一项失败，没有记作全部通过。runner 将其独立保留为 `--manual-keyboard` 可选验收；真实 DSH 点击控件后 ↓+Return 明确显示 English，↑+Return 恢复简体中文，局部证据 `/private/tmp/dsh-chat-language-keyboard.png`。39 项自动回归与此实机键盘证据分别记录。
+- DSH 0.2.0-rc.2 最终包激活后，三个本次启动首次打开的历史对话各观察约 4 秒，仅采集 48px 公开标题条；收到 4/3/3 个变化帧，标题首次出现均直接左上角，没有旧位置/双标题。目录 `/private/tmp/dsh-chat-final-cold-pin`、`cold-second`、`cold-fourth`；无动作的 third 目录不算第四个对话。ScreenCaptureKit 只交付变化帧，不冒称录满全部 30fps 帧。
+- 展开标题原生编辑 11 个变化帧、折叠编辑 10 个变化帧，文字位置与显示态一致，圆角边框没有额外宽外壳；没有输入/提交新标题。模式往返、紧凑品牌控件、设置箭头及关闭设置后返回空主页实机通过。顶部局部采样和浏览器首帧回归互为补充，本次短时观察不保证官网未来改版仍兼容。
+- 最终包正常 quit 后 `pgrep` 无 DSH main/Host 进程（exit1），重开 main 24116/Host 24126；已登录、已记住网页登录、简体中文实际恢复，没有要求用户再次登录。打码证据 `/private/tmp/dsh-chat-readme-captures-20261011/restart-settings-final.png`。收尾展开 CHAT 空主页，AX 实读 false/false。
+
+## 当前产物、截图与整理
+
+- 当前唯一安装包 `artifacts/dsh-chat-0.1.8-cd07d9c360f4.tgz`，22 文件、126520 bytes，SHA256 `cd07d9c360f4610aaf8208517665a7156545ee6dd94c0bcdbae0180245aa3cd8`。官方 CLI `plugin --profile desktop add <绝对路径包> --ignore-scripts` exit0；安装的 manifest/Host/Client/icon 与本地逐字节一致。Client SHA256 `b841fc2a6efafe0c14288c7ee0c947c7613651bc029b8b2e1c1e0fb996607eef`；Host `1d65da67fefe7377e960e4bb84396485af5ddf2bca6f728a324309942bba12d8`。本机包检查不代表当前改动已推送或仓库 URL 已重新验收。
+- 788cd504a4c8 中间包出现桌面/移动双标题，未通过；ba01021f35ec 首次导航观察为空，不能算通过；0085d86212db 仅临时输出公开类名/几何用于定位 mirror，所有临时诊断代码最终已移除。以上均被 cd07 替代，并在本次清理删除，不作为可用产物。
+- README 三图已用最终实机重截：`docs/images/chat-overview.png` 1600×1025、`mode-switch.png` 540×108、`chat-settings.png` 1280×702，合计 272499 bytes。仅空主页/公开控件；个人导航标题、昵称和头像按用户选择用本地不透明实色遮挡。三张逐一看图复核，PNG 为 RGB、仅 ICC 色彩元数据；临时未打码原图已删除，没有进入项目。
+- 验收完成后删除 **30 个已确认可再生成的旧文件，共 2544470 bytes**：19 个旧 tgz（包括原 dsh-duo 包及诊断包）、2 张旧 duo 模拟图、8 份临时 Playwright yml/log、根 .DS_Store。空 output/playwright、output 和 .playwright-cli 目录一并移除。保留当前包、lib 18 个构建文件、node_modules/锁文件、源码/回归及仍被引用的 persistent-browser 备用文档；没有删除有效项目内容。只关闭本轮创建的浏览器会话。
+- 实际退出清除、授权过期、换账号、卸载、跨浏览器发送历史一致性以及其他平台仍为独立待验矩阵，不由本轮布局验收自动完成。所有修改留在本地供用户手动审查、提交和推送。
+
+---
+
+# W024续步：README图文与品牌选中态1px间距 · 2026-10-11（历史）
 
 归入T12/T13文档交付与现有品牌样式任务。用户要求README截图介绍功能，个人对话信息打码，并明确选择本地实色遮挡；过程中最新将品牌白色选中块与外框间距改为1px、仍需圆角，要求重截图片。本次root负责README/截图/代码安装，header_interaction_review只读核对功能与安装说明、复核间距方案；分工均已交还。基线仍main b69c219，保留开工已有AGENTS/handoff/requirements/worklog/styles修改；同轮0.1.8不重复增号，未stage/commit/push。
 
