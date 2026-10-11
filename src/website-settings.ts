@@ -31,15 +31,16 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
     root.setAttribute(attr('request'), goal); root.removeAttribute(attr('phase')); root.removeAttribute(attr('error'))
     root.setAttribute(attr('deadline'), String(Date.now() + 12000))
   }
-  if (command.type === 'settings-close') {closeDialog(); root.removeAttribute(attr('request'));root.removeAttribute(attr('phase'));root.removeAttribute(attr('deadline'))}
-  if (command.type === 'settings-read') request('read')
-  if (command.type === 'setting') request(`${command.key}:${command.value}`)
-  if (command.type === 'preferences') {
+  const loggingOut=root.getAttribute(attr('request'))==='logout'
+  if (command.type === 'settings-close' && !loggingOut) {closeDialog(); root.removeAttribute(attr('request'));root.removeAttribute(attr('phase'));root.removeAttribute(attr('deadline'));root.removeAttribute(attr('error'))}
+  if (command.type === 'settings-read' && !root.hasAttribute(attr('request'))) request('read')
+  if (command.type === 'setting' && !loggingOut) request(`${command.key}:${command.value}`)
+  if (command.type === 'preferences' && !loggingOut) {
     root.removeAttribute(attr('restored'))
     root.removeAttribute('data-dsh-chat-dark-complete')
     if (command.language) root.setAttribute(attr('restore-language'), command.language)
   }
-  if (command.type === 'logout') request('logout')
+  if (command.type === 'logout') {root.removeAttribute(attr('restore-language'));root.removeAttribute(attr('restored'));request('logout')}
   const rowFor = (re: RegExp) => {
     if (!dialog) return undefined
     const walker = doc.createTreeWalker(dialog, 4); let node: Node | null
@@ -85,7 +86,7 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
     else if (goal === 'logout') {
       // The exact current-session item, never the all-device settings action.
       const logout = [...doc.querySelectorAll('[role="menu"],.ds-dropdown-menu')].map(menu => exact(menu, /^(Log out|Logout|退出登录|登出)$/i)).find(Boolean)
-      if (logout) {root.removeAttribute(attr('request'));root.removeAttribute(attr('phase'));logout.click()}
+      if (logout && phase!=='logout-clicked') {root.setAttribute(attr('phase'),'logout-clicked');logout.click()}
       else if (!phase) {closeDialog();root.setAttribute(attr('phase'), 'menu');openProfileMenu()}
     } else if (!dialog) {
       // Wait for the site's pending open/selection commit, bounded by the deadline.

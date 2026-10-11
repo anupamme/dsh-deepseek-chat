@@ -6,6 +6,8 @@ export interface WebsiteConversation {
 }
 export interface WebsiteNavigation {
     readonly status: 'loading' | 'ready' | 'sign-in' | 'unsupported';
+    /** Public profile presence only; independent of layout/preferences readiness. */
+    readonly authenticated?: boolean;
     readonly conversations: readonly WebsiteConversation[];
     readonly selectedHref: string | null;
     readonly canCreate: boolean;

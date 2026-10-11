@@ -24,6 +24,8 @@ export interface DshChatViewState {
     readonly websiteReloadRevision: number;
     readonly settingsViewport: DshChatViewportRect | null;
     readonly preferenceError: string | null;
+    readonly websiteAuthenticationStatus: 'loading' | 'signed-out' | 'signing-in' | 'signed-in' | 'signing-out' | 'error';
+    readonly websiteAuthenticationRevision: number;
     readonly websiteSessionStatus: 'idle' | 'saved' | 'error';
     readonly websiteSessionError: string | null;
     readonly viewport: DshChatViewportRect | null;
@@ -38,6 +40,7 @@ export interface DshChatUIBridge {
     selectMode(mode: DshChatMode): void;
     refreshAuthorization(): void;
     manageAccount(): void;
+    beginWebsiteSignIn(): void;
     toggleSidebar(): void;
     attachViewport(element: HTMLElement | null): void;
     updateViewport(rect: DshChatViewportRect | null): void;

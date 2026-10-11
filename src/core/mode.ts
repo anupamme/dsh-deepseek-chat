@@ -22,9 +22,9 @@ export interface NavigationPort {
   cancelAccount(accountId: string): void
 }
 
-export const CHAT_PANEL = 'dsh-chat.chat'
+export const CHAT_PANEL = 'dsh-deepseek-chat.chat'
 
-/** Account validity and compatibility are checked for every entry, including direct navigation. */
+/** Every entry checks desktop compatibility; website sign-in happens inside CHAT. */
 export class ModeController {
   private state: ModeState
   private readonly listeners = new Set<() => void>()
@@ -50,8 +50,6 @@ export class ModeController {
 
   canEnter(): boolean {
     return !this.disposed && this.state.compatibilityEnabled
-      && this.state.authorization.status === 'authorized'
-      && Boolean(this.state.authorization.accountId)
   }
 
   updateAuthorization(authorization: ModeAuthorization): void {
@@ -61,15 +59,8 @@ export class ModeController {
       && prior.status === 'authorized'
       && authorization.accountId === prior.accountId
       && authorization.epoch === prior.epoch
-    // Close the gate before restoring UI or cancelling. A synchronous observer
-    // cannot send with the previous account during this transition.
-    this.state = { ...this.state, authorization: continuous ? authorization : {
-      status: 'pending', accountId: null, epoch: authorization.epoch, error: authorization.error,
-    } }
-    if (!continuous && (this.state.mode === 'chat' || prior.status === 'authorized')) {
-      this.leave(true)
-      if (prior.accountId) this.port.cancelAccount(prior.accountId)
-    }
+    // A replaced Host generation invalidates its work, without leaving the selected mode.
+    if (!continuous && prior.accountId) this.port.cancelAccount(prior.accountId)
     this.state = { ...this.state, authorization }
     this.publish()
   }
@@ -111,7 +102,7 @@ export class ModeController {
     this.lastPanel = panel
     if (this.disposed || this.transitioning) return
     if (panel === CHAT_PANEL && this.state.mode !== 'chat') {
-      // Selecting the registered main key directly must not bypass our gate.
+      // Selecting the registered main key directly keeps the same compatibility check.
       if (!this.canEnter() || !this.enter(previous)) {
         this.transitioning = true
         try { this.port.selectPanel(previous === CHAT_PANEL ? null : previous) } finally { this.transitioning = false }

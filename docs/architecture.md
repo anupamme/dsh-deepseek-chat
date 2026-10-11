@@ -1,6 +1,6 @@
 # 架构与可行性
 
-当前状态：2026-10-11，W024分发续步 / 0.1.8。预构建候选已完成生产构建、check-distribution、正常package:plugin打包及补齐检查后的fresh pnpm11.7.0本地Git复验；无allowBuilds/ignore-scripts，19个lib及README/patch/icon一致，Host导入与lazy Client契约通过。当前包636e1212353e的Host/Client与已验cd07相同，本轮未重跑界面/登录。远端01e仍旧prepare，用户推送后须独立复验公网URL，同轮不重复递增版本，产物及边界见handoff和文末。
+当前状态：2026-10-11，W025 / 0.1.9，基线f2c1277。用户取消DSH/官网退出后禁用模式与强制HARNESS，改为独立官网授权、同一guest和两处认证状态同步。Host从启动器可信profileContext.dir派生scope，使用dsh-deepseek-chat/website-<profile目录SHA256>保存自己的grant；旧DSH公开id只用于精确迁移本插件旧记录。GitHub改名/origin更新、npm正式0.1.9/latest发布、最终候选构建/分发及fresh Git检查完成。DSH pnpm11.7.0空consumer/空store裸名安装12包，23文件与发布tgz一致，Host import/lazy Client通过；本机CLI换为npm裸名^0.1.9，旧插件不存在、23文件一致。尚未重启/GUI验收，未运行本轮单元/浏览器/GUI回归，未stage/commit/push；官网登录、退出/重登、迁移及重启仍待实机。详见[handoff](handoff.md)。
 
 上一项有限验收：fc00f27开工，cd07d9c360f4包完成持久标题结构CSS、23px品牌控件和设置箭头12px右距的构建安装与实机观察；44项代码、39项浏览器自动回归及真实DSH原生select键盘通过，完整退出后官网登录及简体中文恢复。这些结果保留为对应UI/登录证据，不代替新分发路径验收，也不保证未来官网改版兼容。
 
@@ -16,25 +16,33 @@
 
 CHAT 直接呈现 `https://chat.deepseek.com/`，由网站自行处理登录、会话和服务器历史。插件不实现另一个模型聊天服务，不持久化/合并网页历史。用户2026-10-10允许有限DOM适配，当前在原DSH侧栏镜像已加载的官网导航元数据；这是界面适配，不是官方历史API。
 
-DSH 账号授权仅控制插件模式门槛；网页内部账号由真实页面处理。两者没有公开身份匹配或登出通知桥。DSH 登出即时回 Harness 的实现不等于网页内部登出已联动。
+DSH账号与官网授权独立；DSH退出、失效或换账号不禁用模式、不强制回HARNESS。网页账号由真实页面确认；没有公开身份匹配或Chat OAuth交换契约，不能复用Platform凭据。Client统一官网status、revision和guest同步对话页/设置入口。
 
-## Host：安全 DSH 授权投影与独立 CHAT grant
+## Host：独立profile中的官网grant
 
-`src/index.ts` 加载 `DshChatController`，依赖官方 `deepseekAccount`、`credentials`、`typert`。DSH 状态投影仍只有无凭据的 `dshChat.authorization/watchAuthorization`；新增内部 `loadWebsiteSession/saveWebsiteSession/clearWebsiteSession` 只传递插件自己的 CHAT grant，不向模型开放。
+Host控制器使用官方`credentials`与`typert`管理插件自己的官网grant；DSH公开账号接口仅为兼容旧记录迁移使用，不作为模式权限或官网身份。内部`loadWebsiteSession/saveWebsiteSession/clearWebsiteSession`不向模型开放，Client不能选择任意credential key。
 
-- 官方 `getState()/watch(signal)` 的 `credential-stored` 仅表示本地存在凭据，不代表服务端有效；要求 `getProfile(metadata)` 返回 ready 且稳定 `value.id` 后启用门槛。
-- 同账号连续有效刷新保留授权 epoch；普通网络错误保留既有官方有效确认，不伪造登出。首次无法确认时保持禁用。
-- 官方 `deepseek-account/signed-out`、`deepseek-account/session-expired` 即时关闭门槛。公开 `credentials/record-updated(key)` 只读 key，固定目标 key `deepseek-account-platform/default` 变化先发布 pending 并换 epoch，再安全重读账号资料；不读取 record 内容。
-- 异步资料和 Client unary 回包都有授权代次栅栏，防止登出/换账号后的迟到旧结果重开门槛。Client 首次授权仍保留 Harness，点击进入及窗口重新获得焦点时刷新官方状态。
+- 默认credentials-local文件为全局共享的`$DSH_HOME/.credentials.yaml`，Provider本身不提供天然profile隔离。Host读取公开启动器服务`ctx.get('profileContext')`，验证dir为绝对路径后SHA256派生scope，当前记录为`credentialKey('dsh-deepseek-chat', 'website-<profile目录SHA256>')`；Client仅拿scope哈希，不提供任意dir或key。缺少可信profileContext时明确报告记忆能力不可用，不回退共享固定键或DSH账号键。当前profile的自身代次串行读写，迟到结果不能覆盖退出或新官网登录；不读取DSH平台或其他插件grant。
+- 新profile记录不存在时，DSH官方`getProfile`的公开稳定id只用于计算旧`dsh-chat/website-<DSH账号SHA256>`的精确key并迁移本插件自己的记录；资料失败、未登录或没有旧记录均不关闭CHAT入口，不枚举其他账号记录。
+- 显式官网退出先建立保存/恢复barrier，等待并清除当前记忆，再正常操作官网当前会话logout。记忆清除失败显示固定错误，不假报已退出；DSH退出不清除独立官网grant。
+- 官网正常登录先发布公开账号/status/revision，后台持久化只影响“已记住”状态，不阻塞页面显示。普通网络错误不伪造官网退出，官网结果仍是登录成立依据。
 - `src/protocol.ts` 使用显式 strict InvocationDescriptor 和 Zod codecs，Host 注册 Typert contribution，Client `$mount`；不依赖 SRC 猜方法。流使用官方 `$stream` 监督重连与取消。
 - Client先`remote.$mount`再`ctx.inject(['remote', 'remote.dshChat'], ...)`，所有unary/stream调用使用该子Context。仅注入`remote`不包含生成的独立namespace服务；直接从原插件Context调用会抛出`cannot get property "remote.dshChat" without inject`。不能在挂载前把namespace设为外层必需依赖，造成启动相互等待。
-- 刷新合并在途请求，35秒界面期限覆盖连接与调用，超时传递AbortSignal并隔离迟到回包。挂载失败可重试；初始失败从pending转unavailable，既有有效授权不因网络错误被撤销。HARNESS和CHAT均有错误反馈/刷新入口；插件卸载按依赖先dispose namespace消费者与stream，再撤回contribution。
+- Host连接和协议挂载失败保留固定错误/重试与迟到请求隔离，不强制改变模式。设置退出优先于旧读取，reset旧请求；卸载按依赖先dispose namespace消费者与stream，再撤回contribution。
 
-证据：deepseek-account/src/index.ts:39–93、types.ts:31–56；deepseek-account-platform/src/index.ts:17,147–150,296–343；credentials/src/types.ts:92–102；api/gateway/README.md。服务端撤销只在官方请求拒绝/事件确认时获知，插件不自行推断网络故障为撤销。
+官方来源为app-boot的ProfileContext、shell-env读取同一公开服务的实现，以及credentials与Gateway的固定类型/源码；deepseek-account公开账号资料仅支撑旧记录身份，Platform的signed-out/session-expired不再决定CHAT入口。官网登录/退出由同一guest的公开结果确认，不能从Host保存成功推导官网接受会话。
 
-2026-10-10复现与回归：发布的Cordis4.0.4/Gateway0.2.0-rc.2上，真实插件Context缺namespace注入必然拒绝；旧集成从root Context调用，假Client Context又未执行依赖限制，所以19项测试漏检。当前server.test在真实Cordis加载生产Client入口，验证初始未授权、恢复授权、进入CHAT、官方登出回退及卸载；账号/carrier/presentation仍是fixture，不替代真实Desktop证据。
+历史复现与回归（2026-10-10）：发布的Cordis4.0.4/Gateway0.2.0-rc.2上，真实插件Context缺namespace注入必然拒绝；当时的fixture验证原DSH授权门槛/退出回退，W025已取消这些产品规则。历史测试结果不代替0.1.9实现验收，本轮未新增或运行测试。
 
-## W024：插件自己的网页登录授权（2026-10-11）
+## W025：同一guest的认证同步与操作顺序
+
+Client集中维护官网登录status、revision、公开账号信息和记忆状态；设置与对话页读取同一快照、打开同一个guest。未登录显示明确登录按钮，不创建第二份网页登录面板或让用户切换页面手动刷新。真实官网确认登录后立即同步公开状态与导航，固定三key的授权保存后台串行执行；保存失败只能表示记忆未完成，不能把已成功登录重新显示为未登录。
+
+退出操作优先于设置读取/偏好恢复，清空旧请求并推进revision，使迟到读取不能覆盖新状态。Host清记忆barrier完成后才使用官网自己的当前会话logout；确认退出结果后两处统一显示正常登录入口，保留模式切换。再次登录沿用同一guest，正常等待与真正读取错误分开呈现。
+
+系统浏览器可正常打开HTTPS链接，`dsh://open`只唤回DSH窗口；当前公开资料未找到Chat第三方授权码交换/回调。官方Platform Provider默认platform.deepseek.com并固定/dsh/authorize、/dsh/authorized及/oauth/callback，不能换成Chat OAuth。当前采用同guest正常官网登录，不伪造外部浏览器确认授权，也不宣称服务方永远没有该能力。0.1.9生产候选构建、类型、产物、分发及安装检查通过，但官网流程尚未重启/GUI验收；未运行本轮单元/浏览器回归。
+
+## 历史：W024插件自己的网页登录授权（2026-10-11，DSH隔离规则由W025替代）
 
 此前“Browser 内存分区意味着只能改宿主”的结论被修正：`ctx.credentials` 已能持久保存插件自己的 grant；完整网页 Session 与最小授权恢复不是同一能力。
 
@@ -48,11 +56,11 @@ DSH 账号授权仅控制插件模式门槛；网页内部账号由真实页面�
 
 ## Client：可逆导航与可达入口
 
-`src/core/mode.ts` 集中管理授权门槛、mode 和原 `activePanelId`（包括 null）。Client 只调用公开 `layout.panelInfo.getSnapshot()/subscribe()` 和 `selectPanel()`；没有 Session/core 状态写入或盲目 close/open 右栏。
+`src/core/mode.ts`集中管理mode与原`activePanelId`（包括null）；模式不受DSH/官网登录状态限制。Client只调用公开`layout.panelInfo.getSnapshot()/subscribe()`和`selectPanel()`，没有Session/core状态写入或盲目close/open右栏。
 
-- `main` 自有键 `dsh-chat.chat`。独立 main 按官方布局自然隐藏 Harness 右栏；退出先恢复原 panel，再 dispose Chat 覆盖项。
+- 插件自有main按官方布局自然隐藏Harness右栏；手动返回HARNESS或卸载恢复原panel并dispose覆盖项，官网登录退出不触发此模式回退。
 - Harness侧栏/navigation原树保留；`sidebar.brand.name`仅替换装饰内容：官方DeepSeek字标（自有SVG视口裁掉HARNESS徽标）及自有锚点。实际按钮是官方additive `shell.overlay`的独立组件；不复制/包装未导出的SidebarRoot。W016新增用户批准的有限侧栏DOM适配，见下一条。
-- `src/sidebar-adapter.ts`从自己的品牌元素沿已核对rc.2祖先结构定位侧栏，先识别renderer的data-slot=sidebar.brand.name/display:contents包装，再校验aria-hidden品牌identity、data-window-drag行和直接子级新会话按钮；只加自有前缀的临时属性，以flex填满品牌间距、CHAT隐藏插件行/空导航区，捕获原新会话click并转交受门槛保护的官网new。官网未就绪/登录页时禁用该新建按钮；HARNESS恢复原disabled和点击行为，卸载移除属性/监听器并恢复原值。绑定归Client所有，品牌因折叠卸载时仍保持，展开重新绑定、Client卸载撤回。观察范围仅该root的childList；不改Session、私有服务或安装包。未知结构不适配，并在自有交互层提示顶部仍为HARNESS语义；不能称为官方新建接口。
+- `src/sidebar-adapter.ts`从自己的品牌元素沿已核对rc.2祖先结构定位侧栏，先识别renderer的data-slot=sidebar.brand.name/display:contents包装，再校验aria-hidden品牌identity、data-window-drag行和直接子级新会话按钮；只加自有前缀临时属性，以flex填满品牌间距、CHAT隐藏插件行/空导航区，捕获原新会话click并转交官网new。官网未就绪/登录页时新建不可用，但模式切换可用；HARNESS恢复原disabled和点击行为，卸载移除属性/监听器并恢复原值。绑定归Client所有，品牌因折叠卸载时仍保持，展开重新绑定、Client卸载撤回。观察范围仅该root的childList，不改Session、私有服务或安装包。未知结构不适配，并提示顶部仍为HARNESS语义；不能称为官方新建接口。
 - 品牌owner的aria-hidden/外层New Session仍存在，交互层在该祖先外，提供按键与屏幕阅读器语义。rc.2品牌行24px且会裁剪，锚点为112×24px；完全可见才发布矩形，折叠/裁剪时隐藏，重新可见时恢复。底部和右下角旧入口已移除；正常授权无常驻刷新，故障时在顶部说明并重试。Mac实测通过，Web/Windows外层按钮及其他平台仍需实测。
 - 两种模式共用原生SidebarRoot；仅CHAT期间通过slots.inject注册 `sidebar.workspaces`，退出后dispose恢复工作区；owner仅wide/expandSidebar。顶部窗口/品牌/新会话视觉、底部真实settings及背景透明/模糊由原组件持续管理，不创建另一套侧栏。
 - W017删除整个网页工具栏。CHAT期间按官方shell.leading契约注册展开/官网新建图标，与rc.2原生HeaderLeadingControls使用同一公开图标、28px尺寸、8px间距和Tooltip；HARNESS/卸载dispose恢复内置项。Mac官方AppFrame仅在全折叠时挂载该Slot。guest矩形扣除官方--dsh-frame-top-clearance，避免overlay遮住原生窗口控制；不硬改核心z-index或窗口按钮。
@@ -70,11 +78,11 @@ DSH 账号授权仅控制插件模式门槛；网页内部账号由真实页面�
 2. React 在自己的 Slot 组件树创建 `<webview name=lease partition=批准值 src=about:blank#lease>`。
 3. 首次dom-ready调用公开原生loadURL加载官网；后续使用Electron公开executeJavaScript运行用户允许的界面适配；新网页登录模块仅有上述固定三项官网授权例外。
 4. 网页长期挂载在自己的 additive shell.overlay。自己的 main 占位元素通过 ref/ResizeObserver 报告自身矩形，容器定位到主区；不查询或修改 DSH 核心元素。
-5. 手动返回 Harness 只隐藏容器；再次进入仍是同一文档。授权代次变化、账号变化或插件卸载释放 guest；异步 acquire 若已被取消则立即 release。
+5. 手动返回Harness只隐藏容器，再次进入仍是同一文档。设置与对话页共用该guest；DSH退出/账号变化不释放独立官网guest。插件卸载释放guest，异步acquire若已取消则立即release。
 
 官方 main 只挂载当前键，直接把 webview 放入 main 会丢失网页文档，因此采用保活 overlay。布局、保活、晚到 acquire 与释放结果需要 mock 和真实 Desktop 分开验收。
 
-主进程校验 lease 并强制 `sandbox:true`、`contextIsolation:true`、`webSecurity:true`、`nodeIntegration:false`。插件不改安装包、header 或安全配置。Browser storage 按插件指定的安全账号隔离身份管理，但实际网页登录身份不可验证；内存分区仅存续当前进程，不共享系统浏览器凭据。
+主进程校验lease并强制`sandbox:true`、`contextIsolation:true`、`webSecurity:true`、`nodeIntegration:false`。插件不改安装包、header或安全配置。官网grant由插件根据可信Host profile目录派生的key隔离，credentials文件仍可全局共享；Browser内存分区仅存续当前进程，实际官网身份由网站确认，不共享系统浏览器凭据。
 
 证据：ui-sidebar-browser/src/types.ts:19–26、ElectronWebviewPresentation.ts:52–60；apps/desktop/src/preload-browser.ts:7–31、main.ts:229–235、browser-guests.ts:29–41,72–95。原生 Platform View 只支持 usage/top-up，不用于任意 Chat URL。
 
@@ -84,11 +92,11 @@ DSH 账号授权仅控制插件模式门槛；网页内部账号由真实页面�
 
 网页导航以窄列几何、真实历史链接、新对话标签及不含编辑器等条件定位；原生列表按页面次序分组，可搜索已加载标题，点击真实页面链接/新建元素，加载更早时滚动原网页列表。W017同时隐藏有宽度的外层导航轨道、将编辑器所在内容列扩展、隐藏无文本的紧凑导航头部，消除占位。首次真实主框架新文档在完成初始布局/暗色前使用preparing样式；已呈现的同文档SPA路由、后台加载及临时节点替换不得再次隐藏全页。guest自有MutationObserver在官网React提交后重做有限适配。最新修正也在官网设置同步失败时解除无限遮罩，保留错误及重试，不假报暗色已完成；恢复验证/登录页加载时保留原生连接与重试入口。13b2第三次复验仅确认加载反馈与认证恢复，后续主区闪烁未通过；b4修正后的有限显示观察见文末。设置同步真实错误/主题超时分支尚无实机故障证据，只完成源码与生产构建核查。此前13b2/b4阶段未增加官网环境提示关闭逻辑；最新用户授权与固定说明适配见文末，此旧范围不覆盖最新实现。未知结构恢复原界面，不裁切视口冒充移入侧栏。
 
-设置适配仅操作官网公开显示的头像菜单、系统设置、通用设置、语言下拉/深色按钮及关闭控件。精确标签支持中英文，自定义ds-select通过文本触发器的公开pointerdown/mousedown展开；读回官网值才确认成功。12秒设置期限失败后提供原官网入口，不输出内部结构诊断。设置缓存为自有DOM临时属性，官网登录页/恢复/账号代次变化清空，Host/Client返回值限长并栅栏隔离。无Cookie、storage、私有应用状态/API或聊天正文读取。CHAT设置提供官网完整设置/导航及重新加载入口，不宣称官网全部管理动作已镜像。
+设置适配仅操作官网公开显示的头像菜单、系统设置、通用设置、语言下拉/深色按钮及关闭控件。精确标签支持中英文，自定义ds-select通过公开pointerdown/mousedown展开；读回官网值才确认成功。真实设置错误有期限和重试，不输出内部诊断。设置缓存为自有DOM临时属性，官网登录页/恢复/自身revision变化清空，Host/Client返回值限长并隔离旧请求；退出操作优先于旧读取。CHAT设置仅显示官网公开账号、当前会话退出和系统语言，未登录按钮进入同一guest；不提供完整账号安全/数据管理，不读取Cookie、私有应用状态/API或正文。独立登录模块的固定三key例外与设置DOM范围分开。
 
 W016登录核查：固定deepseek-account-platform默认Platform origin为platform.deepseek.com、inference origin为api.deepseek.com；公开PlatformSession仅用于平台嵌入，Browser acquire由主进程生成进程内隔离partition。未发现面向chat.deepseek.com的官方SSO/凭据交换入口，不能复用Platform token冒充官网登录，也不迁移Cookie。这一阶段尚未实现最小grant保存；W024改用官方credentials保存官网自身授权，同账号三次完整退出重开已通过；这仍不构成Platform到Chat的兑换。
 
-每1.2秒串行刷新可见导航，HARNESS期间不执行适配；卸载/授权代次变化撤回动作绑定和guest。Client同时限定模式/门槛/代次及已加载链接，旧账号回包不能污染新列表。网页返回payload按非信任输入过滤origin、大小和类型，标题仅作React文本。首次登录页只说明官网尚未登录，不证明DSH授权失效或两处账号相同；曾确认官网ready后再次进入sign_in，或插件显式当前退出请求后确认sign_in，则回HARNESS并禁用模式，可从CHAT设置重新官网登录。
+串行刷新可见导航；设置与对话页共用官网认证结果，HARNESS普通隐藏不需要导航适配，设置登录/退出仍可访问同一guest。Client限定自身revision、文档代次及已加载链接，旧账号回包不能污染新列表。网页payload过滤origin、大小和类型，标题仅作React文本。确认sign_in后清空旧公开账号/导航并呈现正常登录入口，不回HARNESS、不禁用模式，不以此断言DSH退出或两处账号相同。
 
 当前适配已在Mac真实官网确认分组列表、选择联动和＋新建；空账号/官网布局变化、动态加载更多与网页内部账号切换仍需扩展实测。公开webview方法文档及固定Sidebar owner契约见references。
 
@@ -96,29 +104,33 @@ W016登录核查：固定deepseek-account-platform默认Platform origin为platfo
 
 锁定 Cordis 4.0.4、官方 DSH 包 0.2.0-rc.2、React 18.3.1；TSX 支持，Host ESM、Client 单个 lazy-CJS factory、lib/types 声明。Client 仅共享固定 baseline 模块，第三方 Zod inline；feature 服务只通过 ctx/注入使用。build/check-artifact 校验精确 module requests、Host 依赖声明和单工厂结构，tarball 不含源码开发 harness、依赖或凭据。
 
-当前分发方案（本地Git及正常打包通过）：准备将lib构建产物随源码提交，由发布者手动构建/核查，安装者从仓库包取得完整入口。取消prepare及安装生命周期构建；原`build`脚本键改为`build:plugin`，`release:prepare`手动生成并核对源码与产物对照清单、manifest和files，`package:plugin`手动打包。保留包名dsh-chat。当前构建、check-distribution和正常打包已通过，本地fresh Git fixture无需allowBuilds/ignore-scripts通过；推送后的公网仓库地址仍须独立验收。
+当前分发方案：包名/仓库名为dsh-deepseek-chat，预编译lib继续随Git与npm包交付；开发者手动build:plugin、release:prepare与package:plugin，不增加prepare或安装生命周期构建。W024/0.1.8的fresh Git与正常打包证据保留为历史；0.1.9最终package:plugin生产构建、类型、产物及分发检查已通过。正式候选23files/133326bytes，SHA256为`e82535818456c7b569580c13f555442bd9396d0b1d0f74829ecce9ff606ab710`。最新fresh DSH pnpm11.7 Git fixture安装12包，文件逐字节、Host import与lazy Client契约通过，不使用allowBuilds或ignore-scripts。
+
+仓库实际改名与origin更新完成；用户正常完成npm认证/2FA后publish exit0，公开名称/版本/latest均为dsh-deepseek-chat@0.1.9。registry短暂0.0.0-stage占位已完成处理，不作为另一个正式产物。DSH pnpm11.7.0在空consumer/空store以裸名安装12包，23文件与已发布tgz逐字节一致，Host import和lazy Client通过，fixture已清理。首次fixture对源码package.json的逐字节断言失败来自pnpm pack规范化排版及去除packageManager，修正为正式tgz基准后23/23通过，不是安装故障。
+
+官方Desktop CLI先移除旧dsh-chat，随后移除本地0.1.9 tgz依赖再add裸名均exit0；desktop依赖为^0.1.9、oldInstalled=false，23文件与发布包一致。默认pnpm自动加该新版本minimumReleaseAgeExclude，无人为allowBuilds、ignore-scripts或bypass。尚未重启/GUI验收，证据见[handoff](handoff.md)。本轮代码未stage/commit/push，公开npm与本机安装成功不代表新Git代码已推送，也不证明官网退出/重登/迁移/重启通过。
 
 依据：[pnpm11.7.0 prepare-package源码](https://github.com/pnpm/pnpm/blob/v11.7.0/exec/prepare-package/src/index.ts#L82)中非空prepare无条件触发构建；prepublish/prepack/publish仅在main文件缺失时触发。Git和GitHub archive均进入同一准备判断，再按packlist取文件。pnpm只判断main是否存在，不验证Client/types/patch/icon完整性，所以发布检查必须覆盖全部声明文件。[npm Git依赖官方说明](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#git-urls-as-dependencies)还将build等脚本视作重构建信号，故采用明确的手动脚本名称，避免把本机pnpm条件推成所有安装器的保证。
 
-旧源码分发记录：此前仓库不提交lib，Git通过自包含prepare构建，DSH pnpm11.7.0需为准确Git身份配置allowBuilds；仅--allow-build不替代该许可。2026-10-10缺prepare导致两个lib入口缺失的故障及后续源码fixture复验仍保留于handoff/worklog。该历史路线不再作为当前用户直装方案；远端01e尚未更新，仍具有旧行为。
+旧源码分发记录：此前仓库不提交lib，Git通过自包含prepare构建，DSH pnpm11.7.0需为准确Git身份配置allowBuilds；仅--allow-build不替代该许可。2026-10-10故障及复验保留于handoff/worklog，该路线不再作为当前直装方案。W025基线f2c1277已由用户提交；本轮0.1.9源码/产物是否到达公开默认分支仍需实际核对。
 
 浏览器 Web profile 缺少 Desktop bridge 时保持 Harness 禁用，无未经验证的 iframe 回退。官网公开无凭据 HEAD 返回 429，不能据此断定 iframe 嵌入策略。
 
 ## 尚未成立的能力
 
 - 用户已完成一次官网正常登录，登录保存及同账号三次完整退出恢复已验收；其他登录方式、验证码流程、发送及另一浏览器同账号历史一致性仍未验收。
-- 官网内部登出自动切回、网页账号与 DSH 账号匹配、网页原生历史 API。
+- 网页账号与DSH账号匹配、Chat第三方OAuth交换及网页原生历史API；官网退出自动回HARNESS不是当前需求。
 - 卸载/授权变化时未发送网页草稿保留与官网流式取消；插件不能提取或调用这些内部能力。
 - 网站下载、设备权限、外部 OAuth 弹窗等受原生 Browser 固定策略限制；当前仅在同 guest 接受官方 Chat HTTPS popup。
 - 其他DSH版本、Web iframe、Windows/Linux品牌入口实测及完整屏幕阅读器验收。Mac顶部品牌位置已通过本轮实机检查；剩余项不因typecheck/build/mock通过自动变成支持。
 
-## W018统一名称与插件图标（2026-10-10）
+## 历史：W018统一名称与插件图标（2026-10-10，名称由W025替代）
 
 插件包、两端name导出、bundle patch及Typert贡献package统一为dsh-chat；Host/Client同步使用dshChat namespace，注册键和自有DOM标记同用dsh-chat前缀，类型为DshChat*。不保留旧名别名，不同时安装两份插件。包名变更涉及新的browser accountStorageKey，按正常网页登录恢复账号历史，不迁移旧guest凭据。
 
 插件管理图片使用package.json顶层icon=./assets/icon.svg，导出./package.json供官方readPluginMeta发现，并将assets/icon.svg加入files及source-only Git安装fixture。DSH rc.2固定源码明确支持manifest相对路径、自包含SVG和256 KiB上限；不用网页DOM或侧栏Slot替换管理页图标。当前仅静态资源/打包验证，不宣称已安装UI验收。
 
-## W019精简设置与标题布局（2026-10-10）
+## 历史：W019精简设置与标题布局（2026-10-10，退出回退由W025取消）
 
 完整四Tab官网设置嵌入实机出现超时/空白，用户明确取消该方案。本轮settings.section只承接原生网页账号昵称、退出当前会话和系统语言。website-settings.ts通过官网公开头像菜单进入General，定位Language控件、修改并读回；错误有期限，不伪造成功。官网语言读写、中文/英文往返及官方language=zh-CN配置落盘已通过本机实测，详细分层证据及产物以handoff为准。禁止以“登出所有设备”替代当前会话退出；确认sign_in后回HARNESS并禁用模式，约1.2秒轮询不等于官方退出事件。
 
@@ -185,7 +197,7 @@ cd07已生产构建、官方CLI安装，manifest/Host/Client/icon与本地逐字
 
 最终正常quit后pgrep无main/Host进程，重开main24116/Host24126；真实CHAT设置确认已登录、已记住网页登录、简体中文，无再次登录。README三图已用最终实机图并不透明打码个人信息；清理30个旧验收/临时文件2544470bytes，保留当前唯一包、lib18、node_modules、有效源码/回归/文档。全部修改仍在本地，详细产物哈希与证据见handoff；过期、退出清除、换账号、卸载、发送/跨浏览器历史及其他平台仍须独立验收。
 
-## W024续步：预构建仓库分发的本地验收与公网边界
+## 历史：W024预构建仓库分发验收与当时公网边界
 
 root已完成当前源码生产构建和check-distribution。新版check-git-install使用DSH bundled pnpm11.7.0，在独立临时Git source、consumer和全新store中正常安装`git+file://…#sha`，无allowBuilds、无ignore-scripts，12个包安装成功。计划提交的19个lib文件及README/patch/icon与安装结果一致，Host import和lazy Client artifact契约通过；临时fixture在finally清理。历史source-only+prepare+allowBuilds验收保留为旧路线，不与这次证据混用。
 

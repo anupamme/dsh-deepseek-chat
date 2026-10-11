@@ -1,8 +1,12 @@
-# dsh-chat：Agent / Codex 开发指南
+# dsh-deepseek-chat：Agent / Codex 开发指南
 
-用户已撤销此前AGENTS强制流程；本文保留项目上下文，历史流程条目不能覆盖用户最新授权或自行增加审批、测试和版本递增。本轮0.1.8已递增一次，续步不重复加号。
+用户已撤销此前AGENTS强制流程；本文保留项目上下文，历史流程条目不能覆盖用户最新授权或自行增加审批、测试和版本递增。旧W024版本0.1.8已交付；新W025独立登录/改名发布版本为0.1.9，本轮仅加一次。
 
-## W024当前状态（2026-10-11）
+## W025当前工作（2026-10-11）
+
+用户最新撤销DSH退出/授权失效禁用切换控件规则：CHAT网页登录独立，未登录可进入同一个真实官网guest完成登录，退出保持CHAT和可用切换器；设置与对话页共用单一状态流。已实现账号显示先于后台保存、设置/偏好/退出串行、迟到写隔离和可信profile目录派生记录。插件/GitHub仓库已改名dsh-deepseek-chat，npm公开0.1.9/latest已实读；全新npm裸名安装及本机官方CLI裸名安装通过，本机依赖为^0.1.9、旧名移除。未重启或验收0.1.9官网登录/退出体验，不把构建安装当作GUI验收；源码/lib仍未Git提交/推送。无需新增npx命令行入口。外部浏览器Chat确认回跳未发现公开OAuth/session交换契约，当前采用同一内嵌官网正常登录，不复用Platform授权。具体结果及未验边界见handoff顶部，下面W024是历史。
+
+## W024历史状态（2026-10-11）
 
 最新续步：用户只要求完整仓库地址直装，暂不做 npm 名称发布。已移除 prepare/build 自动生命周期，改为显式 build:plugin/release:prepare；Git 纳入 lib 19 文件（含源码/产物哈希清单），新分发检查拒绝陈旧或缺失产物和构建 hook。DSH pnpm 11.7.0 在独立临时 Git 仓库、consumer、空 store 中，无 allowBuilds/ignore-scripts 的正常 Git 安装通过；负向检查和正常 package:plugin 通过。当前包 636e1212353e，Host/Client 与此前界面验收版本逐字节相同。本次没有重新运行界面/登录验收。远端 main 实读仍为 01e6718 的旧 prepare 方案，待用户自行提交/推送全部修改（必须包含 lib）后再验公网 URL；没有 stage/commit/push。同轮 0.1.8 不重复增号，具体产物与边界见 handoff 顶部。
 
@@ -21,20 +25,20 @@
 - 本文件是所有设备、所有 Agent 工具的项目上下文入口。同步范围包括整个项目的任务目标和全部有实质影响的工作，不限于登录逻辑或代码变更。
 - 最终体验：DeepSeek 图标后的 `CHAT | HARNESS` 切换器、白底选中态、CHAT 的对话导航/主区、HARNESS 原工作区完整恢复、授权联动，以及经官方能力确认后的真实聊天和网页历史同步。
 - 已验收界面：W019 / 0.1.5精简设置与标题布局已完成本机验收。用户取消完整四Tab官网设置嵌入，本轮只做官网账号昵称、退出当前账号入口、系统语言；不提供外观和语音选项。官网真实语言“跟随系统→简体中文→English→简体中文”读写及language=zh-CN官方配置落盘已确认，页面中文/暗色和标题分享展开/折叠同顶行已实机验证。退出入口仅公开DOM与Client回归通过，未实际登出当前用户。用户assets/icon.svg保持原样；产物与分层证据见handoff/worklog。
-- 当前主线：0.1.8仓库预编译分发已完成本地验收，待用户提交/推送后检查完整GitHub URL。此前网页登录记忆和界面有限实机验收见handoff。Browser完整分区仍非persist，但官方credentials可保存自己的grant，不能再将内存分区推导为插件无路径。只处理插件官网guest的固定授权白名单，不读其他凭据、不迁移Cookie、不改DSH安装包；不自动stage/commit/push。
+- 当前主线：W025/0.1.9已公开npm发布、默认策略裸名安装及本机官方CLI安装通过；0.1.9完整网页登录/退出体验待重启实机确认，最终构建/发布及安装证据以handoff顶部为准。W024预编译代码已由用户提交f2c1277，新的0.1.9代码仍需用户手动提交/推送。Browser完整分区仍非persist，但官方credentials可保存自己的grant。只处理插件官网guest的固定授权白名单，不读其他凭据、不迁移Cookie、不改DSH安装包；不自动stage/commit/push。
 - 全部任务 ID、目标/完成标准、状态、依赖、负责人、文件范围和下一步见 [docs/handoff.md](docs/handoff.md)；决策理由、尝试/失败及阶段记录见 [docs/worklog.md](docs/worklog.md)。任何新的工作也必须纳入这套记录。
 - 下一个 Agent 应仅靠仓库回答：为什么做、目标是什么、已经做了什么、为什么这样决定、什么证据可信、谁在做什么、哪些没做/受限、现在该从哪里继续。缺失的信息先从实际文件/证据补齐，不要求用户重述已确认事项。
 
-## 已确认产品决策（2026-10-09）
-- 未登录或未获得有效 DeepSeek 账号授权时，保持 HARNESS，整个 `CHAT | HARNESS` 切换控件置灰、禁用；HARNESS 自身仍正常可用。
-- CHAT 中退出登录或官方确认授权失效时，立即回 HARNESS，恢复原工作区/面板，然后禁用切换控件；自动回退不等待用户确认或请求取消完成。
-- 启动时授权未确认，默认 HARNESS 并禁用控件；首次确认/重新授权有效后启用控件，不自动进入 CHAT。同一账号授权持续有效的刷新不改变用户已选择的模式。普通网络故障不等同于已确认退出登录。
-- 不提供匿名 CHAT，也不做匿名会话登录合并；本地缓存不能绕过账号授权门槛。API key 或其他模型配置不能自行替代本需求中的 DeepSeek 账号登录授权。
-- 登录授权门槛是产品决策；授权状态接口/事件与网页历史同步接口是否可用是技术验证事项，不能混为已支持。
-- 本轮补充：CHAT数据源为真实网页，网页内登录和DSH授权独立。公开Browser桥没有网页账号/登出通知，不能冒称网页登出即时联动或同账号匹配；用户允许的DOM导航镜像不等于官方历史API。详见requirements的最新试用范围。
+## 已确认产品决策（2026-10-11，替代旧DSH授权门槛）
+- CHAT与DSH账号授权独立，切换器仅受插件兼容性控制；DSH退出或官网退出都不禁用整个切换器、不强制返回HARNESS。
+- 未登录时允许进入CHAT登录入口；真实网站决定登录验证及能否聊天，不把可进入登录页当作已有官网授权。
+- CHAT设置和对话页共用同一个guest、导航/账号状态与退出屏障；登录成功先更新真实账号，再后台保存；不能靠重新打开设置才能同步。
+- 退出先阻止迟到保存、清除本插件记忆，再执行官网正常退出并等待真实登录页；失败有明确可重试状态，不能假装退出完成或再次恢复旧grant。
+- 授权通过官方credentials持久化；其默认文件全局共享，必须由Host校验启动器的profileContext.dir并派生独立记录key，不能用固定共享key。缺少可信profile时只允许普通网页登录，不读写或迁移持久记录。DSH公开账号id仅用于精准迁移旧dsh-chat自有记录，不能作为权限条件。用户正常官网登录，Agent不填写或读取登录表单、Cookie或密码。
+- 未发现Chat外部OAuth回跳公开契约时不虚构一键外部授权。官网导航镜像不等于官方历史API，不把Platform/Codex grant换作Chat授权。
 
 ## 仓库与信息来源
-- 仓库：`git@github.com:xingxingbk-git/dsh-chat.git`；默认协作分支 `main`。
+- 仓库：`https://github.com/xingxingbk-git/dsh-deepseek-chat.git`；默认协作分支 `main`。
 - 项目理解必须来自已提交的仓库文件，不依赖某台设备的聊天历史、Codex 全局记忆、安装路径或 `/tmp` 提取文件。
 - 当前需求以 `docs/requirements.md` 为准；技术证据及限制以 `docs/architecture.md` 为准；阶段安排以 `docs/roadmap.md` 为准；全项目当前任务、进展、分工和下一步以 [docs/handoff.md](docs/handoff.md) 为准；决策和工作历史见 [docs/worklog.md](docs/worklog.md)。细节只在对应主文档维护，入口与快照通过摘要/链接引用，避免多份互相矛盾的全文副本。
 - `docs/review-2026-10-09.md` 是历史审查快照，存在后续已修订的建议；不要用历史建议覆盖当前已确认需求。冲突时遵循用户最新指令并同步所有受影响文档。
@@ -66,11 +70,10 @@
 
 - 拓展 UI 前先确认 Slot 契约及 owner props；对于 `shadows-shipped-ui` Slot，仅在需要的模式注册、切回 Harness 时及时 dispose，让内置 occupant 恢复。
 - CHAT/HARNESS 切换必须可逆；不静默丢弃 Harness 状态、聊天草稿或正在生成的回答。
-- 所有进入 CHAT 的路径（切换按钮、快捷键、主面板入口、恢复状态）都必须使用同一授权门槛，不能只置灰一个按钮。
-- 退出登录/授权失效后禁止新的 CHAT 请求，按已确认的官方取消能力终止该账号在途请求，隔离迟到结果；不阻塞回 HARNESS。保存草稿/已接收内容需遵守账号隔离与已确认的数据策略，不能继续使用旧授权或自动上传给另一账号。
+- 所有进入CHAT的路径共用插件兼容性与同一官网guest；网站未登录显示登录入口，不能增加DSH账号门槛。网页登录退出时清除旧账号导航/状态，隔离迟到保存与恢复，官网负责自身请求和登录验证；普通模式切换可逆。
 - CHAT 模式隐藏 Harness 专属右侧栏；离开 CHAT 时要恢复用户原来的面板状态，而不只是无条件打开/关闭。
 - 在0.2.0-rc.2中先验证独立 `main` 面板自然隐藏右栏和原 `activePanelId` 恢复，不默认调用 `closeRightbar/openRightbar`。品牌名槽在 `aria-hidden` 祖先内，Web/Windows还有外层新会话按钮；仅放非交互字标与插件自有定位锚点，按钮在官方 `shell.overlay` 对齐锚点，不能塞入隐藏区或嵌套按钮。rc.2品牌行高24px，锚点须适配裁剪；折叠/遮蔽时撤回交互层。仅允许上述有限侧栏适配，原菜单/快捷键仍须另核查CHAT行为。
-- W023最新用户授权保存例外：只在插件持有、origin确认为https://chat.deepseek.com的guest处理userToken、__appKit_userInfo中的id、deepseek-device-id:chat三项严格白名单，正常官网登录后保存官网自己的grant，通过官方ctx.credentials的dsh-chat/website-<可信DSH账号SHA256>记录恢复。accountId/epoch由Host确认，禁止Client指定其他key；不读取DSH/其他插件令牌、其他storage/IDB、Cookie、密码、聊天内容/MFA私钥，不调用私有认证API。grant不进入日志、UI快照、Config、模型接口、工具输出或Git；格式来自当前官网实现，不是稳定官方OAuth，过期重新正常登录。调试只输出固定状态/布尔值，不能读取或展示实际payload。官网导航镜像仍不宣称官方历史API。
+- 网页登录保存例外：只在插件持有、origin确认为https://chat.deepseek.com的guest处理userToken、__appKit_userInfo中的id、deepseek-device-id:chat三项严格白名单，正常官网登录后由官方ctx.credentials保存插件自己的grant；新namespace为dsh-deepseek-chat，Host profile作用域/epoch禁止Client指定其它key。仅可精准迁移旧dsh-chat的已知自有记录；不读取DSH/其它插件令牌、其它storage/IDB、Cookie、密码、聊天正文，不调用私有认证API。grant不进入日志、UI快照、Config、模型接口、工具输出或Git；官网当前实现不是稳定OAuth，过期重新正常登录。
 - 不自动合并本地缓存与账号历史，不把模型 API 能力误称为网页历史同步。
 - 每个阶段写可复现的构建/测试步骤；验证插件禁用/卸载后 DSH 原行为恢复。
 

@@ -72,7 +72,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     needsRecovery.current = false
     bridge.reportWebsiteState(generation, { loading: true, error: null })
     const release = (value: DesktopBrowserReservation) => {
-      void nativeBrowser.release(value.lease).catch(() => { console.warn('dsh-chat: website guest release failed') })
+      void nativeBrowser.release(value.lease).catch(() => { console.warn('dsh-deepseek-chat: website guest release failed') })
     }
     void nativeBrowser.acquire(storageKey).then(value => {
       if (stopped) { release(value); return }
@@ -115,6 +115,10 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     let restoreDeadline = 0
     let websiteHadSession = false
     let savedSessionFingerprint: string | null = null
+    let pendingSessionCapture: Promise<void> | null = null
+    let fastPollingUntil = Date.now()+8000
+    let lastPolled = 0
+    let lastNavigationStatus: string | null = null
     retryGuestSession.current=()=>{restorationAttempted=false;restoredFromVault=false;restoreDeadline=0}
     const report = (loading: boolean, error: string | null = null) => {
       if (loading) lastError = null
@@ -148,15 +152,20 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     const prepareSession = async (): Promise<boolean> => {
       if(restorationAttempted) return true
       restorationAttempted=true
+      const authenticationRevision=bridge.getSnapshot().websiteAuthenticationRevision
+      const sameRecovery=()=>active()
+        && bridge.getSnapshot().websiteAuthenticationRevision===authenticationRevision
+        && !['signing-in','signing-out'].includes(bridge.getSnapshot().websiteAuthenticationStatus)
       try {
         const present=parseWebsiteSession(await executeScript(websiteSessionCaptureScript()))
         if(!active()) return false
-        if(present) return true
+        if(present || !sameRecovery()) return true
         const saved=await bridge.loadWebsiteSession(generation)
         if(!active() || !approvedOrigin()) return false
-        if(!saved) return true
+        if(!saved || !sameRecovery()) return true
         const result=await executeScript(websiteSessionRestoreScript(saved))
         if(!active()) return false
+        if(!sameRecovery()) return true
         if(result==='restored') {
           restoredFromVault=true;restoreDeadline=Date.now()+15_000
           setPresentationReady(false);report(true);current.reload();return false
@@ -164,48 +173,59 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         if(result!=='present') bridge.reportWebsiteSessionError(generation,'当前官网未能恢复已保存的登录，请在网页中重新登录。')
         return true
       } catch {
-        if(active()) bridge.reportWebsiteSessionError(generation,'网页登录恢复暂时不可用，请重试网页；也可以直接登录。')
+        if(sameRecovery()) bridge.reportWebsiteSessionError(generation,'网页登录恢复暂时不可用，请重试网页；也可以直接登录。')
         return active()
       }
+    }
+    const captureSession = (requestDocumentRevision: number) => {
+      if (pendingSessionCapture) return
+      const authenticationRevision=bridge.getSnapshot().websiteAuthenticationRevision
+      const sameLogin=()=>active() && requestDocumentRevision===documentRevision
+        && bridge.getSnapshot().websiteAuthenticationRevision===authenticationRevision
+        && bridge.getSnapshot().websiteAuthenticationStatus==='signed-in'
+      pendingSessionCapture=(async()=>{
+        try {
+          const session=parseWebsiteSession(await executeScript(websiteSessionCaptureScript()))
+          if (!sameLogin()) return
+          if (!session) {bridge.reportWebsiteSessionError(generation,'当前官网的登录格式尚无法保存；重启后可能需要重新登录。');return}
+          // This comparison stays private in the guest owner and never enters UI state.
+          const fingerprint=JSON.stringify(session)
+          if (fingerprint!==savedSessionFingerprint && await bridge.saveWebsiteSession(generation,session) && sameLogin()) savedSessionFingerprint=fingerprint
+        } catch { if(sameLogin()) bridge.reportWebsiteSessionError(generation,'网页登录保存暂时不可用。当前网页可继续使用，请稍后重试。') }
+      })().finally(()=>{pendingSessionCapture=null})
     }
     const adapt = async (command: WebsiteCommand) => {
       const snapshot = bridge.getSnapshot()
       const requestDocumentRevision=documentRevision
+      const requestAuthenticationRevision=snapshot.websiteAuthenticationRevision
       const currentDocument=()=>active() && requestDocumentRevision===documentRevision
+      const currentProjection=()=>currentDocument() && bridge.getSnapshot().websiteAuthenticationRevision===requestAuthenticationRevision
       if(command.type==='snapshot') command={...command,headerInset:headerInset(snapshot.viewport)}
-      if (events.signal.aborted || snapshot.authorizationGeneration !== generation || (snapshot.mode !== 'chat' && !snapshot.settingsViewport)
-        || (!snapshot.modeEnabled && !snapshot.settingsViewport) || snapshot.authorizationStatus !== 'authorized') return
+      if (events.signal.aborted || snapshot.authorizationGeneration !== generation || snapshot.authorizationStatus !== 'authorized') return
+      if (snapshot.websiteAuthenticationStatus==='signing-out' && command.type!=='logout' && command.type!=='snapshot') return
       try {
-        if(!approvedOrigin() || !await prepareSession() || !currentDocument()) return
+        if(!approvedOrigin() || !await prepareSession() || !currentProjection()) return
         const result = parseWebsiteNavigation(await execute(command))
-        if(!currentDocument()) return
+        if(!currentProjection()) return
         // Keep this document's first usable presentation through transient DOM
         // loading. Only a real document replacement clears navigation and paint.
-        if(documentPresented && result.status==='loading') return
-        if(result.status==='ready') {
-          websiteHadSession=true;restoredFromVault=false
-          let session: ReturnType<typeof parseWebsiteSession> = null
-          let captureFailed=false
-          try {session=parseWebsiteSession(await executeScript(websiteSessionCaptureScript()))}
-          catch {captureFailed=true;if(currentDocument()) bridge.reportWebsiteSessionError(generation,'网页登录保存暂时不可用，请重试网页。')}
-          if(!currentDocument()) return
-          if(session) {
-            // This private comparison is discarded with the guest; no grant enters UI state.
-            const fingerprint=JSON.stringify(session)
-            if(fingerprint!==savedSessionFingerprint && await bridge.saveWebsiteSession(generation,session)) savedSessionFingerprint=fingerprint
-          } else if(!captureFailed) bridge.reportWebsiteSessionError(generation,'当前官网的登录格式尚无法保存；重启后可能需要重新登录。')
-        } else if(result.status==='sign-in') {
-          // Give the website's own current-user verification time after the one reload.
-          if(restoredFromVault && Date.now()<restoreDeadline) return
-          if(websiteHadSession || restoredFromVault) {
-            await bridge.clearWebsiteSession(generation)
-            if(!currentDocument()) return
-            websiteHadSession=false;restoredFromVault=false;savedSessionFingerprint=null
-          }
-        }
+        if(documentPresented && result.status==='loading' && result.authenticated!==true) return
+        if (result.status!==lastNavigationStatus) { lastNavigationStatus=result.status;fastPollingUntil=Date.now()+8000 }
+        if(result.status==='sign-in' && restoredFromVault && Date.now()<restoreDeadline) return
         if (currentDocument()) {
           if(result.status!=='loading') documentPresented=true
-          bridge.reportWebsiteNavigation(generation, result); setPresentationReady(result.status !== 'loading')
+          // Publish account/login/navigation before vault I/O. Both login surfaces
+          // observe the same website state without waiting for a save or Settings open.
+          bridge.reportWebsiteNavigation(generation,result);if(result.status!=='loading' || !documentPresented) setPresentationReady(result.status!=='loading')
+        }
+        if(result.authenticated===true) {
+          websiteHadSession=true;restoredFromVault=false
+          captureSession(requestDocumentRevision)
+        } else if(result.status==='sign-in' && (websiteHadSession || restoredFromVault)) {
+          websiteHadSession=false;restoredFromVault=false;savedSessionFingerprint=null
+          // The public sign-in state is already visible. Clear only this plugin's
+          // saved authorization; a failed clear remains explicit and retryable.
+          if(snapshot.websiteAuthenticationStatus!=='signing-out') void bridge.clearWebsiteSession(generation)
         }
       } catch {
         if (currentDocument()) {
@@ -219,14 +239,15 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     const snapshotCommand = (): WebsiteCommand => {const snapshot=bridge.getSnapshot();return {type:'snapshot',showOriginal:snapshot.showWebsiteNavigation, headerInset:headerInset(snapshot.viewport)}}
     const syncNavigation = () => {
       if (reading || events.signal.aborted) return
-      reading = true
+      lastPolled=Date.now();reading = true
       queued = queued.then(() => adapt(snapshotCommand())).finally(() => { reading = false })
     }
     const stopCommands = bridge.bindWebsiteNavigation(generation, command => {
+      if(command.type!=='snapshot') fastPollingUntil=Date.now()+8000
       queued = queued.then(() => adapt(command)).then(() => adapt(snapshotCommand()))
       return queued
     })
-    const timer = setInterval(syncNavigation, 1200)
+    const timer = setInterval(()=>{if(Date.now()-lastPolled>=(Date.now()<fastPollingUntil ? 200 : 1200)) syncNavigation()},200)
     events.signal.addEventListener('abort', () => { clearInterval(timer); stopCommands() }, { once: true })
     const navigate = (url: string) => {
       const revision = ++navigationRevision
@@ -251,7 +272,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     current.addEventListener('did-start-loading', () => { report(true) }, { signal: events.signal })
     current.addEventListener('did-navigate-in-page', event => {
       if ((event as Event & { readonly isMainFrame?: boolean }).isMainFrame !== true) return
-      syncNavigation()
+      fastPollingUntil=Date.now()+8000;syncNavigation()
     }, { signal: events.signal })
     current.addEventListener('did-stop-loading', () => { report(false); syncNavigation() }, { signal: events.signal })
     current.addEventListener('did-fail-load', event => {
@@ -308,10 +329,11 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
   const rect = inSettings && state.websiteNavigation.status!=='sign-in' ? {left:0,top:0,width:globalThis.innerWidth,height:globalThis.innerHeight} : state.settingsViewport ?? state.viewport
   // Leave native connection/retry controls visible while the sign-in guest
   // is still loading or being verified after a session restore.
-  const visible = (inSettings && state.websiteNavigation.status==='sign-in' && presentationReady || !inSettings && state.mode === 'chat' && state.modeEnabled) && state.authorizationStatus === 'authorized' && rect !== null
+  const visible = (inSettings && state.websiteNavigation.status==='sign-in' && presentationReady || !inSettings && state.mode === 'chat' && state.modeEnabled) && rect !== null
   const activeReservation = reservation !== null && reservation.generation === state.authorizationGeneration
     && reservation.storageKey === state.accountStorageKey ? reservation : null
   const clearance = 0
+  const logoutError=state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError ?? '')
   return createPortal(<section id="dsh-chat-website-surface" className="dsh-chat-web-surface" aria-label="DeepSeek 官网网页" aria-hidden={!visible} style={{
     zIndex: inSettings ? (visible ? 1001 : 0) : 14,
     visibility: visible ? 'visible' : 'hidden',
@@ -332,7 +354,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         key: activeReservation.native.lease,
         ref: attachGuest,
         className: 'dsh-chat-webview',
-        style: { opacity: presentationReady ? 1 : 0 },
+        style: { opacity: presentationReady && state.websiteAuthenticationStatus!=='signed-out' && state.websiteAuthenticationStatus!=='signing-out' && !logoutError ? 1 : 0 },
         name: activeReservation.native.lease,
         partition: activeReservation.native.partition,
         src: `about:blank#${activeReservation.native.lease}`,
@@ -340,9 +362,12 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         'data-sidebar-browser-frame': 'webview',
         'aria-label': 'DeepSeek 官网，登录、聊天和历史由网页提供',
       })}
-      {(nativeBrowser === undefined || state.webError !== null || activeReservation === null || !presentationReady) && <div className={`dsh-chat-web-status${state.webError !== null ? ' dsh-chat-web-status-error' : ''}`} role={state.webError !== null ? 'alert' : 'status'}>
-        <strong>{nativeBrowser === undefined ? '当前环境无法内嵌网页' : state.webError !== null ? '网页暂时无法使用' : '正在打开 DeepSeek 官网'}</strong>
-        <p>{state.webError || (nativeBrowser === undefined ? '需要提供官方浏览器能力的 DSH 桌面版。' : '网页登录后，由官网显示该账号的聊天和历史。')}</p>
+      {(nativeBrowser === undefined || state.webError !== null || activeReservation === null || !presentationReady || state.websiteAuthenticationStatus==='signed-out' || state.websiteAuthenticationStatus==='signing-out' || logoutError) && <div className={`dsh-chat-web-status${state.webError !== null ? ' dsh-chat-web-status-error' : ''}`} role={state.webError !== null ? 'alert' : 'status'}>
+        <strong>{nativeBrowser === undefined ? '当前环境无法内嵌网页' : state.webError !== null ? '网页暂时无法使用' : logoutError ? '退出登录未完成' : state.websiteAuthenticationStatus==='signed-out' ? '登录 DeepSeek Chat' : state.websiteAuthenticationStatus==='signing-out' ? '正在退出登录' : '正在打开 DeepSeek 官网'}</strong>
+        <p>{state.webError || (logoutError ? state.websiteSessionError : nativeBrowser === undefined ? '需要提供官方浏览器能力的 DSH 桌面版。' : state.websiteAuthenticationStatus==='signing-out' ? '正在清除登录记忆并退出官网。' : 'CHAT 使用独立的官网登录，登录后自动同步账号和官网对话。')}</p>
+        {logoutError && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button>}
+        {state.websiteAuthenticationStatus==='signed-out' && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.beginWebsiteSignIn()}>登录 DeepSeek</button>}
+        {state.authorizationStatus!=='authorized' && nativeBrowser!==undefined && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.refreshAuthorization()}>重试连接</button>}
         {(state.webError !== null) && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.reloadWebsite()} disabled={nativeBrowser === undefined || !state.modeEnabled}>重试网页</button>}
       </div>}
     </div>

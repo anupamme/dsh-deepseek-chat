@@ -473,3 +473,20 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - 隔离副本负向检查：源码变而lib不变，两个检查入口均拒绝；缺失Client由Git检查拒绝；重新加入prepare两个入口均拒绝。副本已清理。未运行通用代码/浏览器测试或重启DSH，本轮没有新增网页登录验收结论。
 - 正常 pnpm package:plugin exit0。当前23文件包 artifacts/dsh-chat-0.1.8-636e1212353e.tgz，130375bytes，SHA256 636e1212353e1c7340ff05510d6fba8f5c1c4ae03246f0b1795b7e85e0697f42；tar核对只含分发白名单。Host/Client hashes仍为1d65da67…/b841fc2a…，与此前界面已验cd07一致。已用哈希路径区别同版本旧缓存；验收后清理被替代旧cd07包，保留新包与19lib。
 - root只读核实远端HEAD/main仍01e6718，旧prepare尚在公网；代码/文档都留本地供用户手动提交和推送。必须提交整个lib，用户推送后才验完整GitHub URL，不把本地Git fixture成功写成当前公网已修复。同轮0.1.8续步不重复增号；分工及下一步见handoff顶部。
+
+### W025：独立CHAT登录同步、配置隔离与改名发布（2026-10-11）
+
+- 开工main f2c1277干净，前一轮已由用户提交；本地文件夹已改为dsh-deepseek-chat。用户取消DSH退出/官网退出禁用切换和强制HARNESS，要求两处登录同步及退出重登顺畅，并授权改插件/GitHub仓库名和公开npm名称安装。新轮0.1.8→0.1.9，仅加一次；Git仍按用户手动提交/推送，发布授权不扩为Git写操作。
+- Host不依赖DSH账号授权来开放CHAT；Mode仅检查Desktop兼容性。Client共用真实官网guest与账号/navigation状态、认证revision；公开authenticated独立于主题/语言/布局完成，先显示真实账号，再异步保存。设置命令串行，官网退出独占流程；显式退出先停旧保存、清记忆，再正常网站菜单退出，失败有明确重试，不伪称退出完成。
+- 复核发现credentials-local默认全局vault，固定website-profile不足以配置隔离。采用官方公开profileContext.dir，由Host验证绝对路径并hash，scope/key/grant.profileId/fence一致；Client不能选path/key。没有可信scope不读写或迁移vault，仍可普通网页登录/退出。旧DSH公开id仅精准定位本插件自己的旧dsh-chat授权进行迁移，不读取其它插件/平台记录，不迁移开发固定共享键。
+- Client pending clear/save Promise及Host writeRevision阻止退出与重登后旧任务覆盖。明确正常登录取消旧恢复；初次恢复读取失败允许显式重试，已确认的退出继续禁旧恢复；surface在发恢复脚本前/后复核认证代次。新登录清旧logoutVaultCleared，避免后续清理错误被旧成功标记掩盖。预览补齐最新bridge和安全脚本分支，模拟与真实官网登录分开，不生成grant。
+- 未发现Chat公开OAuth/redirect/session交换接口。DSH Platform已有PKCE，但面向platform.deepseek.com而非Chat；Browser bridge没有浏览器会话导入导出。本轮使用同一官网guest正常登录及明确按钮，未虚构外部确认回跳、未导入浏览器Cookie或调用私有认证接口。
+- root负责协调、协议/入口/包名、README与发布/记录；independent_auth负责Host/profile/store/mode，login_sync_agent负责Client/guest/UI/设置和preview，browser_publish_research负责公开接口/发布研究及五份需求架构文档。所有修改范围分别集成，不新增/运行测试。
+- GitHub rename成功并核实公开ADMIN仓库xingxingbk-git/dsh-deepseek-chat，origin同步；没有stage/commit/push。package去private:true并加public registry/repository metadata，Host/Client/Remote公开名统一，内部稳定CSS/data标识保留。预构建lib随分发，无prepare/install hooks。
+- 最终生产package:plugin exit0，23文件133326bytes，SHA256 e82535818456c7b569580c13f555442bd9396d0b1d0f74829ecce9ff606ab710。默认DSH pnpm11.7.0全新Git fixture安装12包exit0，分发文件bytes、Host import、lazy Client契约通过，fixture清理。只证明构建与安装契约；0.1.9真实退出重登、迁移、重启恢复、消息历史和其它平台仍未独立验收。
+- npm第一次正常web登录发生npm11.11 fallback异常；重新正常web登录由用户完成，whoami确认xingxingbk。第一次publish因账号tfa:false被E403拒绝；用户在官方设置启用2FA后读回auth-and-writes。第二次正式publish在TTY走官方web单次passkey确认，当前等待用户确认，不报告npm发布成功。未读取npmrc/token或代填密码/验证码，原始包内容已检查。
+
+- 发布收尾：用户亲自完成单次验证，npm publish exit0、+ dsh-deepseek-chat@0.1.9。registry短暂显示0.0.0-stage处理占位，随后name/version/latest均0.1.9，发布SHA1 b7c54475b4df0342aebbcdf44bce1449a104259f、仓库链接新名正确，确认正式可下载后才检查名称安装。
+- 公开裸名：DSH pnpm11.7.0空consumer/空store正常add dsh-deepseek-chat，12包成功，Host import及lazy Client通过。首次文件断言对比源package.json失败（pack规范化排版/移除packageManager），修正为对比正式tgz后23/23一致；两次临时fixture都finally清理。pnpm自动为新版本加minimumReleaseAgeExclude，未人为使用allowBuilds/ignore-scripts或bypass。
+- 本机官方CLI移除旧dsh-chat并安装正式tgz成功；已存在file来源时再次裸名add不改原来源，因此正常remove新版后重新裸名add，最终desktop依赖^0.1.9、旧名不存在，23安装文件与发布包相同。Host e9c50cc544f24c60d086538ab1283ae0ed2811f23c9bb469916a2e89c3ffb38d、Client 6da7d7cef93b263bdc86496fcdb87c151f99c78a3c5f28555c20ec9cc118f02b。
+- 尚未正常重启或GUI验证0.1.9；登录/退出重登/profile迁移与重启恢复不能宣称实机已通过，当前版本源码/lib供用户手动审查提交推送。GitHub改名成功不表示0.1.9代码已远端同步；npm名称安装则已经公开验证。有效旧包保留回退，不新增原始个人截图/认证数据或临时验收文件到项目。

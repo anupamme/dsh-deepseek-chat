@@ -18,8 +18,8 @@ export interface NavigationPort {
     mountChatNavigation(): () => void;
     cancelAccount(accountId: string): void;
 }
-export declare const CHAT_PANEL = "dsh-chat.chat";
-/** Account validity and compatibility are checked for every entry, including direct navigation. */
+export declare const CHAT_PANEL = "dsh-deepseek-chat.chat";
+/** Every entry checks desktop compatibility; website sign-in happens inside CHAT. */
 export declare class ModeController {
     private readonly port;
     private state;

@@ -14,7 +14,7 @@ import { DshChatWebSurface } from './web-surface.js'
 import { emptyNavigation, parseWebsiteNavigation, type WebsiteCommand } from './website-navigation.js'
 import { createSidebarBinding } from './sidebar-adapter.js'
 
-export const name = 'dsh-chat'
+export const name = 'dsh-deepseek-chat'
 export const inject = ['slots', 'layout', 'remote']
 const AUTHORIZATION_TIMEOUT_MS = 35_000
 const DEFAULT_WEBSITE_LANGUAGE = 'zh-CN'
@@ -42,7 +42,6 @@ export function apply(ctx: Context): void {
   let webLoading = false
   let webError: string | null = null
   let connectionError: string | null = null
-  let navigationAttempt = 0
   let settingsViewport: DshChatViewportRect | null = null
   let settingsReadRequested=false
   let preferenceError: string | null = null
@@ -52,6 +51,12 @@ export function apply(ctx: Context): void {
   let restoringPreferences = false
   let restorationSeen = false
   let websiteSignedOut = false
+  let restorationBlocked = false
+  let websiteAuthenticationStatus: DshChatViewState['websiteAuthenticationStatus'] = 'loading'
+  let websiteAuthenticationRevision = 0
+  let websiteSignInRequested = false
+  let logoutFailed = false
+  let logoutVaultCleared = false
   let logoutRequested = false
   let forgettingWebsiteSession = false
   let logoutTimer: ReturnType<typeof setTimeout> | undefined
@@ -59,6 +64,8 @@ export function apply(ctx: Context): void {
   let websiteSessionStatus: DshChatViewState['websiteSessionStatus'] = 'idle'
   let websiteSessionError: string | null = null
   let pendingSessionSave: Promise<boolean> | null = null
+  let pendingSessionSaveRevision=-1
+  let pendingSessionClear: Promise<boolean> | null = null
   const pendingPreferences = new Map<string,string>()
   let viewport: DshChatViewportRect | null = null
   let brandAnchor: DshChatViewportRect | null = null
@@ -80,25 +87,24 @@ export function apply(ctx: Context): void {
     cancelAccount: () => { authorizationGeneration++; webLoading = false; webError = null; websiteNavigation = emptyNavigation(); navigationHandler = null; publish() },
   }, Boolean(nativeBrowser))
   function availability(): string {
-    const state = mode.getSnapshot()
-    if (!nativeBrowser) return '网页嵌入目前需要 DSH 桌面版 0.2.0-rc.2 的官方浏览器能力。'
-    if (state.authorization.status === 'pending') return '正在确认 DSH 的 DeepSeek 账号授权。'
-    if (state.authorization.status === 'unauthorized') return '请先在 Harness 中登录并授权 DeepSeek 账号，确认后即可使用 CHAT。'
-    if (state.authorization.status === 'unavailable') return '暂时无法确认 DSH 账号授权，请检查网络后刷新。'
-    if (websiteSignedOut) return '官网已退出，请在 CHAT设置中重新登录。'
-    return '真实 DeepSeek 网页；网页登录与 DSH 授权分别处理。'
+    if (!nativeBrowser) return '网页嵌入需要 DSH 桌面版的官方浏览器能力。'
+    if (websiteAuthenticationStatus === 'signing-out') return '正在退出 DeepSeek 官网。'
+    if (websiteSignedOut) return 'CHAT 尚未登录。可进入 CHAT 或 CHAT设置完成官网登录。'
+    return 'CHAT 使用独立的 DeepSeek 官网登录；随时可以切换 HARNESS。'
   }
   function publish(): void {
     if (disposed) return
     const state = mode.getSnapshot()
     cached = {
-      mode: state.mode, modeEnabled: mode.canEnter() && !websiteSignedOut, authorizationStatus: state.authorization.status,
-      availabilityMessage: availability(), accountLabel: state.authorization.status === 'authorized' ? 'DSH 账号已授权' : null,
-      error: state.error ?? connectionError ?? (state.authorization.error ? 'DSH 账号状态刷新遇到网络或服务问题。' : null),
+      mode: state.mode, modeEnabled: mode.canEnter(), authorizationStatus: state.authorization.status,
+      availabilityMessage: availability(), accountLabel: websiteNavigation.accountName ?? null,
+      error: state.error ?? connectionError ?? (state.authorization.error === 'profile-context-unavailable'
+        ? '当前 DSH 未提供可信配置上下文，网页登录可用，但不能保存登录记忆。'
+        : state.authorization.error ? 'CHAT 登录保存服务暂时不可用，请重试连接。' : null),
       desktopAvailable: Boolean(nativeBrowser), webLoading, webError, settingsViewport, preferenceError, viewport, brandAnchor, sidebarAdapted,
-      websiteSessionStatus, websiteSessionError,
+      websiteSessionStatus, websiteSessionError, websiteAuthenticationStatus, websiteAuthenticationRevision,
       accountStorageKey: state.authorization.status === 'authorized' && state.authorization.accountId
-        ? `dsh-chat:website:${state.authorization.accountId}` : null,
+        ? `dsh-deepseek-chat:website:${state.authorization.accountId}` : null,
       authorizationGeneration, websiteReloadRevision, websiteNavigation, showWebsiteNavigation,
     }
     sidebar?.sync()
@@ -108,8 +114,8 @@ export function apply(ctx: Context): void {
     const next = authorizationSchema.parse(value)
     const previous = mode.getSnapshot().authorization
     if (next.accountId !== previous.accountId || next.epoch !== previous.epoch) {
-      authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; showWebsiteNavigation = false;websiteSignedOut=false;logoutRequested=false;websiteHadSession=false;preferencesGeneration=-1
-      websiteSessionStatus='idle';websiteSessionError=null
+      authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; showWebsiteNavigation = false;websiteSignedOut=false;restorationBlocked=false;logoutRequested=false;websiteHadSession=false;preferencesGeneration=-1
+      websiteSessionStatus='idle';websiteSessionError=null;websiteAuthenticationStatus='loading';websiteAuthenticationRevision++;websiteSignInRequested=false;logoutFailed=false;logoutVaultCleared=false
       forgettingWebsiteSession=false
       clearTimeout(logoutTimer);logoutTimer=undefined
     }
@@ -137,13 +143,13 @@ export function apply(ctx: Context): void {
         if (disposed) { await unmount(); return () => {} }
         // $mount publishes a separate Cordis service. Inject it only after
         // mounting, and call its methods from this dependency-aware Context.
-        const consumer = ctx.inject(['remote', 'remote.dshChat'], remoteCtx => {
+        const consumer = ctx.inject(['remote', 'remote.dshDeepseekChat'], remoteCtx => {
           remoteCtx.effect(() => {
             remoteContext = remoteCtx
             const stream = remoteCtx.remote.$stream<AuthorizationState>({
-              name: 'dsh-chat.authorization', open: signal => remoteCtx.remote.dshChat.watchAuthorization(metadata, signal),
-              ended: () => new Error('DSH account stream ended'),
-              carrierFailed: () => { authorizationFailed('DSH 账号连接暂时中断，请刷新授权。') },
+              name: 'dsh-deepseek-chat.authorization', open: signal => remoteCtx.remote.dshDeepseekChat.watchAuthorization(metadata, signal),
+              ended: () => new Error('CHAT session service stream ended'),
+              carrierFailed: () => { authorizationFailed('CHAT 登录保存服务连接暂时中断，请重试连接。') },
             })
             void (async () => {
               try {
@@ -152,18 +158,18 @@ export function apply(ctx: Context): void {
                   if (item.signal.aborted) continue
                   acceptAuthorization(item.value); item.accept()
                 }
-              } catch { if (remoteContext === remoteCtx) authorizationFailed('DSH 账号状态通知不可用，请刷新授权。') }
+              } catch { if (remoteContext === remoteCtx) authorizationFailed('CHAT 登录保存服务状态通知不可用，请重试连接。') }
             })()
             return () => {
               if (remoteContext === remoteCtx) remoteContext = null
               return stream.dispose()
             }
-          }, 'dsh-chat account observation')
+          }, 'dsh-deepseek-chat website session observation')
         })
         try { await consumer }
         catch (error) { await consumer.dispose(); await unmount(); throw error }
         return async () => { await consumer.dispose(); await unmount() }
-      }, 'dsh-chat safe account remote')).then(() => {}).finally(() => { connecting = null })
+      }, 'dsh-deepseek-chat website session remote')).then(() => {}).finally(() => { connecting = null })
     }
     await connecting
   }
@@ -186,15 +192,15 @@ export function apply(ctx: Context): void {
           (async () => {
             await connectRemote()
             if (request.signal.aborted || !remoteContext) throw new Error('Account remote unavailable')
-            return remoteContext.remote.dshChat.authorization(metadata, request.signal)
+            return remoteContext.remote.dshDeepseekChat.authorization(metadata, request.signal)
           })(), deadline,
         ])
         if (disposed || request.signal.aborted || requestGeneration !== authorizationGeneration) return
         if (result.ok) acceptAuthorization(result.value)
-        else authorizationFailed('无法连接 DSH 账号服务，请刷新授权重试。')
+        else authorizationFailed('无法连接 CHAT 登录保存服务，请重试连接。')
       } catch {
         if (!disposed && (requestGeneration === authorizationGeneration || mode.getSnapshot().authorization.status === 'pending')) authorizationFailed(timedOut
-          ? 'DSH 账号授权检查超时，请检查网络后刷新授权。' : '无法连接 DSH 账号服务，请刷新授权重试。')
+          ? 'CHAT 登录保存服务连接超时，请检查网络后重试。' : '无法连接 CHAT 登录保存服务，请重试连接。')
       } finally {
         clearTimeout(timer)
         lifetime.signal.removeEventListener('abort', cancel)
@@ -219,7 +225,7 @@ export function apply(ctx: Context): void {
     if(code==='gateway/invocation-unavailable' || code==='gateway/definition-unavailable' || code==='gateway/method-unavailable') {
       websiteSessionError='网页登录保存服务尚未更新，请重启 DSH 完成插件升级。'
     } else if(code==='fence') {
-      websiteSessionError='DSH 账号状态暂未确认，无法保存网页登录，请重试授权检查。'
+      websiteSessionError='CHAT 登录保存服务尚未连接，当前网页登录无法保存，请重试连接。'
     } else {
       websiteSessionError='网页登录状态未能保存或恢复，请重试；当前网页仍可正常使用。'
     }
@@ -240,39 +246,58 @@ export function apply(ctx: Context): void {
       })])
     } finally {clearTimeout(timer);lifetime.signal.removeEventListener('abort',cancel);request.abort()}
   }
-  async function clearWebsiteSession(generation: number): Promise<boolean> {
+  function clearWebsiteSession(generation: number): Promise<boolean> {
+    if (pendingSessionClear) return pendingSessionClear
     const fence=sessionFence(generation)
-    if(!fence) return false
-    try {
-      // Explicit logout sets its flag first, so no new save can pass this barrier.
-      if(pendingSessionSave) await pendingSessionSave
-      const result=await websiteRequest(async signal=>{
-        await connectRemote()
-        if(!remoteContext || signal.aborted || !sameSessionFence(generation,fence)) throw new Error('Website session invalidated')
-        return remoteContext.remote.dshChat.clearWebsiteSession(metadata,fence.epoch,signal)
-      })
-      if(!sameSessionFence(generation,fence)) return false
-      if(!result.ok){sessionFailure(result.error.code);return false}
-      if(!result.value){sessionFailure('fence');return false}
-      websiteSessionStatus='idle';websiteSessionError=null;publish();return true
-    } catch {if(sameSessionFence(generation,fence)) sessionFailure();return false}
+    if (!fence) return Promise.resolve(false)
+    const authenticationRevision=websiteAuthenticationRevision
+    const priorSave=pendingSessionSave
+    forgettingWebsiteSession=true
+    const clearing=(async()=>{
+      try {
+        // Capture the prior save before publishing this clear barrier. A new login
+        // may already appear, but its save must wait for this same clear Promise.
+        if (priorSave) await priorSave
+        const result=await websiteRequest(async signal=>{
+          await connectRemote()
+          if (!remoteContext || signal.aborted || !sameSessionFence(generation,fence)) throw new Error('Website session invalidated')
+          return remoteContext.remote.dshDeepseekChat.clearWebsiteSession(metadata,fence.epoch,signal)
+        })
+        if (!sameSessionFence(generation,fence)) return false
+        if (!result.ok || !result.value) {
+          if (authenticationRevision===websiteAuthenticationRevision) sessionFailure(result.ok ? 'fence' : result.error.code)
+          return false
+        }
+        if (authenticationRevision===websiteAuthenticationRevision) {websiteSessionStatus='idle';websiteSessionError=null;publish()}
+        return true
+      } catch {
+        if (sameSessionFence(generation,fence) && authenticationRevision===websiteAuthenticationRevision) sessionFailure()
+        return false
+      }
+    })().finally(()=>{
+      if (pendingSessionClear===clearing) pendingSessionClear=null
+      if (!logoutRequested && !logoutFailed) forgettingWebsiteSession=false
+    })
+    pendingSessionClear=clearing
+    return clearing
   }
   bridge = {
     getSnapshot: () => cached,
     subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener) } },
-    selectMode: selected => {
-      const attempt = ++navigationAttempt
-      if (selected === 'harness') { mode.select('harness'); return }
-      if (websiteSignedOut) return
-      const requestedAccount = mode.getSnapshot().authorization
-      void refreshAuthorization().then(() => {
-        const currentAccount = mode.getSnapshot().authorization
-        if (!disposed && attempt === navigationAttempt && currentAccount.accountId === requestedAccount.accountId
-          && currentAccount.epoch === requestedAccount.epoch) mode.select('chat')
-      })
-    },
+    selectMode: selected => { mode.select(selected) },
     refreshAuthorization: () => { void refreshAuthorization() },
-    manageAccount: () => { mode.select('harness') },
+    manageAccount: () => { bridge.beginWebsiteSignIn() },
+    beginWebsiteSignIn: () => {
+      if (disposed || !nativeBrowser || logoutRequested) return
+      if (mode.getSnapshot().mode!=='chat' && !settingsViewport) mode.select('chat')
+      restorationBlocked=true
+      if (!websiteSignInRequested) websiteAuthenticationRevision++
+      websiteSignInRequested=true;websiteAuthenticationStatus='signing-in';webError=null
+      // A failed logout must be retried before accepting a new login.
+      if (logoutFailed) { bridge.logoutWebsite(); return }
+      websiteSessionError=null;publish()
+      if (!navigationHandler) void refreshAuthorization()
+    },
     toggleSidebar: () => { ctx.layout.toggleSidebar() },
     attachViewport: element => { if (!element) { viewport = null; publish() } },
     updateViewport: next => {
@@ -291,26 +316,46 @@ export function apply(ctx: Context): void {
     reloadWebsite: () => { websiteReloadRevision++; publish() },
     reportWebsiteNavigation: (generation, value, newDocument = false) => {
       if (disposed || generation !== authorizationGeneration) return
-      try { websiteNavigation = parseWebsiteNavigation(value) } catch { websiteNavigation = { ...emptyNavigation(), status: 'unsupported' } }
-      // Only confirmed document changes or sign-in reset the guest's preferences.
-      // Temporary loading snapshots must not restart language/appearance restoration.
-      if (newDocument === true || websiteNavigation.status === 'sign-in') {
-        preferencesGeneration = -1; restoringPreferences = false; restorationSeen = false
+      let next: typeof websiteNavigation
+      try { next=parseWebsiteNavigation(value) } catch { next={...emptyNavigation(),status:'unsupported'} }
+      if (newDocument || next.status==='sign-in') {
+        preferencesGeneration=-1;restoringPreferences=false;restorationSeen=false;settingsReadRequested=false
       }
-      if ((logoutRequested || websiteHadSession) && websiteNavigation.status === 'sign-in') { clearTimeout(logoutTimer);logoutTimer=undefined;logoutRequested=false;forgettingWebsiteSession=false;websiteHadSession=false;websiteSignedOut=true;mode.select('harness') }
-      if (websiteNavigation.status === 'ready') { websiteHadSession=true;websiteSignedOut=false }
-      if(logoutRequested && logoutTimer!==undefined && websiteNavigation.settings?.error && !websiteNavigation.settings.pending) {
+      if (next.status==='sign-in') {
+        if (websiteHadSession || logoutRequested) restorationBlocked=true
+        if (logoutVaultCleared) {websiteSessionStatus='idle';websiteSessionError=null}
+        if (websiteHadSession || logoutRequested) websiteAuthenticationRevision++
         clearTimeout(logoutTimer);logoutTimer=undefined
-        logoutRequested=false
-        websiteSessionError='官网退出未完成，请重试。此设备已清除登录记忆。'
-        websiteSessionStatus='error'
+        logoutRequested=false;logoutFailed=false;forgettingWebsiteSession=false;websiteHadSession=false;websiteSignedOut=true
+        websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'signed-out'
+        preferenceError=null
+        // Public navigation and nickname are cleared together for both surfaces.
+        websiteNavigation=next
+      } else if (logoutRequested) {
+        // The site's old sidebar can survive briefly after its logout click.
+        // Never republish that account, replay preferences or save its grant.
+        websiteNavigation=emptyNavigation()
+        if (next.settings?.error && !next.settings.pending && logoutTimer!==undefined) failWebsiteLogout('官网退出未完成，请重试退出登录。此设备已清除登录记忆。')
+        publish();return
+      } else {
+        websiteNavigation=next
+        if (next.authenticated===true) {
+          if (!websiteHadSession && !logoutFailed) restorationBlocked=false
+          if (!websiteHadSession) websiteAuthenticationRevision++
+          websiteHadSession=true;websiteSignedOut=false;websiteSignInRequested=false
+          logoutVaultCleared=false
+          websiteAuthenticationStatus=logoutFailed ? 'error' : 'signed-in'
+          if (!logoutFailed && websiteSessionStatus!=='error') websiteSessionError=null
+        } else if (next.status==='unsupported') websiteAuthenticationStatus='error'
+        else if (!websiteHadSession) websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'loading'
       }
-      restorePreferences()
-      readSettingsWhenReady()
-      const settings = websiteNavigation.settings
+      const settings=websiteNavigation.settings
       if (restoringPreferences && settings?.restored===false) restorationSeen=true
       if (restorationSeen && settings?.restored && !settings.pending) restoringPreferences=false
-      if (!restoringPreferences && settings?.restored && !settings.pending && !settings.error) {
+      if (settings?.error && !settings.pending) restoringPreferences=false
+      restorePreferences()
+      readSettingsWhenReady()
+      if (!restoringPreferences && settings?.restored && !settings.pending && !settings.error && !logoutFailed) {
         const language=/中文|Chinese/i.test(settings.language ?? '') ? 'zh-CN' : /English|英语/i.test(settings.language ?? '') ? 'en' : /^(System|跟随系统|系统|Follow system)$/i.test(settings.language ?? '') ? 'system' : ''
         if (language) persistPreference('language',language)
       }
@@ -324,7 +369,9 @@ export function apply(ctx: Context): void {
       return () => { if (navigationHandler === handler) navigationHandler = null }
     },
     commandWebsite: command => {
-      if (disposed || (mode.getSnapshot().mode !== 'chat' && !settingsViewport) || !mode.canEnter() || !navigationHandler) return
+      if (disposed || !mode.canEnter() || !navigationHandler) return
+      if ((logoutRequested || logoutFailed) && command.type!=='logout' && command.type!=='snapshot') return
+      if (command.type==='settings-read' && (restoringPreferences || websiteNavigation.settings?.pending)) return
       if (command.type === 'open' && !websiteNavigation.conversations.some(item => item.href === command.href)) return
       // Native settings needs the adapter's multi-step command to stay active;
       // restoring the original navigation would cancel it at the next poll.
@@ -343,70 +390,98 @@ export function apply(ctx: Context): void {
       else readSettingsWhenReady()
     },
     logoutWebsite: () => {
-      if(logoutRequested || !navigationHandler || websiteNavigation.status!=='ready') return
+      if (logoutRequested || !navigationHandler || (!websiteHadSession && !logoutFailed)) return
       const generation=authorizationGeneration
+      const handler=navigationHandler
       clearTimeout(logoutTimer);logoutTimer=undefined
-      logoutRequested=true;forgettingWebsiteSession=true
+      logoutRequested=true;restorationBlocked=true;logoutFailed=false;logoutVaultCleared=false;forgettingWebsiteSession=true;websiteSignInRequested=false
+      websiteAuthenticationStatus='signing-out';websiteAuthenticationRevision++
+      websiteNavigation=emptyNavigation();websiteSessionError=null;preferenceError=null
+      settingsReadRequested=false;restoringPreferences=false;restorationSeen=false;preferencesGeneration=-1
+      publish()
       void clearWebsiteSession(generation).then(cleared=>{
-        if(disposed || generation!==authorizationGeneration) return
-        if(cleared) {
-          bridge.commandWebsite({type:'logout'})
-          logoutTimer=setTimeout(()=>{
-            logoutTimer=undefined
-            if(disposed || generation!==authorizationGeneration || !logoutRequested) return
-            logoutRequested=false;websiteSessionStatus='error'
-            websiteSessionError='官网退出未完成，请重试。此设备已清除登录记忆。';publish()
-          },20_000)
-        }
-        else {logoutRequested=false;websiteSessionError='无法清除已保存的网页登录，请重试退出登录。';publish()}
+        if (disposed || generation!==authorizationGeneration || !logoutRequested) return
+        if (!cleared) { failWebsiteLogout('无法清除已保存的网页登录，退出未完成。请重试退出登录。');return }
+        logoutVaultCleared=true
+        logoutTimer=setTimeout(()=>{
+          logoutTimer=undefined
+          if (disposed || generation!==authorizationGeneration || !logoutRequested) return
+          failWebsiteLogout('官网退出未完成，请重试退出登录。此设备已清除登录记忆。')
+        },20_000)
+        // Use the same retained guest. Website logout is a normal, visible menu action.
+        void handler({type:'logout'}).catch(()=>{
+          if (!disposed && generation===authorizationGeneration && logoutRequested) failWebsiteLogout('官网退出未完成，请重试退出登录。此设备已清除登录记忆。')
+        })
       })
     },
     loadWebsiteSession: async generation => {
       const fence=sessionFence(generation)
-      if(!fence || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return null
+      const authenticationRevision=websiteAuthenticationRevision
+      if(!fence || restorationBlocked || logoutRequested || forgettingWebsiteSession || logoutFailed) return null
       try {
         const result=await websiteRequest(async signal=>{
           await connectRemote()
-          if(!remoteContext || signal.aborted || !sameSessionFence(generation,fence)) throw new Error('Website session invalidated')
-          return remoteContext.remote.dshChat.loadWebsiteSession(metadata,fence.epoch,signal)
+          if(!remoteContext || signal.aborted || !sameSessionFence(generation,fence) || authenticationRevision!==websiteAuthenticationRevision || restorationBlocked || logoutRequested || forgettingWebsiteSession || logoutFailed) throw new Error('Website session invalidated')
+          return remoteContext.remote.dshDeepseekChat.loadWebsiteSession(metadata,fence.epoch,signal)
         })
-        if(!sameSessionFence(generation,fence) || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return null
+        if(!sameSessionFence(generation,fence) || authenticationRevision!==websiteAuthenticationRevision || restorationBlocked || logoutRequested || forgettingWebsiteSession || logoutFailed) return null
         if(!result.ok){sessionFailure(result.error.code);return null}
+        websiteSessionStatus='idle';websiteSessionError=null;publish()
         return result.value
-      } catch {if(sameSessionFence(generation,fence)) sessionFailure();return null}
+      } catch {if(sameSessionFence(generation,fence) && authenticationRevision===websiteAuthenticationRevision && !restorationBlocked && !logoutRequested && !forgettingWebsiteSession && !logoutFailed) sessionFailure();return null}
     },
     saveWebsiteSession: (generation,session) => {
       const fence=sessionFence(generation)
-      if(!fence || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return Promise.resolve(false)
-      const saving=(async()=>{try {
-        const result=await websiteRequest(async signal=>{
-          await connectRemote()
-          if(!remoteContext || signal.aborted || !sameSessionFence(generation,fence) || logoutRequested || forgettingWebsiteSession) throw new Error('Website session invalidated')
-          return remoteContext.remote.dshChat.saveWebsiteSession(metadata,fence.epoch,session,signal)
-        })
-        if(!sameSessionFence(generation,fence) || logoutRequested || forgettingWebsiteSession || websiteSignedOut) return false
-        if(!result.ok){sessionFailure(result.error.code);return false}
-        if(!result.value){sessionFailure('fence');return false}
-        websiteSessionStatus='saved';websiteSessionError=null;publish();return true
-      } catch {if(sameSessionFence(generation,fence)) sessionFailure();return false}})()
-      pendingSessionSave=saving
-      void saving.finally(()=>{if(pendingSessionSave===saving) pendingSessionSave=null})
+      const authenticationRevision=websiteAuthenticationRevision
+      if (!fence || logoutRequested || websiteSignedOut || logoutFailed || (forgettingWebsiteSession && !pendingSessionClear)) return Promise.resolve(false)
+      const sameLogin=()=>sameSessionFence(generation,fence) && authenticationRevision===websiteAuthenticationRevision
+        && !logoutRequested && !websiteSignedOut && !logoutFailed
+      if (pendingSessionSave) {
+        if (pendingSessionSaveRevision===authenticationRevision) return pendingSessionSave
+        return pendingSessionSave.then(()=>sameLogin() ? bridge.saveWebsiteSession(generation,session) : false)
+      }
+      const priorClear=pendingSessionClear
+      const saving=(async()=>{
+        try {
+          if (priorClear) await priorClear
+          if (!sameLogin() || forgettingWebsiteSession) return false
+          const result=await websiteRequest(async signal=>{
+            await connectRemote()
+            if (!remoteContext || signal.aborted || !sameLogin() || forgettingWebsiteSession) throw new Error('Website session invalidated')
+            return remoteContext.remote.dshDeepseekChat.saveWebsiteSession(metadata,fence.epoch,session,signal)
+          })
+          if (!sameLogin() || forgettingWebsiteSession) return false
+          if (!result.ok) {sessionFailure(result.error.code);return false}
+          if (!result.value) {sessionFailure('fence');return false}
+          websiteSessionStatus='saved';websiteSessionError=null;publish();return true
+        } catch {if (sameLogin() && !forgettingWebsiteSession) sessionFailure();return false}
+      })()
+      pendingSessionSave=saving;pendingSessionSaveRevision=authenticationRevision
+      void saving.finally(()=>{if(pendingSessionSave===saving) {pendingSessionSave=null;pendingSessionSaveRevision=-1}})
       return saving
     },
     clearWebsiteSession,
     reportWebsiteSessionError: (generation,message) => {
-      if(!sessionFence(generation)) return
+      if(!sessionFence(generation) || logoutRequested || forgettingWebsiteSession || logoutFailed) return
       if(websiteSessionStatus==='error' && websiteSessionError===message) return
       websiteSessionStatus='error';websiteSessionError=message;publish()
     },
   }
+  function failWebsiteLogout(message: string): void {
+    clearTimeout(logoutTimer);logoutTimer=undefined
+    logoutRequested=false;logoutFailed=true;forgettingWebsiteSession=true
+    websiteAuthenticationStatus='error';websiteSessionStatus='error';websiteSessionError=message
+    publish()
+  }
   function readSettingsWhenReady(): void {
-    if(!settingsViewport || !navigationHandler || websiteNavigation.status!=='ready' || settingsReadRequested) return
+    if(!settingsViewport || !navigationHandler || websiteNavigation.authenticated!==true || settingsReadRequested || restoringPreferences || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
     settingsReadRequested=true
+    // Preference restoration already reads the public language value; reuse it.
+    if (websiteNavigation.settings?.language && !websiteNavigation.settings.error) return
     void navigationHandler({type:'settings-read'})
   }
   function restorePreferences(): void {
-    if (!preferences || !navigationHandler || websiteNavigation.status!=='ready' || preferencesGeneration===authorizationGeneration) return
+    if (!preferences || !navigationHandler || websiteNavigation.authenticated!==true || preferencesGeneration===authorizationGeneration || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
     const language = preferences.language || DEFAULT_WEBSITE_LANGUAGE
     preferencesGeneration=authorizationGeneration;restoringPreferences=true;restorationSeen=false
     void navigationHandler({type:'preferences',language})
@@ -418,7 +493,7 @@ export function apply(ctx: Context): void {
   }
   ctx.inject(['configForms'], child => {
     child.effect(() => {
-      const form=child.configForms.get<{language:string}>('dsh-chat')
+      const form=child.configForms.get<{language:string}>('dsh-deepseek-chat')
       preferenceForm=form
       const read=()=>{
         const snapshot=form.getSnapshot()
@@ -439,12 +514,12 @@ export function apply(ctx: Context): void {
   publish()
   // The enclosing effect's final cleanup restores navigation before registered main keys disappear.
   ctx.effect(() => {
-    ctx.slots.inject('settings.section', () => ctx.slots.register({name:'settings.section',id:'dsh-chat.chat-settings',order:80,label:'CHAT设置',inject:()=>({bridge})}, DshChatChatSettings))
+    ctx.slots.inject('settings.section', () => ctx.slots.register({name:'settings.section',id:'dsh-deepseek-chat.chat-settings',order:80,label:'CHAT设置',inject:()=>({bridge})}, DshChatChatSettings))
     ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: CHAT_PANEL, inject: () => ({ bridge }) }, DshChatChatPanel))
     ctx.slots.inject('sidebar.brand.name', () => ctx.slots.register({ name: 'sidebar.brand.name', priority: -100, inject: () => ({ bridge }) }, DshChatBrandName))
     ctx.slots.inject('shell.overlay', () => [
-      ctx.slots.register({ name: 'shell.overlay', id: 'dsh-chat.brand-control', order: 100, inject: () => ({ bridge }) }, DshChatBrandControl),
-      ctx.slots.register({ name: 'shell.overlay', id: 'dsh-chat.website', order: 90, inject: () => ({ bridge, nativeBrowser }) }, DshChatWebSurface),
+      ctx.slots.register({ name: 'shell.overlay', id: 'dsh-deepseek-chat.brand-control', order: 100, inject: () => ({ bridge }) }, DshChatBrandControl),
+      ctx.slots.register({ name: 'shell.overlay', id: 'dsh-deepseek-chat.website', order: 90, inject: () => ({ bridge, nativeBrowser }) }, DshChatWebSurface),
     ])
     const stopMode = mode.subscribe(publish)
     const stopPanel = ctx.layout.panelInfo.subscribe(() => { mode.observePanel(ctx.layout.panelInfo.getSnapshot().activePanelId) })
@@ -452,10 +527,9 @@ export function apply(ctx: Context): void {
     globalThis.addEventListener('focus', refreshOnFocus)
     void refreshAuthorization()
     return () => {
-      navigationAttempt++
       clearTimeout(logoutTimer)
       mode.dispose(); sidebar?.dispose(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
       globalThis.removeEventListener('focus', refreshOnFocus)
     }
-  }, 'dsh-chat reversible website UI')
+  }, 'dsh-deepseek-chat reversible website UI')
 }

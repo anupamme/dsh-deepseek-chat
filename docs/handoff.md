@@ -1,4 +1,22 @@
-# W024续步：预编译仓库直装 · 2026-10-11（本地完成，公网待用户推送）
+# W025：独立CHAT登录同步、改名与npm发布 · 2026-10-11（已发布，界面体验待验）
+
+基线main f2c1277，开工干净；用户已提交前一轮预编译直装，本地文件夹已自行改为dsh-deepseek-chat。新版本0.1.8→0.1.9，仅递增一次。用户最新取消DSH/官网登出禁用CHAT切换器，要求两处网页登录同步/顺畅退出重登，询问外部浏览器确认回跳，并明确授权改GitHub仓库与插件名、发布npm名称安装。Git提交/推送仍按用户手动流程，不从发布授权推导Git写授权。
+
+- root协调、协议/入口/包名、发布/README及上下文；independent_auth负责Host/profile凭据与mode；login_sync_agent负责Client/guest/设置及UI状态流；browser_publish_research只读核查Chat OAuth、官方Browser/Platform边界、npm/GitHub发布契约。
+- 当前代码将CHAT兼容性与官网登录分开；同一guest共用真实状态，账号先显示、记忆后台保存，退出屏障阻断迟到保存。保存记录按Host可信profileContext.dir的SHA256分开；凭据Provider默认文件仍全局共享，不能写固定共享key。缺少可信profile时load null/save false/clear no-op true，普通网站登录退出可用。
+- 显式退出、官网已登录后的失效和明确点击新登录禁止旧授权恢复；初次读取失败后的“重试网页”可重新恢复。Client认证revision与Host写revision共同阻断迟到结果；新登录复位旧退出成功标记，设置读取/偏好不能抢退出状态。预览仅模拟公开账号与导航，不生成或读取真实grant。
+- 最终`pnpm package:plugin`通过：类型检查、Host ESM、Client单lazy工厂、来源码/产物哈希及无安装构建hook契约。DSH pnpm11.7.0全新临时Git source/consumer/store安装12包exit0，23分发文件一致、Host import/lazy Client通过，fixture自动删除。未新增/运行测试、未进行0.1.9真实网页登录/退出/重启体验验收，构建不能代替这些体验验收。
+- 正式发布包`artifacts/dsh-deepseek-chat-0.1.9.tgz`：23文件、133326bytes，SHA256 `e82535818456c7b569580c13f555442bd9396d0b1d0f74829ecce9ff606ab710`，只含manifest、lib、README、patch及icon；无密码、Cookie、聊天记录或开发临时输出。Host SHA256 `e9c50cc544f24c60d086538ab1283ae0ed2811f23c9bb469916a2e89c3ffb38d`，Client `6da7d7cef93b263bdc86496fcdb87c151f99c78a3c5f28555c20ec9cc118f02b`。
+- 外部浏览器已有DSH Platform PKCE回调，但未发现Chat第三方授权交换/redirect契约，不能转换为Chat网页登录；本轮采用同一真实官网guest登录入口，不制造回跳协议或导入浏览器Cookie。
+- GitHub仓库改名已成功，origin为`https://github.com/xingxingbk-git/dsh-deepseek-chat.git`。npm正常web登录已确认为xingxingbk；第一次发布E403因账号未开2FA。用户自行开启并完成单次官方网页/passkey验证后，第二次正式publish exit0；公开registry处理占位后已核实name/version/latest均`dsh-deepseek-chat@0.1.9`，tarball为`https://registry.npmjs.org/dsh-deepseek-chat/-/dsh-deepseek-chat-0.1.9.tgz`，SHA1 `b7c54475b4df0342aebbcdf44bce1449a104259f`。没有读取token、代填密码/验证码或创建bypass凭据。
+- 公开npm裸名安装：DSH pnpm11.7.0在空consumer/空store正常add dsh-deepseek-chat，12包成功；23包文件与正式tgz一致、Host import/lazy Client通过，临时目录全部清理。首次检查错误地比较源package.json排版（pack会规范化），随后改为与正式tarball比较通过；没有把那次断言当成安装故障或通过。
+- 本机desktop已通过官方CLI移除旧dsh-chat、按npm裸名安装新版；实际依赖为`dsh-deepseek-chat: ^0.1.9`，旧名不再安装，23文件与发布包一致。先前临时tgz来源已撤去。正常pnpm对新版本自动添加minimumReleaseAgeExclude；未人为放开allowBuilds、使用ignore-scripts或bypass。未重启/GUI验收，需正常完整退出重开激活并确认独立登录、退出重登和旧记忆迁移。
+- Git工作树和lib留本地，没有stage/commit/push；npm已可按名称安装，但GitHub main仍为用户前次f2c1277，不把改名当作0.1.9代码已上远端。用户自行提交时须包含源码、整个lib和上下文文档。
+- 旧W024已由用户提交；下方为历史证据，新的命名/网页登录规则以本节为准，进度在收尾同步。
+
+---
+
+# W024续步：预编译仓库直装 · 2026-10-11（历史，已由用户提交f2c1277）
 
 归入 T10/T13，开工 main `01e671889e8f48d8f2e82f98f6155dec1663b52d`。用户要求粘贴仓库 URL 就能安装；确认 npm 的 `dsh-chat` 已属于另一位作者的群聊插件后，最新选择“暂时只做仓库地址直接安装”。保留名称 dsh-chat、private:true 与同轮版本 0.1.8，不发布 npm、不重复增号、不 stage/commit/push。
 

@@ -9,6 +9,8 @@ export interface WebsiteConversation {
 }
 export interface WebsiteNavigation {
   readonly status: 'loading' | 'ready' | 'sign-in' | 'unsupported'
+  /** Public profile presence only; independent of layout/preferences readiness. */
+  readonly authenticated?: boolean
   readonly conversations: readonly WebsiteConversation[]
   readonly selectedHref: string | null
   readonly canCreate: boolean
@@ -23,7 +25,7 @@ export type WebsiteCommand = { readonly type: 'snapshot'; readonly showOriginal:
   | { readonly type: 'logout' }
   | { readonly type: 'new' } | { readonly type: 'more' } | { readonly type: 'restore' }
 
-export const emptyNavigation = (): WebsiteNavigation => ({ status: 'loading', conversations: [], selectedHref: null, canCreate: false, error: null })
+export const emptyNavigation = (): WebsiteNavigation => ({ status: 'loading', authenticated: false, conversations: [], selectedHref: null, canCreate: false, error: null })
 
 /** This function is serialized into our isolated guest. Keep all helpers inside it. */
 export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'origin' | 'pathname'>, command: WebsiteCommand): WebsiteNavigation {
@@ -37,7 +39,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   const styleId = 'dsh-chat-website-navigation-style'
   const preparingStyleId = 'dsh-chat-website-preparing-style'
   const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-profile', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-expanding', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor', 'data-dsh-chat-header-native-depth']
-  const empty = (status: WebsiteNavigation['status']): WebsiteNavigation => ({ status, conversations: [], selectedHref: null, canCreate: false, error: null })
+  const empty = (status: WebsiteNavigation['status']): WebsiteNavigation => ({ status, authenticated: false, conversations: [], selectedHref: null, canCreate: false, error: null })
   const clearSettings = () => {
     for (const attr of [...doc.documentElement.attributes]) if (/^data-dsh-chat-(settings-|language$|theme$|dark-complete$)/.test(attr.name)) doc.documentElement.removeAttribute(attr.name)
   }
@@ -219,6 +221,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   }
   profile?.setAttribute('data-dsh-chat-profile','')
   const accountName = profile?.textContent?.trim().slice(0, 100) || null
+  const authenticated=profile!==null && Boolean(accountName || profile.querySelector('img'))
   const settings = adaptWebsiteSettings(doc, profile, command)
   const settingsRoot = doc.documentElement
   const conversations: WebsiteConversation[] = []
@@ -283,7 +286,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     settingsRoot.removeAttribute('data-dsh-chat-preparing')
     if (!(command.type === 'snapshot' && command.showOriginal)) settingsRoot.setAttribute(presentedMarker, '')
   }
-  return { status: ready ? 'ready' : 'loading', conversations, selectedHref: safeHref(page.pathname), canCreate: newChat !== null, error: null, accountName, settings }
+  return { status: ready ? 'ready' : 'loading', authenticated, conversations, selectedHref: safeHref(page.pathname), canCreate: newChat !== null, error: null, accountName, settings }
 }
 
 export function websiteCommandScript(command: WebsiteCommand): string {
@@ -298,8 +301,9 @@ export function parseWebsiteNavigation(value: unknown): WebsiteNavigation {
   const validHref = (href: unknown): href is string => typeof href === 'string' && /^https:\/\/chat\.deepseek\.com\/a\/chat\/s\/[a-zA-Z0-9-]+$/.test(href)
   const conversations = source.conversations.slice(0, 1000).filter(item => item && validHref(item.href) && typeof item.title === 'string' && typeof item.group === 'string')
     .map(item => ({ href: item.href, title: item.title.slice(0, 300), group: item.group.slice(0, 80) }))
-  return { status: source.status, conversations: source.status === 'ready' ? conversations : [], selectedHref: validHref(source.selectedHref) ? source.selectedHref : null,
-    accountName: source.status === 'ready' && typeof source.accountName === 'string' ? source.accountName.slice(0,100) : null,
+  const authenticated=source.status!=='sign-in' && (source.authenticated===true || (source.authenticated===undefined && source.status==='ready'))
+  return { status: source.status, authenticated, conversations: authenticated ? conversations : [], selectedHref: validHref(source.selectedHref) ? source.selectedHref : null,
+    accountName: authenticated && typeof source.accountName === 'string' ? source.accountName.slice(0,100) : null,
     settings: source.settings ? {language:typeof source.settings.language === 'string' ? source.settings.language.slice(0,80) : null,theme:typeof source.settings.theme === 'string' ? source.settings.theme.slice(0,80) : null,error:typeof source.settings.error === 'string' ? source.settings.error.slice(0,200) : null,pending:source.settings.pending===true,restored:source.settings.restored===true} : undefined,
-    canCreate: source.status === 'ready' && source.canCreate === true, error: typeof source.error === 'string' ? source.error.slice(0, 300) : null }
+    canCreate: authenticated && source.canCreate === true, error: typeof source.error === 'string' ? source.error.slice(0, 300) : null }
 }

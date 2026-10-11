@@ -25,6 +25,12 @@ let sidebarCollapsed = false
 let websiteReloadRevision = 0
 let webLoading = false
 let webError: string | null = null
+let websiteAuthenticationStatus: DshChatViewState['websiteAuthenticationStatus']='loading'
+let websiteAuthenticationRevision=0
+let websiteSignInRequested=false
+let websiteSessionStatus: DshChatViewState['websiteSessionStatus']='idle'
+let websiteSessionError: string | null = null
+let fixtureAccountLabel='官网模拟账号 A'
 let settingsViewport: DshChatViewportRect | null = null
 let viewport: DshChatViewportRect | null = null
 let brandAnchor: DshChatViewportRect | null = null
@@ -96,11 +102,12 @@ function publish(): void {
   const authorized = state.authorization.status === 'authorized'
   cached = {
     mode: state.mode, modeEnabled: controller.canEnter(), authorizationStatus: state.authorization.status,
-    availabilityMessage: authorized ? '开发模拟：DSH 账号授权有效，网页容器不联网。' : '开发模拟：请使用上方按钮确认 DSH 账号授权。',
-    accountLabel: authorized ? `模拟账号 ${state.authorization.accountId}` : null,
-    error: state.error ?? (state.authorization.error ? '开发模拟：授权检查失败，请重试。' : null), desktopAvailable: true, webLoading, webError, settingsViewport, preferenceError:null, viewport, brandAnchor, sidebarAdapted,
+    availabilityMessage: authorized ? '开发模拟：CHAT 独立官网登录，模式切换不受 HARNESS 登录影响。网页容器不联网。' : '开发模拟：登录保存服务未连接，模式切换仍可用。',
+    accountLabel: websiteNavigation.accountName ?? null,
+    error: state.error ?? (state.authorization.error ? '开发模拟：登录保存服务暂时不可用，请重试连接。' : null), desktopAvailable: true, webLoading, webError, settingsViewport, preferenceError:null, viewport, brandAnchor, sidebarAdapted,
     accountStorageKey: authorized && state.authorization.accountId ? `preview:website:${state.authorization.accountId}` : null,
     authorizationGeneration, websiteReloadRevision, websiteNavigation, showWebsiteNavigation,
+    websiteAuthenticationStatus,websiteAuthenticationRevision,websiteSessionStatus,websiteSessionError,
   }
   sidebar?.sync()
   for (const listener of listeners) listener()
@@ -122,15 +129,31 @@ function sameAccountRefresh(): void {
 }
 
 const bridge: DshChatUIBridge = {
-  updateSettingsViewport: next=>{settingsViewport=next;publish()}, logoutWebsite:()=>bridge.commandWebsite({type:'logout'}),
+  updateSettingsViewport: next=>{settingsViewport=next;publish()},
+  logoutWebsite:()=>{
+    fixtureWebsiteMode='sign-in';websiteSignInRequested=false;websiteAuthenticationRevision++
+    websiteAuthenticationStatus='signed-out';websiteSessionStatus='idle';websiteSessionError=null
+    websiteNavigation={...emptyNavigation(),status:'sign-in'};publish()
+  },
   getSnapshot: () => cached,
   subscribe: listener => { listeners.add(listener); return () => { listeners.delete(listener) } },
   selectMode: mode => { controller.select(mode) },
   refreshAuthorization: () => {
     if (controller.getSnapshot().authorization.status === 'authorized') sameAccountRefresh()
-    else authorize('A') // Explicit local fixture recovery; no real account call.
+    else authorize('preview-profile') // Only a local Host/profile capability; never website identity.
   },
-  manageAccount: () => { controller.select('harness') },
+  manageAccount: () => { bridge.beginWebsiteSignIn() },
+  beginWebsiteSignIn: () => {
+    if (!settingsViewport) controller.select('chat')
+    websiteSignInRequested=true;websiteAuthenticationStatus='signing-in';websiteSessionError=null;publish()
+  },
+  loadWebsiteSession: async () => null,
+  saveWebsiteSession: async () => false, // No real or simulated credential payload is persisted.
+  clearWebsiteSession: async generation => {
+    if (generation!==authorizationGeneration) return false
+    websiteSessionStatus='idle';websiteSessionError=null;publish();return true
+  },
+  reportWebsiteSessionError: () => {}, // Capture returning null is expected in this credential-free fixture.
   toggleSidebar: () => layout.toggleSidebar(),
   attachViewport: element => { if (!element) { viewport = null; publish() } },
   updateViewport: next => {
@@ -150,7 +173,18 @@ const bridge: DshChatUIBridge = {
     webError = state.error
     publish()
   },
-  reportWebsiteNavigation: (generation, value) => { if (generation === authorizationGeneration) { websiteNavigation = parseWebsiteNavigation(value); publish() } },
+  reportWebsiteNavigation: (generation,value) => {
+    if (generation!==authorizationGeneration) return
+    const next=parseWebsiteNavigation(value)
+    if (next.status==='sign-in') {
+      if (websiteNavigation.authenticated) websiteAuthenticationRevision++
+      websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'signed-out'
+    } else if (next.authenticated) {
+      if (!websiteNavigation.authenticated || next.accountName!==websiteNavigation.accountName) websiteAuthenticationRevision++
+      websiteAuthenticationStatus='signed-in';websiteSignInRequested=false
+    } else if (next.status==='unsupported') websiteAuthenticationStatus='error'
+    websiteNavigation=next;publish()
+  },
   bindWebsiteNavigation: (generation, handler) => { navigationHandler = handler; return () => { if (navigationHandler === handler) navigationHandler = null } },
   commandWebsite: command => {
     if ((cached.mode !== 'chat' && !settingsViewport) || !cached.modeEnabled) return
@@ -162,6 +196,7 @@ const bridge: DshChatUIBridge = {
 sidebar = createSidebarBinding(() => ({chat:cached.mode === 'chat',canCreate:cached.modeEnabled && websiteNavigation.canCreate}),
   () => bridge.commandWebsite({type:'new'}), ready => { if (sidebarAdapted !== ready) { sidebarAdapted = ready; publish() } })
 controller.subscribe(publish)
+authorize('preview-profile')
 publish()
 
 /** Only this development root gets a browser-tag simulation. No webpage is ever fetched. */
@@ -211,7 +246,14 @@ function simulateGuest(element: HTMLElement): void {
   fixtureDoc.querySelectorAll('a').forEach(link => link.addEventListener('click', event => { event.preventDefault(); fixturePath = link.getAttribute('href')! }))
   Object.assign(element, { loadURL: load, getURL: () => currentUrl, reload: () => { void load(currentUrl) }, executeJavaScript: async (code: string) => {
     const prefix = ')(document,location,'
-    const command = JSON.parse(code.slice(code.lastIndexOf(prefix) + prefix.length, -1)) as WebsiteCommand
+    const commandStart=code.lastIndexOf(prefix)
+    // Session scripts never execute against this fixture and never receive a grant.
+    if (commandStart<0) return null
+    const tail=code.slice(commandStart+prefix.length)
+    const commandEnd=tail.lastIndexOf('); })()')
+    if (commandEnd<0) return null
+    const command = JSON.parse(tail.slice(0,commandEnd)) as WebsiteCommand
+    fixtureDoc.querySelector('footer button')!.textContent=fixtureAccountLabel
     const history = fixtureDoc.querySelectorAll('a')
     history.forEach(link => { link.hidden = fixtureWebsiteMode === 'empty' })
     const savedLinks = [...history].map(link => link.getAttribute('href'))
@@ -240,7 +282,7 @@ function simulateGuest(element: HTMLElement): void {
   const title = document.createElement('strong')
   title.textContent = '网页容器模拟，未加载官网'
   const body = document.createElement('p')
-  body.textContent = '这里只验证模式切换和网页容器生命周期。没有登录、聊天或官网历史；切回 HARNESS 后，同一授权下的容器保持不变。'
+  body.textContent = '这里只验证模式切换和网页容器生命周期。没有登录、聊天或官网历史；切回 HARNESS 后，同一个模拟配置下的容器保持不变。'
   const identity = document.createElement('code')
   identity.textContent = lease
   note.append(title, body, identity)
@@ -254,7 +296,8 @@ const guestObserver = new MutationObserver(records => {
     for (const element of node.querySelectorAll<HTMLElement>('webview')) simulateGuest(element)
   }
 })
-guestObserver.observe(rootElement, { childList: true, subtree: true })
+// The production surface uses a body portal, outside preview-root.
+guestObserver.observe(document.body, { childList: true, subtree: true })
 
 const slotProps = {
   usePanelInfo: (<R,>(selector: (snapshot: PanelInfo) => R): R => selector(useSyncExternalStore(layout.panelInfo.subscribe, layout.panelInfo.getSnapshot))) as UsePanelInfo,
@@ -284,19 +327,19 @@ function Preview() {
   return <div className="preview-page">
     <style>{previewStyles}</style>
     <header className="preview-header">
-      <h1>dsh-chat 开发预览 · 模拟环境，不是 DSH 实机验收</h1>
-      <p>复用插件实际 UI 和 ModeController；账号、布局和网页容器均为模拟，不连接 DeepSeek 官网。顶部品牌控件使用实际定位组件。</p>
+      <h1>dsh-deepseek-chat 开发预览 · 模拟环境，不是 DSH 实机验收</h1>
+      <p>复用插件实际 UI 和 ModeController；CHAT 官网账号、登录保存服务和网页容器分别模拟，不连接 DeepSeek 官网，也不创建任何授权记录。</p>
       <div className="preview-actions" aria-label="开发模拟控制"><button onClick={()=>setSettingsOpen(true)}>CHAT设置</button>
-        <button type="button" onClick={() => acceptAuthorization({ status: 'pending', accountId: null, epoch: `preview-${++epochNumber}`, error: null })}>模拟授权待确认</button>
-        <button type="button" onClick={() => acceptAuthorization({ status: 'unavailable', accountId: null, epoch: `preview-${++epochNumber}`, error: 'fixture-unavailable' })}>模拟授权失败</button>
-        <button type="button" onClick={() => authorize('A')}>模拟授权账号 A</button>
-        <button type="button" onClick={sameAccountRefresh} disabled={state.authorizationStatus !== 'authorized'}>同账号授权刷新</button>
-        <button type="button" onClick={() => acceptAuthorization({ status: 'unauthorized', accountId: null, epoch: `preview-${++epochNumber}`, error: null })}>模拟退出 DSH</button>
-        <button type="button" onClick={() => authorize('B')}>模拟切换账号 B</button>
+        <button type="button" onClick={() => acceptAuthorization({ status: 'pending', accountId: null, epoch: `preview-${++epochNumber}`, error: null })}>模拟保存服务待连接</button>
+        <button type="button" onClick={() => acceptAuthorization({ status: 'unavailable', accountId: null, epoch: `preview-${++epochNumber}`, error: 'fixture-unavailable' })}>模拟保存服务中断</button>
+        <button type="button" onClick={() => authorize('preview-profile')}>连接模拟保存服务</button>
+        <button type="button" onClick={sameAccountRefresh} disabled={state.authorizationStatus !== 'authorized'}>刷新模拟保存服务</button>
+        <button type="button" onClick={() => record({action:'fixture-harness-sign-out'})}>模拟退出 HARNESS（不影响 CHAT）</button>
+        <button type="button" onClick={() => { fixtureAccountLabel='官网模拟账号 B';fixtureWebsiteMode='ready' }}>模拟官网账号 B</button>
         <button type="button" onClick={() => { fixtureWebsiteMode = 'sign-in' }}>模拟官网登录页</button>
         <button type="button" onClick={() => { fixtureWebsiteMode = 'empty' }}>模拟官网空列表</button>
         <button type="button" onClick={() => { fixtureWebsiteMode = 'unsupported' }}>模拟官网结构变化</button>
-        <button type="button" onClick={() => { fixtureWebsiteMode = 'ready' }}>恢复模拟官网列表</button>
+        <button type="button" onClick={() => { fixtureAccountLabel='官网模拟账号 A';fixtureWebsiteMode = 'ready' }}>模拟官网账号 A / 登录完成</button>
       </div>
     </header>
     <div className="preview-frame">
@@ -313,7 +356,7 @@ function Preview() {
         <div style={{flex:1,minHeight:0,marginTop:20}}>{sidebarMounted ? <DshChatChatNavigation {...slotProps} bridge={bridge} wide={!sidebarCollapsed} expandSidebar={() => layout.toggleSidebar()} /> : <nav aria-label="原 Harness 模拟导航"><strong>原工作区</strong><span>原会话与文件面板</span></nav>}</div>
         {!sidebarCollapsed && <div className="preview-ledger" aria-label="网页容器生命周期">
           <strong>状态：{state.mode.toUpperCase()} / {state.authorizationStatus}</strong><br />
-          <span>授权代次：{state.authorizationGeneration}</span><br />
+          <span>保存服务代次：{state.authorizationGeneration} · 官网状态：{state.websiteAuthenticationStatus}</span><br />
           <span>创建 {counts.acquired} · 释放 {counts.released} · 当前 {activeLeases.size}</span>
           <ol>{ledger.slice(-5).map(item => <li key={item.sequence}>{item.action} <small>{item.lease}</small></li>)}</ol>
         </div>}

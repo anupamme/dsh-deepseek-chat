@@ -2,12 +2,14 @@ import { Context } from '@deepseek-ai/cordis';
 import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol';
 import { AuthorizationAuthority } from './authorization.js';
 import type { AuthorizationState, DshChatClientMetadata, WebsiteSession } from './protocol.js';
-/** Official DSH identity gates a separate, plugin-owned CHAT website credential store. */
+/** Independent CHAT website session service scoped to the current DSH profile. */
 export declare class DshChatController extends TypertRemoteService {
     static inject: string[];
     readonly authority: AuthorizationAuthority;
     private readonly websiteSessions;
+    private legacyAccount;
     constructor(ctx: Context);
+    private legacyAccountId;
     authorization(metadata: DshChatClientMetadata, signal: AbortSignal): Promise<AuthorizationState>;
     watchAuthorization(metadata: DshChatClientMetadata, signal: AbortSignal): AsyncIterable<AuthorizationState>;
     private websiteFence;
@@ -17,6 +19,6 @@ export declare class DshChatController extends TypertRemoteService {
 }
 declare module '@deepseek-ai/cordis' {
     interface Context {
-        dshChat: DshChatController;
+        dshDeepseekChat: DshChatController;
     }
 }

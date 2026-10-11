@@ -2,7 +2,7 @@
 
 实际开发以 DeepSeek Harness 官方文档和目标安装版本为准。本文件区分项目创建阶段记录、2026-10-09 静态复核和用户确认的产品决策，不将不同设备/工具的证据混写成同一次 live 验证。
 
-2026-10-11当前分发续步：用户选择仓库地址直装、保留dsh-chat名称。候选已通过生产构建、check-distribution、正常package:plugin打包及最终fresh pnpm11.7.0本地Git复验，无allowBuilds/ignore-scripts；19个lib与README/patch/icon一致，Host导入及lazy Client契约通过。当前636e1212353e包的Host/Client与已验cd07相同，本轮未重跑UI/登录。远端01e仍旧prepare，用户推送后公网URL尚未复验；分层证据见文末和handoff。
+2026-10-11当前W025 / 0.1.9，基线f2c1277已由用户提交。新规则为独立官网授权，取消退出禁用与强制HARNESS；同guest、status/revision同步、可信Host profile目录派生key及旧记录精确迁移见architecture/requirements。仓库改名/origin更新、正常npm正式0.1.9/latest发布、最终候选构建/分发及fresh Git检查已完成。公开DSH pnpm11.7.0裸名空store安装12包、23文件与发布tgz一致及Host/lazy Client通过；本机CLI换为裸名^0.1.9、旧插件不存在且23文件一致。未重启/GUI验收，未运行本轮单元/浏览器/GUI回归，未stage/commit/push。详见[handoff](handoff.md)；以下旧包、旧源码与旧门槛证据仅对应历史版本，不替代官网登录/退出/重登/迁移/重启验收。
 
 ## 当前验证基线（2026-10-09）
 
@@ -12,7 +12,7 @@
 - 官方 tag：`dsh-v0.2.0-rc.2`；commit：`639ed015397290b3745d163aafe02ffee4aa3f84`。不同版本先重新核查契约。
 - 官方入门、打包、Client Modules、Slots、Web Client、Sidebar/Layout/右栏正文已读取；初始环境曾只获得检索摘要，不再代表当前文档读取状态。
 - 本次 Codex 工具中没有 Cordis Inspect；下面的 live 查询是项目创建阶段的记录。本次复核用官方固定版本源码及安装产物，未调用业务接口、未热加载插件。
-- 产品规则已由用户确认：未登录/未授权禁用整个切换控件并保持 HARNESS；CHAT 登出立即回 HARNESS，然后禁用控件；不提供匿名聊天或匿名迁移。此规则不证明官方授权事件与网页历史接口已经可用。
+- 当前产品规则（W025）由用户确认：CHAT独立官网授权；未登录可进入同一guest的明确登录入口，DSH/官网退出不禁用切换器、不强制HARNESS。真实网站仍决定聊天权限，不提供匿名/API替代聊天；规则本身不证明官方Chat OAuth或历史API已可用。
 
 ## DSH 官方插件开发文档
 
@@ -47,7 +47,7 @@
 - [DeepSeek V3 官方模型仓库](https://github.com/deepseek-ai/DeepSeek-V3) — 开源模型相关代码；不能据此推断 chat.deepseek.com 前端、服务端、账号历史 API 开源或允许第三方调用。
 - [DeepSeek API 官方文档](https://api-docs.deepseek.com/en/) — 公开 API 文档入口；API 对话不等于网页账号历史同步。
 - [DeepSeek 官网](https://www.deepseek.com/) — 官方产品入口。
-- [DeepSeek Chat](https://chat.deepseek.com/) — 本次新建浏览器页未登录访问转到 `/sign_in`，没有匿名聊天入口；用户随后独立验证未登录无法免费对话，并据此确认插件授权门槛。页面观察不等于第三方授权契约。
+- [DeepSeek Chat](https://chat.deepseek.com/) — 历史未登录访问转到`/sign_in`，没有匿名聊天入口；网页聊天需要登录不等于插件模式必须禁用。W025已取消DSH门槛，未登录可进入官网正常登录；页面观察不等于第三方OAuth契约。
 - [Responses API](https://api-docs.deepseek.com/api/create-response/) — 明确模型 API 无状态，历史由调用方提供；不能作为网页账号历史同步的证据。
 - [DeepSeek 隐私政策](https://cdn.deepseek.com/policies/zh-CN/deepseek-privacy-policy.html) — 2026-02-10 版本的注册登录说明和用户手动导出历史路径；手动导入未验证，不能代替自动同步。
 
@@ -68,8 +68,8 @@
 
 历史源码方案（2026-10-10安装问题复核）：当时仓库不含lib，[官方打包文档的 GitHub 构建脚本说明](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish#installing-from-github-the-build-script-catch)支持通过自包含prepare补入口，用户需为pnpm授予该Git包构建许可；预构建tarball不需安装时构建。本机Desktop profile当时缺Host/Client lib入口，不能以先前tarball成功推断Git安装可用。当前用户选择改为Git包含预构建lib，最新判断与待验范围见文末，此旧记录不构成必须长期使用prepare的要求。
 
-1. 在目标设备先 Inspect `list`，获取准确的账号授权 Provider/Method，再确认读取状态、订阅登出/授权失效、账号切换和取消请求的契约。不读取原始密码/Cookie/token。
-2. 确认所有进入 CHAT 的入口及新建/快捷键路径如何统一受授权门槛约束。
+1. 新设备重新核查官方credentials、Browser与Gateway契约；DSH公开profile仅用于旧插件grant精确迁移，不读取平台凭据或其他插件record，不重新引入模式门槛。
+2. 确认设置和对话页共用guest、认证status/revision，官网登录/退出同步且迟到操作不能覆盖新状态；新建/快捷键另按其实际公开能力核查。
 3. 用真实 DSH 加载插件，验证 panel 切换、原侧栏恢复、右栏恢复和插件禁用/卸载。
 4. 网页历史读取/同步需要单独的官方第三方授权与 API 文档；目前未找到，继续标为待验证。
 
@@ -82,7 +82,7 @@
 
 第三方资料仅用于定位线索；遇到冲突以 DSH 官方文档、当前 package contracts 和 Inspect 结果为准。
 
-## 本轮固定公开契约证据（2026-10-09）
+## 历史固定公开契约证据（2026-10-09，DSH门槛由W025取消）
 
 全部链接固定 commit `639ed015397290b3745d163aafe02ffee4aa3f84`，本轮无 live Inspect。对应源码路径和行号在 architecture 中列出；无需安装提取文件才能接力。
 
@@ -195,7 +195,7 @@ Mac真实DSH的AX/截图确认顶部按钮可达、鼠标及Shift-Tab/Enter可�
 - 最终包 `artifacts/dsh-chat-0.1.8-f3fb874f2ae4.tgz`，22文件，SHA256 `f3fb874f2ae455f74287e6aecd992ba923d590c2463e348e1cbf6b8f6af50a98`。生产构建和CLI exit0；安装Host/Client/manifest/icon四文件逐字节MATCH。Client SHA256 `31961eb7e580dc448804976e820166a717ffb2cefc742047a861ec294478bde8`，其余三项同b4。
 - 连续两次正常quit、ps确认相关进程全无后重开，未手动点X，原提示区域无dialog，官网主页/公共模型提示与指定置顶恢复。证据 `/private/tmp/dsh-chat-env-notice-before-018.png`、`/private/tmp/dsh-chat-env-notice-after-restart-1-018.png`、`/private/tmp/dsh-chat-env-pin-restart-1-018.png`、`/private/tmp/dsh-chat-env-notice-after-restart-2-018.png`、`/private/tmp/dsh-chat-env-pin-restart-2-018.png`；仅确认固定说明两次收起，不泛化其他网页状态。第二次原生CHAT设置读回原账号已登录、已记住网页登录与简体中文，证据 `/private/tmp/dsh-chat-env-account-language-018.png`；关闭设置后原对话标题正常，证据 `/private/tmp/dsh-chat-env-final-title-018.png`。AX实读false/false，停在展开CHAT原对话，无手动点环境提示X、输入、发送或重命名。
 
-## W024仓库地址直装：包管理器来源、本地Git实测与公网边界（2026-10-11）
+## 历史：W024仓库地址直装来源、本地实测与当时公网边界（2026-10-11）
 
 - [pnpm11.7.0 prepare-package固定源码](https://github.com/pnpm/pnpm/blob/v11.7.0/exec/prepare-package/src/index.ts#L82)：packageShouldBeBuilt在非空prepare存在时直接要求构建；否则只有prepublish/prepack/publish存在且main文件不存在才要求构建。allowBuild拒绝点在同文件L37–46。本机DSH实际pnpm11.7.0发布bundle的preparePackage/packageShouldBeBuilt与该固定源码一致；静态依据与下方本地安装实测分别记录。
 - 本机bundle的Git fetcher和GitHub archive fetcher都先调用preparePackage再packlist。即使移除prepare，若保留prepack且Git包中main缺失，仍会触发构建许可；即使main存在，pnpm也不验证Client/其他声明入口。因此新方案须跟踪完整lib，并由发布检查核对files、manifest和源码产物对照清单。
@@ -204,3 +204,14 @@ Mac真实DSH的AX/截图确认顶部按钮可达、鼠标及Shift-Tab/Enter可�
 - 正常pnpm package:plugin已exit0，release:prepare/check-distribution通过，当前唯一包636e1212353e，23文件、130375bytes，完整SHA256见handoff。Git检查补齐verifyDistributionManifest源码哈希验证和workspaces/postpack防护后，fresh pnpm11.7.0再次通过；两个检查拒绝旧源码/prepare hook，缺失Client亦被拒绝，临时副本清理完成。运行Host/Client与此前cd07哈希完全相同，本轮未重跑界面/登录验收。
 - 此次为本地Git fixture与正常打包证据，未执行推送后公网GitHub URL安装，不能据此宣布当前公开默认分支已更新或URL已完成直装。
 - 公开远端01e当前仍是旧prepare源码方案，用户自行审查、提交/推送本轮文件；未自动stage/commit/push。Git包含lib和新脚本须在实际公开提交核实，URL完成声明还需对应远端安装证据。本地候选、tarball或fixture成功均不自动代表当前默认分支已更新。
+
+## W025：独立官网授权、外部浏览器边界与npm名称发布（2026-10-11）
+
+- [固定官方Credentials类型](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/credentials/credentials/src/types.ts)与[本地Provider](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/credentials/credentials-local/README.md)支撑插件自己的grant。[Provider固定实现](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/credentials/credentials-local/src/index.ts#L81)默认全局`$DSH_HOME/.credentials.yaml`，不能假设天然profile隔离。Host改用可信profile目录派生`dsh-deepseek-chat/website-<profile目录SHA256>`；旧dsh-chat/website-<DSH账号SHA256>仅使用官方公开稳定id精确迁移，Client不能传任意dir或record key。API支持不等于本轮退出/重登同步已实机验收。
+- [固定app-boot ProfileContext](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/boot/app-boot/src/profile-context.ts#L15)公开声明启动器提供的name、dir、home等事实，[入口导出](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/boot/app-boot/src/index.ts#L20)及[官方shell-env调用](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/shell/shell-env/src/index.ts#L164)确认可用`ctx.get('profileContext')`。本插件Host验证绝对dir后派生scope，Client仅取得哈希；缺少可信profileContext不回退共享固定键或DSH账号键。
+- [rc.2 DesktopBrowserBridge](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/client/ui-sidebar-browser/src/types.ts)仅公开acquire/release/onOpenRequested，无外部系统浏览器会话导入。固定[desktop main](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/apps/desktop/src/main.ts#L1228)只处理dsh://open唤回窗口；正常HTTP(S)外链打开能力不是Chat授权回调。
+- [官方Platform Provider文档](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/credentials/deepseek-account-platform/README.md)及[固定实现](https://github.com/deepseek-ai/deepseek-harness/blob/639ed015397290b3745d163aafe02ffee4aa3f84/packages/credentials/deepseek-account-platform/src/index.ts#L53)：默认platform.deepseek.com，PKCE /oauth/callback与auth_init/auth_exchange只面向Platform，固定/dsh/authorize和/dsh/authorized；不能冒称可兑换chat.deepseek.com网页登录。此次官方资料搜索未找到Chat第三方client_id/scope/redirect_uri/授权码交换契约，结论只限公开核查，不断言服务方永远没有能力。
+- [GitHub官方仓库改名说明](https://docs.github.com/en/repositories/creating-and-managing-repositories/renaming-a-repository)与[gh repo rename](https://cli.github.com/manual/gh_repo_rename)明确admin可改名、旧Git地址重定向并建议更新origin。本轮正常gh核查原仓库为ADMIN；实际改名后读回xingxingbk-git/dsh-deepseek-chat及新URL，origin已更新。仅改名，不代表本轮0.1.9代码已提交/推送。
+- npm公开registry最初对dsh-deepseek-chat返回HTTP404，表示当时未占用。最初npm whoami返回ENEEDAUTH；用户通过官方网页登录后，root确认认证为xingxingbk。首次正常publish被E403拒绝，提示需要2FA；用户正常配置并完成验证后正式publish exit0，公开名称、0.1.9版本和latest均已确认。[npm网页登录](https://docs.npmjs.com/accessing-npm-using-2fa/)、[2FA发布要求](https://docs.npmjs.com/requiring-2fa-for-package-publishing-and-settings-modification/)与[官方发布说明](https://docs.npmjs.com/creating-and-publishing-unscoped-public-packages/)是依据。不读取或输出npmrc/token，不创建bypass token；短暂0.0.0-stage处理占位已完成，不作为额外正式版本验收。
+- [DSH官方包安装](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)支持npm预编译包按名称安装。因此用户口语“发布到npx”的目标按npm名称入口实现，正式包dsh-deepseek-chat@0.1.9已公开，不需要新增独立CLI。最终package:plugin的生产构建/类型/产物/分发检查通过；23files/133326bytes，SHA256为`e82535818456c7b569580c13f555442bd9396d0b1d0f74829ecce9ff606ab710`。最新fresh DSH pnpm11.7 Git fixture安装12包、逐字节/Host import/lazy Client通过，无allowBuilds或ignore-scripts。
+- 公开npm安装证据：DSH pnpm11.7.0空consumer/空store add裸名安装12包，解析0.1.9；23文件与正式发布tgz逐字节一致，Host import/lazy Client通过，fixture清理完成。首次fixture对源码package.json的bytes断言差异来自pnpm pack规范化排版/packageManager剔除，改对正式tgz后23/23通过，不是安装故障。本机官方CLI已移除旧dsh-chat与本地tgz后add裸名exit0，desktop依赖^0.1.9、oldInstalled=false，23文件一致。默认pnpm自动增加该版本minimumReleaseAgeExclude，无人为allowBuilds/ignore-scripts/bypass。尚未重启/GUI验收，未运行本轮单元/浏览器回归；完整证据见[handoff](handoff.md)。

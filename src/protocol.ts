@@ -4,14 +4,14 @@ import type {
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { TypertContribution } from '@deepseek-ai/dsh-typert-registry'
 
-/** Credential-free identity of the UI making the official DSH account operation. */
+/** Credential-free identity of the UI using the plugin's own Host bridge. */
 export interface DshChatClientMetadata {
   version: string
   locale: string
   timezoneOffsetSeconds: number
 }
 
-/** DSH account authorization only; this does not describe the separate chat website login. */
+/** Host lifetime and profile scope; website login is observed separately in our guest. */
 export interface AuthorizationState {
   status: 'pending' | 'authorized' | 'unauthorized' | 'unavailable'
   accountId: string | null
@@ -45,7 +45,7 @@ export const websiteSessionSchema = z.strictObject({
 }) satisfies z.ZodType<WebsiteSession>
 
 const strict = (name: string, schema: z.ZodType) => ({
-  mode: 'strict' as const, typeSymbol: `dsh-chat#${name}`, create: () => schema,
+  mode: 'strict' as const, typeSymbol: `dsh-deepseek-chat#${name}`, create: () => schema,
 })
 const metadataParameter = {
   name: 'metadata', wire: 'metadata', source: 'json' as const,
@@ -56,13 +56,13 @@ const epochParameter = {
   codec: strict('AuthorizationEpoch', authorizationEpochSchema),
 }
 const descriptor = (method: string, stream = false): InvocationDescriptor => ({
-  id: `dsh-chat#dshChat/${method}`, service: 'dshChat', namespace: 'dshChat', method,
+  id: `dsh-deepseek-chat#dshDeepseekChat/${method}`, service: 'dshDeepseekChat', namespace: 'dshDeepseekChat', method,
   invocation: { kind: 'direct' }, parameters: [metadataParameter],
   cancellation: { parameter: 'signal' }, result: strict('AuthorizationState', authorizationSchema),
   ...(stream ? { mode: 'stream' as const } : {}),
 })
 const websiteDescriptor = (method: string, save = false): InvocationDescriptor => ({
-  id: `dsh-chat#dshChat/${method}`, service: 'dshChat', namespace: 'dshChat', method,
+  id: `dsh-deepseek-chat#dshDeepseekChat/${method}`, service: 'dshDeepseekChat', namespace: 'dshDeepseekChat', method,
   invocation: { kind: 'direct' },
   parameters: [metadataParameter, epochParameter, ...(save ? [{
     name: 'session', wire: 'session', source: 'json' as const,
@@ -81,23 +81,23 @@ export const DSH_CHAT_DESCRIPTORS: readonly InvocationDescriptor[] = [
   websiteDescriptor('clearWebsiteSession'),
 ]
 export const DSH_CHAT_REMOTE_CONTRIBUTION: TypertRemoteContribution = {
-  package: 'dsh-chat', descriptors: DSH_CHAT_DESCRIPTORS,
+  package: 'dsh-deepseek-chat', descriptors: DSH_CHAT_DESCRIPTORS,
 }
 export const DSH_CHAT_HOST_CONTRIBUTION: TypertContribution = {
-  package: 'dsh-chat', face: 'host', schemas: [],
+  package: 'dsh-deepseek-chat', face: 'host', schemas: [],
   // Website credentials are never model-callable services or objects.
   model: { services: [], events: [], objects: [] }, invocations: DSH_CHAT_DESCRIPTORS,
 }
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteMap {
-    'dshChat/authorization': (metadata: DshChatClientMetadata, signal?: AbortSignal) => Promise<RemoteResult<AuthorizationState>>
-    'dshChat/watchAuthorization': (metadata: DshChatClientMetadata, signal?: AbortSignal) => RemoteStreamHandle<AuthorizationState, never>
-    'dshChat/loadWebsiteSession': (metadata: DshChatClientMetadata, epoch: string, signal?: AbortSignal) => Promise<RemoteResult<WebsiteSession | null>>
-    'dshChat/saveWebsiteSession': (metadata: DshChatClientMetadata, epoch: string, session: WebsiteSession, signal?: AbortSignal) => Promise<RemoteResult<boolean>>
-    'dshChat/clearWebsiteSession': (metadata: DshChatClientMetadata, epoch: string, signal?: AbortSignal) => Promise<RemoteResult<boolean>>
+    'dshDeepseekChat/authorization': (metadata: DshChatClientMetadata, signal?: AbortSignal) => Promise<RemoteResult<AuthorizationState>>
+    'dshDeepseekChat/watchAuthorization': (metadata: DshChatClientMetadata, signal?: AbortSignal) => RemoteStreamHandle<AuthorizationState, never>
+    'dshDeepseekChat/loadWebsiteSession': (metadata: DshChatClientMetadata, epoch: string, signal?: AbortSignal) => Promise<RemoteResult<WebsiteSession | null>>
+    'dshDeepseekChat/saveWebsiteSession': (metadata: DshChatClientMetadata, epoch: string, session: WebsiteSession, signal?: AbortSignal) => Promise<RemoteResult<boolean>>
+    'dshDeepseekChat/clearWebsiteSession': (metadata: DshChatClientMetadata, epoch: string, signal?: AbortSignal) => Promise<RemoteResult<boolean>>
   }
   interface TypertRemoteNamespaceMap {
-    dshChat: import('@deepseek-ai/dsh-typert-protocol').TypertRemoteNamespace<'dshChat'>
+    dshDeepseekChat: import('@deepseek-ai/dsh-typert-protocol').TypertRemoteNamespace<'dshDeepseekChat'>
   }
 }

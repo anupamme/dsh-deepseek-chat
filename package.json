@@ -1,8 +1,20 @@
 {
-  "name": "dsh-chat",
-  "version": "0.1.8",
-  "private": true,
+  "name": "dsh-deepseek-chat",
+  "version": "0.1.9",
   "description": "CHAT / HARNESS mode switcher for DeepSeek Harness",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xingxingbk-git/dsh-deepseek-chat.git"
+  },
+  "homepage": "https://github.com/xingxingbk-git/dsh-deepseek-chat#readme",
+  "bugs": {
+    "url": "https://github.com/xingxingbk-git/dsh-deepseek-chat/issues"
+  },
+  "keywords": ["dsh", "deepseek", "chat", "dsh-plugin"],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "packageManager": "pnpm@10.33.2",
   "engines": {

@@ -5,7 +5,7 @@ export declare const Config: schema<Schemastery.ObjectS<NoInfer<{
 }>>, Schemastery.ObjectT<NoInfer<{
     language: schema<"" | "zh-CN" | "en" | "system", "" | "zh-CN" | "en" | "system", "volatile-defined">;
 }>>, "plain">;
-export declare const name = "dsh-chat";
+export declare const name = "dsh-deepseek-chat";
 /** Host-half entry. Browser UI is declared separately by the `dsh.client` manifest. */
 export declare const inject: string[];
 export declare function apply(ctx: Context): void;
