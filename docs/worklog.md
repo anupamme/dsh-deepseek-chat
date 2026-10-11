@@ -490,3 +490,28 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - 公开裸名：DSH pnpm11.7.0空consumer/空store正常add dsh-deepseek-chat，12包成功，Host import及lazy Client通过。首次文件断言对比源package.json失败（pack规范化排版/移除packageManager），修正为对比正式tgz后23/23一致；两次临时fixture都finally清理。pnpm自动为新版本加minimumReleaseAgeExclude，未人为使用allowBuilds/ignore-scripts或bypass。
 - 本机官方CLI移除旧dsh-chat并安装正式tgz成功；已存在file来源时再次裸名add不改原来源，因此正常remove新版后重新裸名add，最终desktop依赖^0.1.9、旧名不存在，23安装文件与发布包相同。Host e9c50cc544f24c60d086538ab1283ae0ed2811f23c9bb469916a2e89c3ffb38d、Client 6da7d7cef93b263bdc86496fcdb87c151f99c78a3c5f28555c20ec9cc118f02b。
 - 尚未正常重启或GUI验证0.1.9；登录/退出重登/profile迁移与重启恢复不能宣称实机已通过，当前版本源码/lib供用户手动审查提交推送。GitHub改名成功不表示0.1.9代码已远端同步；npm名称安装则已经公开验证。有效旧包保留回退，不新增原始个人截图/认证数据或临时验收文件到项目。
+
+## W026 · 2026-10-11至12 · T10/T12/T13 · 登录过渡识别恢复（本轮修复已交付）
+
+- 用户实报登录后两份侧栏、DSH导航不识别，CHAT设置显示“暂时无法连接官网”。fetch确认main/远端25fc3a2一致、开工干净；用户已手动提交W025。新修复0.1.9→0.1.10只增一次，不stage/commit/push。
+- 发现首次登录React提交中sidebar暂缺直接永久fallback，之后不再探测已加载页面；旧认证任务异常只检查文档版本，可破坏新登录投影。设置页误把结构失败当网络失败。另发现profile未挂载便启动设置菜单会卡无trigger phase。
+- navigation_failure_review修复首次5秒宽限与持续安全恢复，受限sidebar/new/track/content齐备后恢复且不重遮罩/点击compact；未确认profile不做设置；unknown保持未知，不从ready推断登录。surface_fallback_review修复旧认证异常隔离并只读复核root状态改动。root保留同文档已确认身份、未确认ready改loading、暂停未就绪设置/导航/正常退出、清理fallback取消的设置pending，真实sign-in/显式退出继续清理。browser_publish_research同步需求/架构/路线。
+- 首个候选生产构建、分发清单、正常pack、官方CLI安装通过，23文件与候选包一致。旧原生界面已限定读取固定文案复现导航未识别。正常quit后pgrep无进程，重开main34277/Host34295；选择CHAT与CHAT设置后显示正常登录入口，官网要求用户本人重新登录。已发异步登录请求，尚未收到完成回复，不读取或代填表单、凭据，不把登录入口显示当已登录验收。
+- 最后静态复核后的最终包3bc43e1c7169再次生产构建/分发核对通过，134091bytes；Client43b568732090e7f1e3ef12a270607652ad31c50af78072f360e6f6fb117a5145。唯一hash路径避免pnpm同版本本地缓存。仍待用户登录完成后替换候选、完整重启核实同账号/列表/设置保存；最终包尚未安装或npm发布。未新增/运行单元或浏览器测试，临时工具留在/tmp，没有新原始个人截图或无效验收文件进入仓库。详细候选/最终hash及续步见handoff顶部。
+
+### W026续步：昵称误取与完整重启（同轮仍为0.1.10）
+
+- 用户回复已正常登录，固定原生状态先确认已登录/已记住/简体中文；其新截图又显示账号卡收进整段侧栏。旧profile从最后头像盲取祖先再用textContent截100字，误收sidebar，长内容挤窄退出按钮。先前3bc“最终”指当时静态候选，未安装，现被e031严格包取代。
+- navigation_failure_review修为footer-v1独立底部row/唯一头像/单昵称叶，有界几何证明；隐藏后只复用同row/avatar，晚挂载时仅已确认track同步visibility:hidden/fixed测量并finally恢复，拒绝last-image和整段祖先textContent。surface_fallback_review加min-width/ellipsis与退出不收缩/不换行，root增加原生账号group语义。final_navigation_review只读复核无新可确认缺陷，指出官网结构变化仍可能失败关闭。
+- 生产build、分发来源清单、正常pnpm pack及官方CLI安装通过；最终e0316b056d46包135131bytes，23/23安装文件字节相同，Client c380faa909eb794101949a7621dab657508cd393e67b246f33912fc50bf08a96，Host保持e9c50cc544f24c60d086538ab1283ae0ed2811f23c9bb469916a2e89c3ffb38d。未修改allowBuilds或忽略构建政策。
+- 正常quit确认旧main/Host全结束，重开main35411/Host35429，无再次登录操作。最终CHAT设置实读昵称长度4、sidebar-text=false、退出按钮86×38，已登录/已记住/简体中文；关闭设置后官网guest来源确认、原生导航103控件、原官网新对话按钮0、新建enabled=true。实际一次完整重启恢复与有限原生检查通过；未真实退出当前官网账号、未发送消息或跨浏览器比对，未新增/运行单元或浏览器测试。
+- npm whoami确认原账号登录，公开最新仍0.1.9。首次publish相对包路径没有./，npm误当Git仓库exit128；改为最终tgz绝对路径后正常发布已发起，23文件/SHA1 3e9e15715a6e8a213754bbfe5bce3e7de0ddd9a7，当前session96745等待官方单次2FA。正常确认页已打开并异步请用户本人验证，未读取npmrc/token、代填密码或绕过验证，不能写发布成功。
+- 仅清理哈希确认已被取代且从未安装的3bc中间包，当前/有效回退包保留。源码/lib及文档未stage/commit/push；原生检查结束恢复AXManualAccessibility=false（setter success），AXEnhancedUI未改；临时工具只在/tmp，未将原始个人截图/授权或检查日志加入项目。收尾及发布续步见handoff顶部。
+
+### W026发布收尾 · 2026-10-12
+
+- 用户回复发布验证完成后，旧终端96745已因npm单次auth会话失效GET done E404退出，公开仍0.1.9；重新以同一e031绝对tgz正常publish并由用户在新官方页完成验证，session24376 exit0、+ dsh-deepseek-chat@0.1.10。没有增号、改包、读凭据或绕过2FA。
+- npm先提示processing，初次view仍0.1.9；随后匿名完整/安装专用install-v1索引都确认latest0.1.10/版本存在。正式公开tgz135131bytes、SHA1 3e9e15715a6e8a213754bbfe5bce3e7de0ddd9a7、SHA256 e0316b056d4683160a7df4aa915d10795e2cf8c6a2df1ed14864014ea8ea845d，与本机已验收包完整字节相同。
+- 安装核对第一回用了runtime/bin/node包装脚本，缺少DSH_DESKTOP_NODE_EXECUTABLE宿主环境而exit127；改用已确认的primary-runtime实际Node后，第二回空store仍沿用全局旧元数据并安装0.1.9，版本断言失败。两回finally清理临时目录，不当成功；没有改用户全局缓存。
+- 最终使用DSH实际primary Node、内置pnpm11.7.0及独立consumer/空store/空元数据缓存正常add裸名dsh-deepseek-chat，12包安装exit0、版本0.1.10、23/23文件与正式公开tgz一致。没有allowBuilds/ignore-scripts政策覆盖；新包minimumReleaseAgeExclude由pnpm自动生成。全部临时consumer/store/cache已清理，临时脚本不进仓库。
+- 本机保持前轮已安装/完整重启验收的e031来源，公开包字节相同，本轮不重复重装或GUI验收；未新增或运行单元/浏览器测试。文档同步正式发布及分发证据，源码/lib和上下文仍留本地由用户手动提交/推送，npm发布不表示GitHub代码已同步。

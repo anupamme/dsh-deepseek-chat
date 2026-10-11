@@ -228,11 +228,15 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
           if(snapshot.websiteAuthenticationStatus!=='signing-out') void bridge.clearWebsiteSession(generation)
         }
       } catch {
-        if (currentDocument()) {
+        if (currentProjection()) {
           documentPresented=true
-          bridge.reportWebsiteNavigation(generation, { ...emptyNavigation(), status: 'unsupported' })
+          // A failed DOM projection cannot prove that the website signed out.
+          // Drop only unconfirmed navigation and keep the real website usable.
+          bridge.reportWebsiteNavigation(generation, { status: 'unsupported', conversations: [], selectedHref: null, canCreate: false, error: null })
           setPresentationReady(!snapshot.settingsViewport)
-          try { await execute({type:'restore'}) } catch { /* The next ready event retries a recovered guest. */ }
+          if (currentProjection()) {
+            try { await execute({type:'restore'}) } catch { /* Polling probes the recovered page without restarting its first paint. */ }
+          }
         }
       }
     }
@@ -281,7 +285,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     }, { signal: events.signal })
     current.addEventListener('render-process-gone', () => {
       needsRecovery.current = true
-      bridge.reportWebsiteNavigation(generation, { ...emptyNavigation(), status: 'unsupported' })
+      bridge.reportWebsiteNavigation(generation, { status: 'unsupported', conversations: [], selectedHref: null, canCreate: false, error: null })
       report(false, '网页进程已退出，请点击「重试网页」。')
     }, { signal: events.signal })
     const offOpen = nativeBrowser.onOpenRequested(reservation.native.lease, url => {

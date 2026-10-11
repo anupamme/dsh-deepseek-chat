@@ -317,9 +317,19 @@ export function apply(ctx: Context): void {
     reportWebsiteNavigation: (generation, value, newDocument = false) => {
       if (disposed || generation !== authorizationGeneration) return
       let next: typeof websiteNavigation
-      try { next=parseWebsiteNavigation(value) } catch { next={...emptyNavigation(),status:'unsupported'} }
+      try { next=parseWebsiteNavigation(value) } catch { next={status:'unsupported',conversations:[],selectedHref:null,canCreate:false,error:null} }
+      const previousNavigation=websiteNavigation
+      if (next.status==='unsupported' && !logoutRequested && !logoutFailed) {
+        // Fallback cancels unfinished public settings phases in the guest.
+        // Resume the preference/read request only after its profile is ready.
+        if (restoringPreferences || previousNavigation.settings?.pending) preferencesGeneration=-1
+        restoringPreferences=false;restorationSeen=false;settingsReadRequested=false
+      }
       if (newDocument || next.status==='sign-in') {
         preferencesGeneration=-1;restoringPreferences=false;restorationSeen=false;settingsReadRequested=false
+      }
+      if (newDocument && next.authenticated!==true && next.status!=='sign-in' && !logoutRequested && !logoutFailed) {
+        websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'loading'
       }
       if (next.status==='sign-in') {
         if (websiteHadSession || logoutRequested) restorationBlocked=true
@@ -338,7 +348,12 @@ export function apply(ctx: Context): void {
         if (next.settings?.error && !next.settings.pending && logoutTimer!==undefined) failWebsiteLogout('官网退出未完成，请重试退出登录。此设备已清除登录记忆。')
         publish();return
       } else {
-        websiteNavigation=next
+        // A partial React commit or an adapter failure cannot revoke the
+        // identity already confirmed in this document. Navigation commands
+        // remain unavailable until the current page is fully identified.
+        websiteNavigation=!newDocument && next.authenticated!==true && previousNavigation.authenticated===true
+          ? {...next,status:next.status==='ready' ? 'loading' : next.status,authenticated:true,accountName:previousNavigation.accountName,settings:next.settings ?? (previousNavigation.settings && {...previousNavigation.settings,pending:next.status==='unsupported' ? false : previousNavigation.settings.pending})}
+          : next
         if (next.authenticated===true) {
           if (!websiteHadSession && !logoutFailed) restorationBlocked=false
           if (!websiteHadSession) websiteAuthenticationRevision++
@@ -346,8 +361,7 @@ export function apply(ctx: Context): void {
           logoutVaultCleared=false
           websiteAuthenticationStatus=logoutFailed ? 'error' : 'signed-in'
           if (!logoutFailed && websiteSessionStatus!=='error') websiteSessionError=null
-        } else if (next.status==='unsupported') websiteAuthenticationStatus='error'
-        else if (!websiteHadSession) websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'loading'
+        } else if (!websiteHadSession) websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'loading'
       }
       const settings=websiteNavigation.settings
       if (restoringPreferences && settings?.restored===false) restorationSeen=true
@@ -355,7 +369,7 @@ export function apply(ctx: Context): void {
       if (settings?.error && !settings.pending) restoringPreferences=false
       restorePreferences()
       readSettingsWhenReady()
-      if (!restoringPreferences && settings?.restored && !settings.pending && !settings.error && !logoutFailed) {
+      if (websiteNavigation.status==='ready' && !restoringPreferences && settings?.restored && !settings.pending && !settings.error && !logoutFailed) {
         const language=/中文|Chinese/i.test(settings.language ?? '') ? 'zh-CN' : /English|英语/i.test(settings.language ?? '') ? 'en' : /^(System|跟随系统|系统|Follow system)$/i.test(settings.language ?? '') ? 'system' : ''
         if (language) persistPreference('language',language)
       }
@@ -371,6 +385,7 @@ export function apply(ctx: Context): void {
     commandWebsite: command => {
       if (disposed || !mode.canEnter() || !navigationHandler) return
       if ((logoutRequested || logoutFailed) && command.type!=='logout' && command.type!=='snapshot') return
+      if (websiteNavigation.status!=='ready' && command.type!=='logout' && command.type!=='snapshot' && command.type!=='restore') return
       if (command.type==='settings-read' && (restoringPreferences || websiteNavigation.settings?.pending)) return
       if (command.type === 'open' && !websiteNavigation.conversations.some(item => item.href === command.href)) return
       // Native settings needs the adapter's multi-step command to stay active;
@@ -391,6 +406,7 @@ export function apply(ctx: Context): void {
     },
     logoutWebsite: () => {
       if (logoutRequested || !navigationHandler || (!websiteHadSession && !logoutFailed)) return
+      if (!logoutFailed && websiteNavigation.status!=='ready') return
       const generation=authorizationGeneration
       const handler=navigationHandler
       clearTimeout(logoutTimer);logoutTimer=undefined
@@ -474,14 +490,14 @@ export function apply(ctx: Context): void {
     publish()
   }
   function readSettingsWhenReady(): void {
-    if(!settingsViewport || !navigationHandler || websiteNavigation.authenticated!==true || settingsReadRequested || restoringPreferences || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
+    if(!settingsViewport || !navigationHandler || websiteNavigation.status!=='ready' || websiteNavigation.authenticated!==true || settingsReadRequested || restoringPreferences || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
     settingsReadRequested=true
     // Preference restoration already reads the public language value; reuse it.
     if (websiteNavigation.settings?.language && !websiteNavigation.settings.error) return
     void navigationHandler({type:'settings-read'})
   }
   function restorePreferences(): void {
-    if (!preferences || !navigationHandler || websiteNavigation.authenticated!==true || preferencesGeneration===authorizationGeneration || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
+    if (!preferences || !navigationHandler || websiteNavigation.status!=='ready' || websiteNavigation.authenticated!==true || preferencesGeneration===authorizationGeneration || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
     const language = preferences.language || DEFAULT_WEBSITE_LANGUAGE
     preferencesGeneration=authorizationGeneration;restoringPreferences=true;restorationSeen=false
     void navigationHandler({type:'preferences',language})

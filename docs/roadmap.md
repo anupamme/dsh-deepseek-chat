@@ -1,8 +1,17 @@
 # 开发路线
 
-当前阶段W025 / 0.1.9（2026-10-11），基线f2c1277。实现独立官网登录、取消退出禁用/强制HARNESS、统一设置/对话页status+revision及同一guest、后台保存与退出barrier，并精确迁移本插件旧grant。仓库改名/origin更新、npm正式0.1.9/latest发布、最终候选构建/分发及fresh Git检查完成。公开DSH pnpm11.7.0裸名空consumer/空store安装12包、23文件与发布tgz一致及Host/lazy Client通过，fixture已清理；本机CLI换为裸名来源^0.1.9、旧插件不存在且23文件一致。尚未重启/GUI验收，未运行本轮单元/浏览器/GUI回归，本地修改仍由用户手动提交/推送；完整官网流程仍待实机，详见[handoff](handoff.md)。
+当前阶段W026 / 0.1.10（2026-10-12）：最终e031严格footer-v1/布局包已完成构建/分发与官方CLI安装23/23文件一致；正常quit确认旧主/Host结束后重开，无再次填写登录。原生create-enabled=true，账号group昵称长度4/无侧栏文字/退出按钮86×38，固定已登录/已记住网页登录/简体中文齐全。修正临时AX URL的系统类型桥接后，自有guest官网origin确认，native导航103按钮、官网原新建按钮0，新建可用；固定布局未显示重复新建入口。用户完成新npm验证后publish exit0，公开完整与install-v1索引确认0.1.10/latest，正式下载与e031同字节；DSH pnpm11.7.0空store/空元数据缓存按裸名安装12包、版本0.1.10及23/23文件一致通过。本机保留同字节e031本地tgz，不重复安装或GUI验收；同轮不重复增号，未新增或运行单元/浏览器测试，未stage/commit/push，不声明全部官网流程验收通过。
 
-## W025当前工作与交付边界
+## W026当前工作与验收边界
+
+1. 首次导航结构识别保留5秒宽限，fallback持续安全结构探测；只有sidebar、新对话、layout/content完整确认后恢复适配，替代同文档永久fallback规则，避免重复遮罩/compact点击/重开guest。
+2. unknown、暂缺导航或profile不推断官网登出；profile出现后才读取设置/恢复偏好，结构未识别提示与网络连接错误区分，旧授权异常按代次/生命周期隔离。
+3. 前候选构建/分发与安装核对、正常登录后的固定状态已有证据；后续账号卡改为footer-v1独立行/唯一头像/昵称叶的有界几何证明，移除lastimg与祖先textContent截断，隐藏后复用同一row/avatar proof，latefooter只同步测量已确认track并finally恢复sheet/style。
+4. 原生账号group与nowrap/ellipsis/flex-shrink修正已在最终e031做有限检查：账号昵称4字且不含侧栏文字、退出按钮86×38；一次正常退出重开后的固定登录/记忆/中文、新建可用已确认。临时AX URL的类型桥接修正后，自有guest官网origin确认，native导航103按钮、官网原新建按钮0，固定布局未显示重复新建入口；完整过渡/异常/退出重登/迁移矩阵仍待验，详见[handoff](handoff.md)。0.1.10正常npm发布与公开索引/下载、独立consumer/空store/空元数据缓存裸名安装已通过，23/23文件与公开tgz一致；无allowBuilds/ignore-scripts等policy覆盖，临时consumer/store/cache全部清理。本机不重复安装同字节包或GUI验收；同轮不涨号，全部单元/浏览器测试未跑。
+
+历史交付W025 / 0.1.9，基线f2c1277。独立官网登录、取消退出禁用/强制HARNESS、同一guest与status/revision、后台保存及退出barrier已实现。仓库改名/origin更新、npm正式0.1.9/latest发布、最终候选构建/分发与fresh Git检查完成；公开DSH pnpm11.7.0裸名空store安装12包、23文件与tgz一致及Host/lazy Client通过；本机CLI裸名^0.1.9、旧插件不存在且23文件一致。该轮收尾未重启/GUI验收，本次用户故障反馈不推翻分发检查，也不能以分发检查宣称官网问题通过。详见[handoff](handoff.md)。
+
+## W025既有规则与分发证据
 
 1. 取消DSH与官网退出后对模式控件的登录禁用：未登录可进入CHAT明确登录入口，保持模式选择；真实聊天权限仍由官网决定。
 2. 设置与对话页共用guest和认证快照；官网确认后立即同步公开账号/导航，后台记忆不阻塞显示。退出操作reset旧读取并建立保存/恢复barrier，先清记忆再官网当前会话logout，迟到结果不得覆盖重登。
@@ -54,7 +63,9 @@ W017按用户登录截图补布局占位、紧凑头部和首屏闪现保护；�
 
 ## 阶段 5：发布
 
-用户在W025已明确授权仓库改名与npm名称发布。生产候选构建、类型/产物/分发、fresh Git检查、npm正式0.1.9/latest发布、公开裸名空store安装及本机npm来源检查已通过；安装文件均与发布tgz逐字节一致。首次fixture源码manifest比对差异的原因与正式23/23基准结果见[handoff](handoff.md)。剩余官网GUI、退出/重登、迁移与完整重启分别验收，不用分发结果替代。Git仍由用户自行提交/推送代码与上下文；未推送不声称跨设备同步，npm发布与Git提交是分别记录的结果。
+用户在W025已明确授权仓库改名与npm名称发布。当前W026正式e031生产构建/分发、官方CLI安装及一次完整重启的有限原生观察完成；2026-10-12用户完成新的正常npm验证，session24376 publish exit0。匿名公开完整与install-v1索引确认0.1.10/latest，正式tgz为135131bytes、SHA256 `e0316b056d4683160a7df4aa915d10795e2cf8c6a2df1ed14864014ea8ea845d`、SHA1 `3e9e15715a6e8a213754bbfe5bce3e7de0ddd9a7`，与已验本机包完全一致。DSH真实primary Node与pnpm11.7.0在独立consumer/空store/空元数据缓存正常add裸名安装12包exit0，版本0.1.10，23/23文件与公开tgz一致；无allowBuilds/ignore-scripts等policy覆盖，minimumReleaseAgeExclude由pnpm自身添加，临时consumer/store/cache全部finally清理。本机仍用同字节e031本地tgz，不重复安装或GUI验收。
+
+W025的0.1.9发布、fresh Git、公开裸名安装及本机npm来源检查保留为历史；此前fixture源码manifest排版差异及正式23/23基准见[handoff](handoff.md)。各登录过渡/异常、退出/重登、迁移、过期、跨浏览器发送与历史一致性仍分别待验；分发成功不替代这些官网流程。本轮未新增或运行单元/浏览器测试，Git仍由用户自行提交/推送代码与上下文；未推送不声称跨设备同步，npm发布与Git提交分别记录。
 
 W019范围已由用户收敛：取消完整四Tab和语音，本轮先交付网页账号、当前会话退出和语言切换，并统一标题/分享顶部布局。原生账号、真实语言读写及配置落盘、暗色和标题/分享展开折叠布局已实机确认；退出当前账号入口有回归覆盖，尚未实际登出用户。W019时重启登录尚未修复；后续W023采用插件自身grant候选，完整Session仍受Browser限制。语言偏好保存不能冒充认证恢复。具体产物、尝试与下一步以handoff/worklog为准。
 

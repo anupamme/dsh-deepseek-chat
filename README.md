@@ -4,7 +4,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.1.9** · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
+当前版本 **0.1.10** · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -76,7 +76,7 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 将构建生成的 `.tgz` 文件交给 DSH 官方插件管理器安装，或使用 CLI：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.9.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.10.tgz
 ```
 
 将路径替换成你的实际安装包；使用其他 profile 时替换 `desktop`。**安装或更新后，完整退出并重新打开 DSH**，让新插件生效。
@@ -98,7 +98,7 @@ dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.9.tgz
 ## 使用限制
 
 - **兼容范围：**目前针对 DSH 0.2.0-rc.2 桌面版适配，其他版本和平台待验证；DSH Web版暂不支持本插件的 CHAT 模式。
-- **官网导航：**左侧列表依赖官网页面结构，只镜像已加载的导航，不是官方历史 API。结构不匹配时恢复官网原导航并提示。
+- **官网导航：**左侧列表依赖官网页面结构，只镜像已加载的导航，不是官方历史 API。结构不匹配时恢复官网原导航并自动重新识别；恢复后同步左侧列表和 CHAT设置。
 - **新建快捷键：**本版适配顶部“新会话”的鼠标/Enter 点击；原 Harness 快捷键和菜单仍执行 Harness 行为，可能创建 Harness 会话并退出 CHAT。
 - **登录记忆：**不共享 Safari/Chrome 登录，独立于 DSH 平台账号。授权过期、撤销或官网实现变化时需要重新登录；新版独立登录、退出重登、完整卸载和其他平台仍需扩大实机验证。
 - **网页状态：**手动模式切换保留网页；插件停用、卸载或 DSH 完全退出会销毁容器，插件不备份未发送草稿，也不能代替官网停止生成。
@@ -123,7 +123,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.1.9.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.1.10.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 

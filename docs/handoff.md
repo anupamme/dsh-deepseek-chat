@@ -1,4 +1,22 @@
-# W025：独立CHAT登录同步、改名与npm发布 · 2026-10-11（已发布，界面体验待验）
+# W026：登录过渡恢复与账号栏修正 · 2026-10-11至12（已安装、有限实机确认并公开发布）
+
+基线main/远端`25fc3a2`，fetch确认一致，开工干净；用户实报0.1.9登录后官网原侧栏重复出现、DSH列表未识别，以及CHAT设置“暂时无法连接官网”。本轮0.1.9→0.1.10只增一次，Git提交/推送仍由用户手动完成。
+
+- root负责Client/UI状态、打包安装与文档；navigation_failure_review负责受限导航恢复，surface_fallback_review负责认证版本异常隔离，browser_publish_research负责需求/架构/路线同步，分工已交还。
+- 根因：首次登录SPA过渡中sidebar尚未挂载即进入永久fallback，后续跳过已加载官网结构；异常恢复仅检查文档，不检查认证revision。设置页把结构不匹配错写成网络失败，Client同时将身份置error。
+- 修复：首次缺结构统一5秒宽限；fallback无重复遮罩/compact点击/设置请求地持续探测，只有sidebar、新对话按钮、可信track及同父有界content确认才恢复；恢复保留已呈现页面，已完成偏好不会重启。profile缺失时不启动无trigger设置请求。
+- unknown不证明退出，同文档保留已确认账号/settings、清空未确认列表并暂停相关命令；新文档不继承旧账号投影，真实sign-in及明确退出仍清理。旧认证任务异常不能清除新的投影。设置提示页面识别并自动重试，实际webError继续使用真实加载失败信息。
+- 用户已完成正常官网登录；前候选曾实读已登录/已记住/中文，但截图随后揭示profile ancestor误收整段侧栏并截100字，长账号文字挤出竖排退出按钮。原候选及中间3bc静态包均已被下面严格包替代，不能当作最终验收。
+- 严格昵称修正：只接受有界底部独立账号行、唯一头像和单个非隐藏昵称文本叶，排除sidebar/track/layout、新建、链接、输入和菜单；已有footer-v1证明只复用同row/avatar。隐藏后晚挂载头像仅在已确认track内同步不可见测量，finally恢复插件sheet和原inline样式，不采集整个侧栏文字、不再次遮罩页面。原生账号group、昵称ellipsis/min-width与退出flex-shrink/nowrap防止长昵称挤窄按钮。
+- 最终`node scripts/build.mjs`与`node scripts/check-distribution.mjs`通过，Host ESM/lazy CJS及18编译文件来源清单一致；DSH官方pnpm正常pack与CLI安装exit0，无allowBuilds/ignore-scripts。安装23文件逐字节匹配最终包`artifacts/dsh-deepseek-chat-0.1.10-e0316b056d46.tgz`，135131bytes、SHA256 `e0316b056d4683160a7df4aa915d10795e2cf8c6a2df1ed14864014ea8ea845d`，Host `e9c50cc544f24c60d086538ab1283ae0ed2811f23c9bb469916a2e89c3ffb38d`，Client `c380faa909eb794101949a7621dab657508cd393e67b246f33912fc50bf08a96`。唯一hash文件名避免同版本本地缓存，canonical包与其字节一致。
+- 最终原生核实：正常quit后pgrep无旧主程序/Host（exit1），重开新main35411/Host35429，进入CHAT无需再次登录。账号group昵称长度4、sidebar-text=false、退出按钮86×38；固定已登录/已记住网页登录/简体中文齐全。关闭设置后自有官网guest origin通过AXURL确认，原生导航103按钮、原官网“开启新对话”按钮0，新建官网对话enabled=true。只输出固定状态、布尔、长度/尺寸/计数，不输出个人标题/正文/授权值。这是当前账号的一次完整重启与有限界面证据，未新增/运行单元或浏览器测试，未实际退出当前官网账号/跨设备发送或故障注入。
+- 10/12用户正常完成新npm单次验证，publish session24376 exit0、+ dsh-deepseek-chat@0.1.10；旧96745曾因验证会话失效E404失败，已通过重新正常验证解决。正式公开完整和install-v1索引均latest/version=0.1.10；tgz为 https://registry.npmjs.org/dsh-deepseek-chat/-/dsh-deepseek-chat-0.1.10.tgz，135131bytes、SHA1 `3e9e15715a6e8a213754bbfe5bce3e7de0ddd9a7`、SHA256与e031完全相同，公开下载包逐字节匹配本机已验收包。没有读令牌/表单/密码或绕过验证。
+- 名称安装：DSH实际primary Node与内置pnpm11.7.0在独立consumer、空store和空元数据缓存正常add dsh-deepseek-chat，12包安装exit0、版本0.1.10、23分发文件逐字节匹配公开tgz。未修改allowBuilds或ignore-scripts；pnpm自身添加新包minimumReleaseAgeExclude，临时consumer/store/cache全部清理。先前包装Node缺宿主环境、旧全局元数据选到0.1.9的失败核对不能当通过，尝试与修正见worklog。
+- 本机保持最终e031本地包来源，其23文件已在上一轮安装核对，发布包与其完全一致；本轮没有重装同一份代码或重复GUI验收。源码和lib未stage/commit/push，Git由用户自行提交；下一步若用户遇新官网状态失配，继续限定公开DOM定位，或自行提交整个源码/lib/文档同步仓库。过期中间3bc包已哈希核实后清理，当前包及有效回退保留；临时原生辅助功能开关已恢复。官网改动账号行/头像结构时仍可能暂停识别，服务端授权过期仍须正常登录，不宣称永久免登录或所有状态完整验收。下面为历史记录。
+
+---
+
+# W025：独立CHAT登录同步、改名与npm发布 · 2026-10-11（历史已发布，已由用户提交25fc3a2）
 
 基线main f2c1277，开工干净；用户已提交前一轮预编译直装，本地文件夹已自行改为dsh-deepseek-chat。新版本0.1.8→0.1.9，仅递增一次。用户最新取消DSH/官网登出禁用CHAT切换器，要求两处网页登录同步/顺畅退出重登，询问外部浏览器确认回跳，并明确授权改GitHub仓库与插件名、发布npm名称安装。Git提交/推送仍按用户手动流程，不从发布授权推导Git写授权。
 
