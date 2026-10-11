@@ -1,3 +1,25 @@
+# W024续步：README图文与品牌选中态1px间距 · 2026-10-11
+
+归入T12/T13文档交付与现有品牌样式任务。用户要求README截图介绍功能，个人对话信息打码，并明确选择本地实色遮挡；过程中最新将品牌白色选中块与外框间距改为1px、仍需圆角，要求重截图片。本次root负责README/截图/代码安装，header_interaction_review只读核对功能与安装说明、复核间距方案；分工均已交还。基线仍main b69c219，保留开工已有AGENTS/handoff/requirements/worklog/styles修改；同轮0.1.8不重复增号，未stage/commit/push。
+
+- README以使用者为中心整理为功能预览、安装、开始使用、使用限制、隐私与开发打包；保留真实官网、两处独立授权、Git prepare许可、桌面兼容范围和未验限制，删除阶段日志式说明。
+- 新增`docs/images/chat-overview.png`（1600×1025）、`mode-switch.png`（540×108）、`chat-settings.png`（1280×702），合计约241 KiB。均为bdf当前安装的实际界面；导航标题/昵称/头像用本地不透明遮挡，保留已登录/已记住网页登录/简体中文。图片已逐张看图复查，PNG为RGB，仅保留ICC色彩信息；原始未打码截图不进入项目，收尾清理本轮临时原图。
+- `src/styles.ts`仅调整品牌父padding为1px、按钮min-height24px/圆角4px，外框5px、段间gap0、总高26px、无选中阴影及内移焦点保持。完整退出重开后HARNESS/CHAT局部截图均确认1px间距和圆角；证据`/private/tmp/dsh-chat-switch-1px-harness-018.png`与`dsh-chat-switch-1px-chat-018.png`。
+- 当前包`artifacts/dsh-chat-0.1.8-bdfc5fae47af.tgz`，22文件，SHA256 `bdfc5fae47af36b6c2dd35ff2359a7c41e570fda1c9aa1cb250a0419282c067d`；生产构建通过、官方CLI exit0，manifest/Host/Client/icon逐字节MATCH。Client SHA256 `48677cc2a5ac2585b6177c35e9c740166a67a0308668b366ec314a03a9bff2aa`，另外三项未变。下方f7为零间距历史包，已由本包替代。
+- 未新增/运行测试，不将截图或构建扩大为消息发送/跨浏览器历史验收。README图片静态引用与局部diff检查收尾记录见worklog；代码、图片及文档保留本地供用户自行审查/提交/推送。
+
+---
+
+# W024续步：品牌切换器贴框并保留圆角 · 2026-10-11（历史）
+
+用户要求取消白色选中块与父框的间距，并补充白色区域仍须圆角。root仅修改`src/styles.ts`品牌行样式：父padding/gap=0、overflow:hidden；按钮5px圆角/26px最小高度、选中无阴影、焦点描边向内。header_interaction_review只读复核通过，未改文件。当前main基线`b69c219`，本样式任务开工干净；同轮0.1.8不重复增号。
+
+- 生产构建通过；最终22文件包`artifacts/dsh-chat-0.1.8-f7e0ff219e59.tgz`，SHA256 `f7e0ff219e5991379590ce2d540fd5ceb9a1854a76968ecd016f2d4020041ac8`。官方CLI desktop安装exit0，manifest/Host/Client/icon均逐字节一致；Client SHA256 `dd240ac8edcc03b8ec291568ddbf9e6f1e5c4d1b2e2167ce2826a7f778d0a44b`。9f8331f42d35为用户补充前的零按钮圆角中间包，已被f7替代，不用作当前验收。
+- 正常完整quit且ps确认相关进程全结束后重开，分别点击HARNESS和CHAT，两张局部截图确认选中块贴齐父框、四角圆润、整体高度保持。证据`/private/tmp/dsh-chat-switch-flush-rounded-harness-018.png`与`/private/tmp/dsh-chat-switch-flush-rounded-chat-018.png`；仅截取控件，不读取正文/凭据。
+- 收尾展开CHAT，AX实读false/false。未新增/运行测试，未stage/commit/push；代码和最小上下文文档保留本地供用户审查，其他设备/仓库URL尚未同步。此次只验收品牌行样式；下方认证/环境说明证据属于此前阶段。
+
+---
+
 # W024续步：启动环境说明自动收起 · 2026-10-11
 
 用户最新明确要求去掉每次启动的“使用环境异常”说明弹窗；此前不自动关闭环境说明属于旧范围，已被本请求替代。本次只处理该固定、带正常X的说明，不扩大到验证码、认证失败或其他提醒。开工main已由用户提交至 `e3b9b90`（工作区干净）；仍为同轮0.1.8续步，不重复涨号，未stage/commit/push。

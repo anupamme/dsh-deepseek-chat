@@ -434,3 +434,20 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - 当前最终包 `artifacts/dsh-chat-0.1.8-f3fb874f2ae4.tgz`，22文件，SHA256 `f3fb874f2ae455f74287e6aecd992ba923d590c2463e348e1cbf6b8f6af50a98`。生产构建及CLI exit0，安装Host/Client/manifest/icon四文件逐字节MATCH；Client SHA256 `31961eb7e580dc448804976e820166a717ffb2cefc742047a861ec294478bde8`，其他三项同b4。未新增/运行测试，未stage/commit/push。
 - 第1次正常quit、ps确认相关进程全无后重开，未手动点X，原提示区域无dialog、指定置顶恢复；证据 `/private/tmp/dsh-chat-env-notice-before-018.png`、`/private/tmp/dsh-chat-env-notice-after-restart-1-018.png`、`/private/tmp/dsh-chat-env-pin-restart-1-018.png`。第2次同样完整quit/ps确认后重开，未点X，原区域只显示官网主页输入框/公共模型提示、无dialog，指定置顶恢复；证据 `/private/tmp/dsh-chat-env-notice-after-restart-2-018.png`、`/private/tmp/dsh-chat-env-pin-restart-2-018.png`。
 - 连续2次完整重启的固定说明自动收起观察通过，不扩大为官网其他状态通过。第二次原生CHAT设置已读回原xxbk、已登录、已记住网页登录与简体中文，证据 `/private/tmp/dsh-chat-env-account-language-018.png`；关闭设置后原指定对话标题正常，证据 `/private/tmp/dsh-chat-env-final-title-018.png`。AX实读false/false，停在展开CHAT原对话，无手动点环境提示X、输入、发送或重命名。截图仅本机证据，不读取/输出实际授权payload或正文。此次仅6份文档最小同步；root维护AGENTS/handoff/browser-session-capability。
+
+### W024续步：品牌行白色选中块贴框并保留圆角
+
+- 用户已提交环境说明修复至b69c219，本样式任务开工干净。用户先要求取消选中块与父框的间距，随即补充白色区域仍需圆角。root仅改src/styles.ts品牌控件：父padding/gap清零并裁切，按钮圆角5px，26px最小高度维持原总高度，移除选中阴影，焦点描边内移。header_interaction_review只读确认两侧选中均适用，无覆盖冲突；通用/紧凑控件未改。
+- 9f8331f42d35是用户补充前无按钮圆角的中间安装包，尚未完成样式验收，已被f7替代。最终包artifacts/dsh-chat-0.1.8-f7e0ff219e59.tgz，22文件，SHA256 f7e0ff219e5991379590ce2d540fd5ceb9a1854a76968ecd016f2d4020041ac8；生产构建通过，官方CLI desktop add --ignore-scripts exit0，泛化peer warning同前。manifest/Host/Client/icon逐字节一致；新Client SHA256 dd240ac8edcc03b8ec291568ddbf9e6f1e5c4d1b2e2167ce2826a7f778d0a44b，其他三项未变。
+- root正常quit、ps确认相关进程全部结束后重开，HARNESS和CHAT分别实机局部截图：白色选中块与父框零内边距，同时保留四角圆角与原高度。证据/private/tmp/dsh-chat-switch-flush-rounded-harness-018.png和/private/tmp/dsh-chat-switch-flush-rounded-chat-018.png；未截取正文/凭据，未输入或发送。收尾展开CHAT，AX实读false/false。
+- 同轮0.1.8不重复增号；未新增/运行测试，未stage/commit/push。最小同步AGENTS/requirements/handoff/worklog，保留本地供用户审查；本次样式检查不扩大为认证或官网其他流程新验收。
+
+### W024续步：README图文介绍与选中块1px间距
+
+- 用户要求整理README并加入实际功能截图，个人对话信息打码；随后明确选择本地实色遮挡。开工main b69c219，上一轮5份脏文件保留。root重写README，header_interaction_review只读核对当前功能、版本、Git prepare许可及限制；未新增未确认的npm/Release下载入口，不把历史采样或候选哈希放进使用流程。
+- 截图为真实DSH桌面当前界面，原始图仅在本轮私有临时目录。截屏前本地AppKit临时不透明覆盖导航文字/昵称/头像，截图后撤回，不改运行DOM或伪造聊天记录；设置仅保留已登录、已记住网页登录及语言等功能状态。候选图隐私复查发现一行漏遮，已弃用该候选并扩大遮挡，最终三张逐张看图确认。仅打开空白官网会话，未输入或发送消息，不拍聊天正文。
+- 用户过程中将选中块与父框间距改为1px，替代此前贴框方案。src/styles.ts父padding1px、按钮min-height24px/圆角4px，外框5px、gap0、整体26px；白色选中无阴影、焦点描边内移保持。方案只读几何复核通过，root构建/安装后正常完整quit且ps确认相关进程全结束再重开，HARNESS与CHAT局部截图均实际确认，证据/private/tmp/dsh-chat-switch-1px-harness-018.png和/private/tmp/dsh-chat-switch-1px-chat-018.png。
+- 当前22文件包artifacts/dsh-chat-0.1.8-bdfc5fae47af.tgz，SHA256 bdfc5fae47af36b6c2dd35ff2359a7c41e570fda1c9aa1cb250a0419282c067d；生产构建通过、官方CLI exit0，4文件与本地逐字节一致。Client SHA256 48677cc2a5ac2585b6177c35e9c740166a67a0308668b366ec314a03a9bff2aa，Host/manifest/icon未变；仍同轮0.1.8，不重复增号，f7零间距包成为历史。
+- README三图全部按最新安装重截：docs/images/chat-overview.png（1600×1025）、mode-switch.png（540×108）、chat-settings.png（1280×702）。本地PNG压缩，仅保留ICC色彩信息，无原始图或私人文本旁文件进入项目。设置截图读回已登录、已记住网页登录与简体中文；不将其扩大为其它授权状态或发送验收。未新增/运行测试，未stage/commit/push；后续检查/清理收尾记录如下。
+
+- 收尾：README的3张图片及2份本地说明链接均存在，3张PNG均为RGB且仅ICC元数据，最终个人标题/昵称/头像遮挡逐张复查通过。已删除本轮chat-overview-raw.png和chat-settings-raw.png未打码原图，项目images目录仅3张成品。git diff --check通过；已关闭设置，DSH留在展开CHAT空白主页，AX实读false/false。修改保留本地供用户自行提交/推送。
