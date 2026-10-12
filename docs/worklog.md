@@ -628,3 +628,13 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - 当前未登录主CHAT selected1、login145×48及AX primary-class=true，固定refresh/search入口存在；未登录refresh disabled符合规则。正常打开CHAT设置后login144×43及primary=true、纯native固定文案、可见AXWebArea仅shell1，无内嵌settings guest。安装记录重开后仍^0.1.12/lock0.1.12/installed0.1.12，旧三实现已替换；本次没有正常登录、真实退出重登或登录保存实证，不扩充旧矩阵。
 - README补已有安装升级入口和完整重开检查，开发包旧示例同步0.1.12；三份内部文档补持久四层交付要求。此轮未改代码/版本、构建或新增运行测试、公开发布、Git提交/推送，保留用户待提交工作；仍等待用户验收和明确后续操作指令。
 - 原生复核结束后AXManualAccessibility恢复false（setter success），仅删除本轮dsh-w030临时工具源码/二进制和Swift缓存；既有w026工具、用户附件、授权数据未动。没有新增截图或私人信息侧文件，git diff --check通过，工作区仍20个未暂存文件。
+
+## CHAT 对话更多操作 · 2026-10-12
+
+用户要求每条 CHAT 对话尾部增加 HARNESS 样式的更多菜单，参照官网重命名、置顶、分享、删除，排除多选。复用官方 Menu 与图标，官网动作通过同一 guest 的公开行菜单处理，保留官方弹窗；不引入私有历史接口或本地数据替代。生产构建和分发契约通过，未新增/运行测试，真实动作待验收；版本保留 0.1.13，未更新本机安装，未 Git 写入或 npm 发布。当前细节见 handoff 顶部。
+
+用户随后明确要求版本更新与本机安装：0.1.13 → 0.1.14，重新构建打包后通过官方 CLI 安装 desktop，24/24 文件与 ee7ecf7b8530 正式包一致，正常退出并重新打开 DSH。此授权不包含 Git 或 npm 发布。
+
+## CHAT / HARNESS 样式统一 · 0.1.15 · 2026-10-12
+
+用户反馈菜单compact尺寸和官网重命名弹窗与HARNESS不一致。对照官方Rows/RenameSession/CSS，改用标准Menu、原生Modal/Button和44px同款输入框，复用自动全选、取消/Enter/IME/提交中禁用与错误留窗交互；新名称通过官网公开表单保存，等待真实标题确认。0.1.14→0.1.15，构建及分发契约通过，不改动用户对话作验收。安装记录见handoff，不自动Git或npm发布。

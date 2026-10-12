@@ -1,3 +1,4 @@
+import { performWebsiteConversationAction } from './website-conversation-actions.js'
 import { adaptWebsiteHeader } from './website-header.js'
 import { adaptWebsiteSettings } from './website-settings.js'
 import { dismissWebsiteEnvironmentNotice } from './website-notice.js'
@@ -20,6 +21,7 @@ export interface WebsiteNavigation {
 }
 export type WebsiteCommand = { readonly type: 'snapshot'; readonly showOriginal: boolean; readonly headerInset?: number }
   | { readonly type: 'open'; readonly href: string }
+  | { readonly type: 'conversation-action'; readonly href: string; readonly action: 'rename' | 'pin' | 'unpin' | 'share' | 'delete'; readonly title?: string }
   | { readonly type: 'settings-read' } | { readonly type: 'settings-close' } | { readonly type: 'setting'; readonly key: 'language' | 'theme'; readonly value: string }
   | { readonly type: 'preferences'; readonly language: string }
   | { readonly type: 'logout' }
@@ -46,7 +48,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   const conversationError = '该对话不在当前官网列表，请刷新列表。'
   const styleId = 'dsh-chat-website-navigation-style'
   const preparingStyleId = 'dsh-chat-website-preparing-style'
-  const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, profileMarker, profileProofMarker, profileAvatarMarker, navigationWidthMarker, expandingMarker, compactToggleMarker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor', 'data-dsh-chat-header-native-depth']
+  const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, profileMarker, profileProofMarker, profileAvatarMarker, navigationWidthMarker, expandingMarker, compactToggleMarker, 'data-dsh-chat-conversation-error', 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor', 'data-dsh-chat-header-native-depth']
   const empty = (status: WebsiteNavigation['status']): WebsiteNavigation => ({ status, ...(status === 'sign-in' ? { authenticated: false } : {}), conversations: [], selectedHref: null, canCreate: false, error: null })
   const clearSettings = (preserveConfirmedPreferences = false) => {
     const confirmed = ['data-dsh-chat-language', 'data-dsh-chat-theme', 'data-dsh-chat-dark-complete', 'data-dsh-chat-settings-restored']
@@ -459,11 +461,12 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     settingsRoot.removeAttribute('data-dsh-chat-preparing')
     if (!(command.type === 'snapshot' && command.showOriginal)) settingsRoot.setAttribute(presentedMarker, '')
   }
-  return { status: ready ? 'ready' : 'loading', ...(authenticated === undefined ? {} : { authenticated }), conversations, selectedHref: safeHref(page.pathname), canCreate: newChat !== null, error: null, accountName, settings }
+  return { status: ready ? 'ready' : 'loading', ...(authenticated === undefined ? {} : { authenticated }), conversations, selectedHref: safeHref(page.pathname), canCreate: newChat !== null, error: doc.documentElement.getAttribute('data-dsh-chat-conversation-error'), accountName, settings }
 }
 
 export function websiteCommandScript(command: WebsiteCommand): string {
   if (command.type==='refresh') throw new Error('Website refresh must be handled by the guest owner')
+  if (command.type === 'conversation-action') return `(async () => { const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; const adapt = ${adaptWebsiteNavigation.toString()}; const command = ${JSON.stringify(command)}; const before = adapt(document,location,{type:'snapshot',showOriginal:false}); if (before.authenticated !== true || !before.conversations.some(item=>item.href===command.href)) return before; const error = await (${performWebsiteConversationAction.toString()})(document,command); if(error) document.documentElement.setAttribute('data-dsh-chat-conversation-error',error); else document.documentElement.removeAttribute('data-dsh-chat-conversation-error'); return adapt(document,location,{type:'snapshot',showOriginal:false}); })()`
   return `(() => { const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
 }
 

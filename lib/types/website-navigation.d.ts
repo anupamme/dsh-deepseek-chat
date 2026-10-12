@@ -29,6 +29,11 @@ export type WebsiteCommand = {
     readonly type: 'open';
     readonly href: string;
 } | {
+    readonly type: 'conversation-action';
+    readonly href: string;
+    readonly action: 'rename' | 'pin' | 'unpin' | 'share' | 'delete';
+    readonly title?: string;
+} | {
     readonly type: 'settings-read';
 } | {
     readonly type: 'settings-close';

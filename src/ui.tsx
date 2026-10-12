@@ -1,5 +1,5 @@
 import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -65,6 +65,7 @@ export interface DshChatUIBridge {
   reportWebsiteNavigation(generation: number, value: unknown, newDocument?: boolean): void
   bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void
   commandWebsite(command: WebsiteCommand): void
+  renameWebsiteConversation(href: string, title: string): Promise<void>
   toggleWebsiteNavigation(): void
   setSettingsOpen(open: boolean): void
   logoutWebsite(): void
@@ -175,9 +176,64 @@ export function DshChatBrandControl({ bridge }: PropsRuntime<'shell.overlay'> & 
   </div>
 }
 
+function DshChatConversationRow({bridge, item, selected, disabled, onRename}: DshChatBridgeProps & {
+  item: WebsiteNavigation['conversations'][number]; selected: boolean; disabled: boolean; onRename: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const pinned = /^(置顶|Pinned|Pin)$/i.test(item.group)
+  useLayoutEffect(() => { if (disabled) setOpen(false) }, [disabled])
+  return <div className="dsh-chat-conversation-item" data-selected={selected || undefined} data-menu-open={open || undefined}>
+    <button type="button" className="dsh-chat-conversation-row" title={item.title} aria-current={selected ? 'page' : undefined} disabled={disabled} onDoubleClick={onRename} onClick={()=>bridge.commandWebsite({type:'open',href:item.href})}>{item.title}</button>
+    <Menu open={open && !disabled} portal closeOnPointerLeave onClose={()=>setOpen(false)} anchor={
+      <button type="button" className="dsh-chat-conversation-more dsh-chat-icon-button" aria-label={`更多操作：${item.title}`} aria-haspopup="menu" aria-expanded={open} disabled={disabled} onClick={()=>setOpen(value=>!value)}><IconEllipsisOutlineRegular size={16}/></button>
+    } items={[
+      {id:'rename',label:'重命名',icon:<IconEditOutlineRegular size={16}/>},
+      {id:pinned ? 'unpin' : 'pin',label:pinned ? '取消置顶' : '置顶',icon:<IconPinOutlineRegular size={16}/>},
+      {id:'share',label:'分享',icon:<IconShareOutlineRegular size={16}/>},
+      {id:'delete',label:'删除',icon:<IconTrashOutlineRegular size={16}/>,danger:true},
+    ]} onSelect={action=>{
+      setOpen(false)
+      if(action==='rename') {onRename();return}
+      if(action==='pin' || action==='unpin' || action==='share' || action==='delete') bridge.commandWebsite({type:'conversation-action',href:item.href,action})
+    }}/>
+  </div>
+}
+
+/** Same Modal, buttons, input geometry and IME handling as HARNESS RenameSession. */
+function DshChatRenameConversation({bridge, item, onClose}: DshChatBridgeProps & {
+  item: WebsiteNavigation['conversations'][number]; onClose: () => void
+}) {
+  const [draft,setDraft] = useState(item.title)
+  const [renaming,setRenaming] = useState(false)
+  const [error,setError] = useState<string | null>(null)
+  const composing = useRef(false)
+  const trimmed = draft.trim()
+  const blocked = renaming || trimmed===''
+  const close = () => {if(!renaming) onClose()}
+  const confirm = () => {
+    if(blocked) return
+    setRenaming(true);setError(null)
+    void bridge.renameWebsiteConversation(item.href,trimmed).then(onClose).catch(reason=>{
+      setRenaming(false);setError(reason instanceof Error ? reason.message : '重命名失败，请重试。')
+    })
+  }
+  return <Modal open onClose={close} closeLabel="关闭" title="重命名会话" footer={<>
+    <Button variant="outline" disabled={renaming} onClick={close}>取消</Button>
+    <Button variant="primary" disabled={blocked} onClick={confirm}>{renaming ? '正在重命名…' : '重命名'}</Button>
+  </>}>
+    <DshChatStyles/>
+    <input className="dsh-chat-rename-input" value={draft} aria-label="会话名称" data-modal-autofocus maxLength={300} disabled={renaming}
+      onFocus={event=>event.target.select()} onChange={event=>{setDraft(event.target.value);setError(null)}}
+      onCompositionStart={()=>{composing.current=true}} onCompositionEnd={()=>{composing.current=false}}
+      onKeyDown={event=>{if(event.key==='Enter' && !composing.current && !event.nativeEvent.isComposing){event.preventDefault();confirm()}}}/>
+    {error && <div className="dsh-chat-rename-error" role="alert">{error}</div>}
+  </Modal>
+}
+
 /** Only the middle browsing region changes; the shipped shell and Settings stay mounted. */
 export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRuntime<'sidebar.workspaces'> & DshChatBridgeProps) {
   const state = useDshChat(bridge)
+  const [renameTarget,setRenameTarget] = useState<WebsiteNavigation['conversations'][number] | null>(null)
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const navigation = state.websiteNavigation
@@ -192,6 +248,7 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
   }
   return <section className={`dsh-chat-navigation${wide ? '' : ' dsh-chat-navigation-rail'}`} aria-label="官网对话导航">
     <DshChatStyles />
+    {renameTarget && <DshChatRenameConversation key={renameTarget.href} bridge={bridge} item={renameTarget} onClose={()=>setRenameTarget(null)}/>}
     {!wide ? <button type="button" className="dsh-chat-icon-button" onClick={expandSidebar} aria-label="展开官网对话列表"><PanelIcon /></button> : <>
       <header className="dsh-chat-navigation-header"><span>对话</span><div>
         <button type="button" className="dsh-chat-icon-button" aria-label="搜索官网对话" onClick={() => setSearching(value => !value)}><svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" stroke="currentColor" strokeWidth="1.4"/><path d="m13 13 4 4" stroke="currentColor" strokeWidth="1.4"/></svg></button>
@@ -203,7 +260,7 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
         {navigation.authenticated===true && navigation.status==='ready' ? <>
           {[...groups].map(([label, rows]) => <section key={label} className="dsh-chat-conversation-group" aria-label={label}>
             <h3>{label}</h3>
-            {rows.map(item => <button key={item.href} type="button" className="dsh-chat-conversation-row" title={item.title} aria-current={navigation.selectedHref === item.href ? 'page' : undefined} onClick={() => bridge.commandWebsite({type:'open',href:item.href})}>{item.title}</button>)}
+            {rows.map(item => <DshChatConversationRow key={item.href} bridge={bridge} item={item} selected={navigation.selectedHref===item.href} disabled={Boolean(refreshDisabled)} onRename={()=>setRenameTarget(item)}/>)}
           </section>)}
           {groups.size === 0 && <p className="dsh-chat-navigation-status">{query ? '没有匹配的对话' : '暂无对话'}</p>}
           {!query && navigation.conversations.length > 0 && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.commandWebsite({type:'more'})}>加载更早的对话</button>}

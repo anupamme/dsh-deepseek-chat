@@ -105,7 +105,7 @@ const browserArtifact = `window.__ModuleLoader__.load({\n` +
   `  factory: (require) => {\n` +
   `    var module = { exports: {} };\n` +
   `    var exports = module.exports;\n` +
-  clientBody.split('\n').map(line => `    ${line}`).join('\n') + '\n' +
+  clientBody.split('\n').map(line => line ? `    ${line}` : '').join('\n') + '\n' +
   `    return module.exports;\n` +
   `  },\n` +
   `});\n`

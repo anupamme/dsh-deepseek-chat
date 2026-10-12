@@ -1,3 +1,24 @@
+# CHAT / HARNESS 菜单及重命名统一 · 0.1.15 · 2026-10-12
+
+- 用户指出0.1.14菜单及重命名仍不同于HARNESS，要求直接采用同一套样式。保留上一轮全部未提交内容，版本0.1.14→0.1.15，本轮只递增一次。
+- 对照固定官方源码 `ui-workspace/src/client/rows/Rows.tsx`、`session-actions/RenameSession.tsx` 与 `WorkspaceBrowser.module.css`：移除compact和align=end，采用标准Menu、portal、closeOnPointerLeave；使用原生Modal及outline/primary Button，复制44px输入框的实际CSS和中文IME/自动全选/空名称禁用/提交中禁用取消/失败留窗逻辑。双击标题也打开重命名。
+- 重命名输入改由原生弹窗收集，确认后通过同一个官网guest的公开重命名菜单和表单保存，正常dispatch input/change及唯一确认控件，不调用私有接口。只有官网对应href的新标题已确认且认证generation/revision未变化才关闭本地弹窗；失败保留输入并提示。分享/删除仍由官网确认，不添加HARNESS独有分叉/归档或无效快捷键。
+- 类型/生产构建及分发契约已通过，没有新增或运行测试；不自动重命名用户真实对话。已官方CLI安装desktop（exit0），24/24文件同正式包 `artifacts/dsh-deepseek-chat-0.1.15-f6d1a1f3c807.tgz`，SHA256 `f6d1a1f3c807b3fbf8fa755b5d61248bf5b7421a33f7d386cbedef74dc21ea3b`；正常quit/open。重开后CHAT实读100条更多入口；AXPress 0打开标准菜单及重命名，实读原生“重命名会话”弹窗与“会话名称”输入框，停留弹窗供用户查看，未提交任何改名。官方名称保存结果待用户实际操作验收；未声称已验证写操作。AXManualAccessibility已恢复false。未Git提交/推送、未npm发布。
+
+---
+
+# CHAT 对话更多操作 · 2026-10-12（本地实现，待实机验收）
+
+- 开工 HEAD c96236a，工作区干净，0.1.13 连续刷新修复已由用户提交。用户随后明确要求升级并安装，本轮 0.1.13 → 0.1.14，不自行发布、提交或推送。
+- `ui.tsx` 使用 DSH 官方 Menu、Ellipsis/Edit/Pin/Share/Trash 图标；独立按钮避免嵌套及冒泡打开对话，菜单 portal 防止列表滚动裁切，原生键盘/关闭/危险项样式。已选、悬浮和键盘焦点时显示省略号；触屏始终显示。
+- 新 `website-conversation-actions.ts` 只定位确认账号的已加载 href 对应官网行，唯一触发器和新开的公开菜单，精确中英文动作；三秒有界等待，不碰私有 API、正文或凭据。重命名、分享和删除保留官网输入/确认流程，不自动确认删除。Client 串行屏障防重复操作，刷新、设置及退出期间拒绝动作，最终官网快照更新列表。结构未匹配时显式失败，不回退到修改本地数据。
+- 构建包装器仅给非空行加缩进，消除新增模块分隔空行的尾随空格，保证生成文件可通过 diff 检查。
+- 已执行 `pnpm release:prepare`：生产构建及分发契约通过。没有新增或运行测试，尚未实际调用用户对话的重命名/置顶/分享/删除；用户随后要求安装：0.1.14 已通过官方 CLI 安装到 desktop，24/24 分发文件与正式包逐字节一致，正常退出并重新打开 DSH；重开后已切换 CHAT，实读 100 个更多菜单按钮；AXPress 0 打开首条菜单，固定重命名／取消置顶／分享／删除选项存在，未选择任何操作。官网动作仍待用户验收。新源码及 lib 需一并由用户提交；npm 不自动发布。
+
+- 正式包 `artifacts/dsh-deepseek-chat-0.1.14-ee7ecf7b8530.tgz`，SHA256 `ee7ecf7b85302eb2f2f97dd75fccbe18caa012d6e3365e07cbdea36165c88bde`。构建、类型及分发检查通过；安装退出码 0，通用 peer warning 未阻止安装。npm 尚未发布、Git 尚未提交或推送。
+
+---
+
 # 连续刷新卡住修复 · 0.1.13 · 2026-10-12
 
 - 用户要求检查已安装DSH、修复、审查并更新版本；从c8fdccb干净工作区开始。实际已安装0.1.12 Client及manifest与上次修复同字节，排除旧包假象。

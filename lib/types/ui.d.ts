@@ -62,6 +62,7 @@ export interface DshChatUIBridge {
     reportWebsiteNavigation(generation: number, value: unknown, newDocument?: boolean): void;
     bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void;
     commandWebsite(command: WebsiteCommand): void;
+    renameWebsiteConversation(href: string, title: string): Promise<void>;
     toggleWebsiteNavigation(): void;
     setSettingsOpen(open: boolean): void;
     logoutWebsite(): void;

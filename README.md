@@ -4,7 +4,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.1.13**（本地修复版，尚未发布 npm） · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
+当前版本 **0.1.15**（本地修复版，尚未发布 npm） · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -13,6 +13,7 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 ![CHAT 模式：DSH 原侧栏与 DeepSeek 官网聊天页面](docs/images/chat-overview.png)
 
 - 共用 DSH 原侧栏，显示官网对话标题、置顶和日期分组。
+- 每条对话右侧提供“更多操作”：重命名、置顶／取消置顶、分享、删除；菜单和重命名弹窗与 HARNESS 共用 DSH 原生组件，修改由官网保存；分享、删除保留官网确认流程。
 - 点击历史对话继续聊天；顶部“新会话”用于新建官网对话。
 - 点击“对话”右侧的刷新图标，重新加载官网当前页面并更新列表。在其他网页端新建对话后，可用它同步，无需退出 DSH。
 - 搜索筛选已加载的对话标题，聊天正文和输入框由官网提供。
@@ -95,7 +96,7 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 将构建生成的 `.tgz` 文件交给 DSH 官方插件管理器安装，或使用 CLI：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.13.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.15.tgz
 ```
 
 将路径替换成你的实际安装包；使用其他 profile 时替换 `desktop`。**安装或更新后，完整退出并重新打开 DSH**，让新插件生效。
@@ -144,7 +145,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.1.13.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.1.15.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 

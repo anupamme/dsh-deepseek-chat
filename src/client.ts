@@ -75,6 +75,7 @@ export function apply(ctx: Context): void {
   let sidebarAdapted: boolean | null = null
   let websiteNavigation = emptyNavigation()
   let showWebsiteNavigation = false
+  let conversationActionPending = false
   let navigationHandler: ((command: WebsiteCommand) => Promise<void>) | null = null
   let bridge: DshChatUIBridge
   let cached: DshChatViewState
@@ -419,13 +420,35 @@ export function apply(ctx: Context): void {
       if (websiteNavigationRefreshing && !['logout','snapshot','restore','settings-close'].includes(command.type)) return
       if (websiteNavigation.status!=='ready' && command.type!=='logout' && command.type!=='snapshot' && command.type!=='restore') return
       if (command.type==='settings-read' && (restoringPreferences || websiteNavigation.settings?.pending)) return
-      if (command.type === 'open' && !websiteNavigation.conversations.some(item => item.href === command.href)) return
+      if ((command.type === 'open' || command.type === 'conversation-action') && !websiteNavigation.conversations.some(item => item.href === command.href)) return
       // Native settings needs the adapter's multi-step command to stay active;
       // restoring the original navigation would cancel it at the next poll.
       if (command.type==='settings-read' || command.type==='setting' || command.type==='preferences' || command.type==='logout') {
         showWebsiteNavigation=false; publish()
       }
-      void navigationHandler(command)
+      if(command.type==='conversation-action') {
+        if(conversationActionPending || websiteNavigation.authenticated!==true || websiteNavigation.settings?.pending || settingsOpen) return
+        if(!['rename','pin','unpin','share','delete'].includes(command.action)) return
+        conversationActionPending=true
+        void navigationHandler(command).catch(()=>{}).finally(()=>{conversationActionPending=false})
+      } else void navigationHandler(command)
+    },
+    renameWebsiteConversation: async (href, title) => {
+      const trimmed=title.trim()
+      const handler=navigationHandler
+      if(disposed || !mode.canEnter() || mode.getSnapshot().mode!=='chat' || !handler || conversationActionPending
+        || logoutRequested || logoutFailed || websiteNavigationRefreshing || webLoading || settingsOpen
+        || websiteNavigation.settings?.pending || restoringPreferences || websiteNavigation.authenticated!==true
+        || websiteNavigation.status!=='ready' || !trimmed || trimmed.length>300
+        || !websiteNavigation.conversations.some(item=>item.href===href)) throw new Error('官网对话尚未就绪，请稍后重试。')
+      const generation=authorizationGeneration, revision=websiteAuthenticationRevision
+      conversationActionPending=true
+      try {
+        await handler({type:'conversation-action',href,action:'rename',title:trimmed})
+        if(disposed || generation!==authorizationGeneration || revision!==websiteAuthenticationRevision || websiteNavigation.authenticated!==true) throw new Error('登录状态已变化，请重新打开对话列表。')
+        if(websiteNavigation.error) throw new Error(websiteNavigation.error)
+        if(!websiteNavigation.conversations.some(item=>item.href===href && item.title===trimmed)) throw new Error('官网尚未确认新名称，请刷新列表后重试。')
+      } finally {conversationActionPending=false}
     },
     toggleWebsiteNavigation: () => { showWebsiteNavigation = !showWebsiteNavigation; publish() },
     setSettingsOpen: next => {
