@@ -1,3 +1,11 @@
+# 图标更新 · 0.1.16 · 2026-10-12（用户授权构建发布）
+
+- 开工工作区干净，用户新图标已在assets/icon.svg，2497bytes，SHA256 8ea4f1d75f655c24e7f42fd5ed76763872d2c2c9d0661e14d64bcbc4dc5f84c8，与已发布0.1.15图标不同。不改写用户图标。
+- 用户先要求重构建发布并询问是否可用同版本，说明npm不可覆盖后，用户授权整体更新版本号；0.1.15→0.1.16，更新package、README当前安装/打包示例及生成manifest。pnpm lock没有项目version字段，DSH/依赖版本不改，历史记录保留原版本。
+- 用户本轮授权npm发布，不授权Git提交/推送或更新本机DSH。生产build/distribution通过，正式包artifacts/dsh-deepseek-chat-0.1.16-6f390861b6ad.tgz，SHA256 6f390861b6adf734c56a63d6339fdb12e16991ea4e7215a8cbf7bb4dad57bc22；包内package及manifest版本均0.1.16，新图标字节与源文件一致。初次publish PUT E404，随后whoami/access E401确认npm登录失效；精确0.1.16公开索引404。已打开官方web login（终端等待用户），旧web login未完成且终端退到Username，取消后重新官方web login成功，再进行本次2FA；最终npm publish退出0，输出+ dsh-deepseek-chat@0.1.16。匿名公开索引已确认latest=0.1.16；下载tgz与6f390861b6ad正式包逐字节一致，包内assets/icon.svg与用户当前新图标完全相同。公开核对完成，不重复递增版本。
+
+---
+
 # npm 0.1.15 发布 · 2026-10-12（用户明确授权，公开已核实）
 
 - 用户明确要求发布当前0.1.15。发布前生产分发检查通过，当前lib20个文件与已安装f6d1a1f3c807包一致；pnpm pack对package.json仅格式/开发packageManager字段规范化，运行配置无差异。直接npm publish同一个验收tgz，不重新构建替换内容。

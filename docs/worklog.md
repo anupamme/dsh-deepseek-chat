@@ -642,3 +642,9 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 ## npm 0.1.15 发布 · 2026-10-12
 
 用户明确要求发布。直接发布已安装的f6d1a1f3c807包，npm单次官方验证后exit0。索引先显示旧latest及精确版本404；约两分钟后匿名公开索引latest=0.1.15，公开下载tgz与验收包逐字节一致，SHA256 f6d1a1f3c807b3fbf8fa755b5d61248bf5b7421a33f7d386cbedef74dc21ea3b。README安装示例已更新0.1.15；未Git提交或推送。
+
+## 图标更新 · 0.1.16 · 2026-10-12
+
+用户新图标已提交在assets/icon.svg，0.1.15不可覆盖，用户授权整体升级及重构建发布。package/README当前版本和lib已更新0.1.16，生产构建与分发检查通过，6f390861b6ad包包含相同新图标。发布遇PUT E404，whoami/access E401确认npm登录失效，官方web login已打开等待用户；尚未公开发布，不自动Git或本机安装。详见handoff顶部。
+
+0.1.16续步：重新官方web login完成，单次2FA后publish退出0。匿名公开latest=0.1.16，下载包SHA256 6f390861b6adf734c56a63d6339fdb12e16991ea4e7215a8cbf7bb4dad57bc22，与正式包一致；包内新图标与用户源文件逐字节一致。未Git提交/推送，未更新本机DSH。
