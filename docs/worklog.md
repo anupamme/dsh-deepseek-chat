@@ -638,3 +638,7 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 ## CHAT / HARNESS 样式统一 · 0.1.15 · 2026-10-12
 
 用户反馈菜单compact尺寸和官网重命名弹窗与HARNESS不一致。对照官方Rows/RenameSession/CSS，改用标准Menu、原生Modal/Button和44px同款输入框，复用自动全选、取消/Enter/IME/提交中禁用与错误留窗交互；新名称通过官网公开表单保存，等待真实标题确认。0.1.14→0.1.15，构建及分发契约通过，不改动用户对话作验收。安装记录见handoff，不自动Git或npm发布。
+
+## npm 0.1.15 发布 · 2026-10-12
+
+用户明确要求发布。直接发布已安装的f6d1a1f3c807包，npm单次官方验证后exit0。索引先显示旧latest及精确版本404；约两分钟后匿名公开索引latest=0.1.15，公开下载tgz与验收包逐字节一致，SHA256 f6d1a1f3c807b3fbf8fa755b5d61248bf5b7421a33f7d386cbedef74dc21ea3b。README安装示例已更新0.1.15；未Git提交或推送。

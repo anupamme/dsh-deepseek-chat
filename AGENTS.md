@@ -4,7 +4,7 @@
 
 ## 当前样式统一（2026-10-12）
 
-用户要求CHAT菜单和重命名完整对齐HARNESS；0.1.15采用标准Menu、原生Modal/Button、HARNESS输入CSS及IME/自动全选/错误留窗，官网负责保存新名称。构建与分发通过，安装/预览见handoff顶部，未Git或npm发布。
+用户要求CHAT菜单和重命名完整对齐HARNESS；0.1.15采用标准Menu、原生Modal/Button、HARNESS输入CSS及IME/自动全选/错误留窗，官网负责保存新名称。构建与分发通过，安装/预览见handoff；用户随后明确授权npm发布，0.1.15已公开且latest/下载包同验收包已核实。未Git提交或推送。
 
 ## 当前新增功能（2026-10-12）
 
