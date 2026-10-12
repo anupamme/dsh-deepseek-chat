@@ -145,7 +145,6 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     let pendingSessionCapture: Promise<void> | null = null
     let navigationRefresh: { requestId:number; authenticationRevision:number; documentRevision:number } | null = null
     let navigationRefreshTimer: ReturnType<typeof setTimeout> | undefined
-    const refreshTimeoutMessage='官网加载超时，请点击「重试网页」。'
     let fastPollingUntil = Date.now()+8000
     let lastPolled = 0
     let lastNavigationStatus: string | null = null
@@ -253,9 +252,6 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
           // Publish account/login/navigation before vault I/O. Both login surfaces
           // observe the same website state without waiting for a save or Settings open.
           bridge.reportWebsiteNavigation(generation,result);if(result.status!=='loading' || !documentPresented) setPresentationReady(result.status!=='loading')
-          if (result.status==='ready' && result.authenticated===true && lastError===refreshTimeoutMessage) {
-            lastError=null;report(false)
-          }
           if (navigationRefresh && requestDocumentRevision>navigationRefresh.documentRevision) {
             if (result.status==='ready' && result.authenticated===true) finishNavigationRefresh(null)
             else if (result.status==='sign-in') finishNavigationRefresh('官网登录已失效，请重新登录后刷新列表。')
@@ -311,8 +307,10 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
             navigationRefreshTimer=setTimeout(()=>{
               if (navigationRefresh!==refreshRequest) return
               if (!sameRequest()) {finishNavigationRefresh('官网登录状态已变化，请稍后刷新。',refreshRequest);return}
-              finishNavigationRefresh('官网对话列表刷新超时，请点击右侧「重试网页」。',refreshRequest)
-              report(false,refreshTimeoutMessage)
+              // A navigation projection timeout is not a failed HTTP load.
+              // Keep the real conversation usable and offer recovery in the list.
+              finishNavigationRefresh('官网对话列表同步超时，请点击「重新加载」。',refreshRequest)
+              report(false)
             },30_000)
             report(true);current.reload()
           } catch {

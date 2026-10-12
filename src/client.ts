@@ -392,6 +392,8 @@ export function apply(ctx: Context): void {
           if (!logoutFailed && websiteSessionStatus!=='error') websiteSessionError=null
         } else if (!websiteHadSession) websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'loading'
       }
+      if (websiteNavigation.status==='ready' && websiteNavigation.authenticated===true && !websiteNavigationRefreshing
+        && websiteNavigationRefreshError==='官网对话列表同步超时，请点击「重新加载」。') websiteNavigationRefreshError=null
       const settings=websiteNavigation.settings
       if (restoringPreferences && settings?.restored===false) restorationSeen=true
       if (restorationSeen && settings?.restored && !settings.pending) restoringPreferences=false

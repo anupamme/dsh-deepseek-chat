@@ -444,7 +444,11 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
           && !candidate.querySelector('textarea,[contenteditable="true"]') && !candidate.textContent?.trim()) candidate.setAttribute('data-dsh-chat-web-chrome', '')
       }
     }
-    const styleText=`html:not([data-dsh-chat-settings-request]) [${marker}],[data-dsh-chat-web-chrome]{display:none!important}
+    // Native settings shares this desktop guest; public settings requests must
+    // not reveal its sidebar while the content still fills the entire layout.
+    // That conflicting geometry prevents subsequent probes from advancing the
+    // settings request, including its deadline, and leaves refresh waiting.
+    const styleText=`[${marker}],[data-dsh-chat-web-chrome]{display:none!important}
         [data-dsh-chat-layout]{grid-template-columns:minmax(0,1fr)!important}
         [data-dsh-chat-content]{margin-left:0!important;min-width:0!important;width:100%!important;max-width:none!important;flex:1 1 0%!important}`
     let style=doc.getElementById(styleId)

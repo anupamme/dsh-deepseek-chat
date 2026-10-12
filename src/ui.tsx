@@ -210,6 +210,7 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
         </> : <p className="dsh-chat-navigation-status" role="status">{navigation.status === 'sign-in' ? 'CHAT 尚未登录。请在右侧点击登录 DeepSeek，完成后自动显示官网对话。' : navigation.status === 'unsupported' ? '暂未识别官网列表，请使用右侧官网导航。' : '正在加载官网对话…'}</p>}
         {navigation.error && <p className="dsh-chat-navigation-status" role="alert">{navigation.error}</p>}
         {state.websiteNavigationRefreshError && <p className="dsh-chat-navigation-status" role="alert">{state.websiteNavigationRefreshError}</p>}
+        {state.websiteNavigationRefreshError==='官网对话列表同步超时，请点击「重新加载」。' && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.reloadWebsite()} disabled={!state.modeEnabled || !state.desktopAvailable || ['signing-in','signing-out'].includes(state.websiteAuthenticationStatus)}>重新加载</button>}
       </div>
     </>}
   </section>
