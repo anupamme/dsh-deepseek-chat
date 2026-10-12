@@ -27,7 +27,7 @@ const result = await build({
           if (begin < 0 || end < 0) throw new Error(`Installed rc.2 ${name} region is unavailable; preview must be adapted explicitly.`)
           return source.slice(begin, end)
         })
-        return { contents: `import { jsx, jsxs } from 'react/jsx-runtime';\n${regions.join('\n')}\nexport { FishLogo, BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular }; export const Tooltip = ({children}) => children;`, loader: 'js', resolveDir: root }
+        return { contents: `import { jsx, jsxs } from 'react/jsx-runtime';\n${regions.join('\n')}\nexport { FishLogo, BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular }; export const Tooltip = ({children}) => children;`, loader: 'js', resolveDir: root }
       })
     },
   }],

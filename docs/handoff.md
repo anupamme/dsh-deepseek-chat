@@ -1,3 +1,47 @@
+# W030：安装记录恢复旧版导致旧界面复现 · 2026-10-12（持久安装与未登录界面已复核）
+
+- 用户反馈发布后主登录变弱文字、设置卡片下残线，并且列表刷新又变加号。开工HEAD仍086b7abd，保留W028/W029的20个未暂存文件，不提交、推送或公开发布。
+- root现场只读确认：desktop profile依赖为`^0.1.9`、pnpm-lock importer与解析项均0.1.9，实际安装package.json为0.1.9，Client SHA256为`6da7d7cef93b263bdc86496fcdb87c151f99c78a3c5f28555c20ec9cc118f02b`。静态独立审查确认弱按钮、1px settingsViewport占位和加号三项都在该旧包，当前0.1.12源码/产物已没有这些实现。
+- 同时匿名读取npm安装索引，latest仍0.1.12，正式tgz138225bytes、SHA256 `0acaca2e5f6b10f1d8e26100db0d25ab075744ee98ba6c006d4008f618e94e4f`，与已验收0ac整个包一致；公开包Client为46a6041d6c144746b485d03809ea1aff6f6a6c5591b314f76309b500df4d3e72。当前证据证明本机实际旧版与公开新版不一致，没有证明是哪次操作恢复了旧安装记录，不能凭推测归咎用户操作或npm发布错误。
+- root使用官方CLI `dsh plugin --profile desktop add dsh-deepseek-chat@0.1.12 --save-exact`升级实际profile及锁文件，exit0、下载1包，23/23分发文件同正式0ac。实际持久依赖与lock specifier为`^0.1.12`，锁定/安装版本0.1.12，不能声称exact已生效；该范围已排除旧0.1.9。README仅说明明确@0.1.12升级，不承诺精确保存。
+- 正常quit确认旧main51380/Host51389全结束；正常open新main52900/Host52916后manifest仍新版。初始化曾出现NSWorkspace main regular/active/finished=true但AXWindows0，normal activate未显窗；只读核实官方dsh://open/后正常打开该入口，窗口已出现。不能确定启动中具体等待点，不把源码可能性当现场根因。
+- 本次原生固定控件复核：CHAT selected1，两模式enabled；主登录145×48px且AXDOMClassList包含dsh-chat-primary-button；搜索及“刷新官网对话列表”入口均存在。未登录时refresh disabled符合条件，不当实际刷新成功。打开CHAT设置后仅原生状态、登录144×43px且primary=true、可见AXWebArea仅shell1，无设置guest。当前确实显示新版未登录入口，三项旧代码已被公开0.1.12替换；没有本轮正常登录、退出重登或登录记忆验证，也不扩大W027/W028历史证据。
+- 重开后再次持久依赖^0.1.12、lock0.1.12、installed0.1.12未回退，正式23文件一致；本轮只修正已发布版本安装及文档，没有代码/版本修改、构建、测试、公开发布或Git写入。后续需用户验收，任何新的公开发布仍遵循W029。
+- 分工：regression_source_audit完成只读旧代码指纹审查，继续负责README与需求/架构/路线的已有安装升级说明；root负责安装、原生复核、AGENTS/handoff/worklog。正常官网登录仅由用户本人完成，不读凭据、Cookie或个人对话。
+- dsh_window_readonly并行只读核查官方主程序窗口创建/启动契约，不读取用户Session Storage、认证或个人对话。一次官方CLI分支源码只读请求遇自动审批429重试上限而未执行，这是审核服务失败非不安全判定，不绕过；该源码不是升级必要步骤，不影响已完成安装。
+
+---
+
+# W029：后续公开发布须用户验收及明确指令 · 2026-10-12（规则已更新）
+
+- 用户最新要求：今后npm/npx公开发布与Git提交、推送一样，先由用户确认当轮成果验收，再由用户明确告知“可以发布npx版本”或等效当轮发布指令，Agent才执行。
+- 本地成果准备和检查后汇报，等待用户验收与发布指令；Agent自验通过、登录完成、早前发布请求或2FA完成不作为后续版本自动发布授权。未获当轮发布指令不启动npm publish或发布登录/验证流程；已验收成果修改后重新等待验收与发布指令。
+- 规则写入AGENTS.md及需求/架构/路线，既有Git手动流程保留。仅协作规则和交接文档修改，版本仍0.1.12，无构建、测试、安装、npm发布、Git提交或推送操作。下方W028已经发生的0.1.12发布保留为历史事实。
+- 用户追问刚才是否自动提交/推送，root只读git status/log/reflog及GitHub ls-remote核实：本地HEAD与真实远端main均 `086b7abd01ed82b1b44aeafdb3de5d617c9d9a98`（开工基线），本轮20个文件仍未暂存/未提交；没有执行stage/commit/push。npm发布与GitHub仓库更新是两个独立动作。
+
+---
+
+# W028：手动刷新官网对话列表 · 2026-10-12（实机、公开0.1.12及名称安装通过）
+
+基线HEAD/origin/main `086b7abd`，fetch一致、开工干净；W027由用户提交。本轮 `0.1.11 → 0.1.12` 已增一次，不重复增号，Git仍用户手动提交/推送。
+
+- 用户要求列表标题旁的＋改刷新，保留顶部新会话；在其他网页端新建对话后不用退出DSH同步。
+- 根因：snapshot/MutationObserver及200–1200ms轮询仅读取当前官网DOM，不触发服务器历史获取。无已确认独立历史刷新接口；新refresh由surface拦截调用当前同guest.reload()，保留当前URL/lease及授权代次，不new、不回官网首页、不release/acquire，不调用私有API。
+- UI官方刷新图标/28px按钮/Tooltip，用户反馈16px视觉偏大后缩至14px，与17px搜索图标路径的视觉面积相近；刷新中旋转、禁连点与中文status，reducedmotion停动画。refreshError独立，检查阶段保留原列表，上方/leading的新建入口保留。已认证但unsupported可重试；认证/退出/settings pending暂缓。
+- Client单调requestId与授权generation隔离，surface再次核实authenticationRevision。只在新文档确认ready+真实账号后结束刷新，登录失效、加载失败、30秒超时或关闭均有结束/重试状态。
+- 保护检查只在自有guest内判断可见编辑器非空/已选文件以及公开Stop中英按钮、aria-busy、disabled/readonly字段，返回四枚举，不传或保存输入文本/文件名，不读取聊天正文。检测非空时提示先发送或清空；已识别忙碌暂缓。无自动timer/focus reload，不承诺识别所有匿名生成/附件控制或重载保存草稿。
+- 分工：w027_settings_ui UI/CSS与只读审查，w027_compact_navigation公开契约和preview桥接，browser_publish_research三docs，root Client/surface/版本/README/build/install/原生检查。源码与预览契约整合完，独立只读审查无阻断；无新增/运行测试、Git写操作。
+- 原16px候选651b（138016bytes）已正常安装/重启，实际刷新出现busy=true/禁用与中文进度，随后enabled=true/busy=false。用户在另一网页新建后仍保持DSH打开，刷新前100行本地匿名指纹，刷新后新增1/移出1（官网加载上限100），置顶首行不变。只在临时本地比较，不输出标题/正文；证明本次单条外部新增同步，不宣称所有历史场景。guest999×820/nav103/originalNew0/compact0与sessionSaved正常，刷新前后当前URL匿名SHA256均7ea330ae999c9e2b2bd8f4aee7dbaa0974abd38888ecde5edf3c35abb830d747（公开首页）。
+- 中间14px e76f候选（138018bytes）正常build/check18/pack/CLI安装23/23，正常quit确认50344/50353结束，重开50867/50878无需再次登录、CHAT999×820/nav103/compact0/sessionSaved恢复。图标实际已与搜索视觉接近；再次正常刷新发生30秒超时，busy结束但原按钮因加载/认证未就绪禁用，主区没有重试入口，此失败不能当最终正常循环通过。
+- 新最终包 `artifacts/dsh-deepseek-chat-0.1.12-0acaca2e5f6b.tgz`，138225bytes，SHA256 `0acaca2e5f6b10f1d8e26100db0d25ab075744ee98ba6c006d4008f618e94e4f`，SHA1 `93c4d881c53c56e871226cb4e048126bd92079e5`，Client `46a6041d6c144746b485d03809ea1aff6f6a6c5591b314f76309b500df4d3e72`，Host保持e9c50cc544f24c60d086538ab1283ae0ed2811f23c9bb469916a2e89c3ffb38d。超时核对request身份/generation/authrevision后结束刷新并写webError，现有右侧“重试网页”出现；手动重试清旧刷新请求与timer，迟到真实ready只清同源超时，旧await/catch不能覆盖新请求。build/check18/正常pack/官方CLI安装exit0、23/23文件一致；normal quit确认50867/50878结束，重开51380/51389，最终实机通过见后条。
+- README总览已更换14px真实图：1600×1025RGB，所有可见个人行/昵称/头像本地实色覆盖，图像元数据移除、原图即删；底部裁剪行最初残露的图已拒绝，扩大遮挡后才保存。截图工具有限坐标修复与自动审批429稍后正常重试成功，没有绕过审批。
+- 最终0ac重开51380/51389无需再次登录，CHAT999×820/nav103/originalNew0/compact0/sessionSaved正常。正常点击refresh出现busy=true/disabled/中文进度，官网再次自然发生30秒超时后明确webError与可点击“重试网页”；正常AXPress重试无需重登恢复nav103/999×820/compact0/sessionSaved、enabled=true/busy=false，两处旧错误消失，URL匿名哈希仍公开首页7ea330。这是实际自然超时→正常重试流程通过，不故障注入或所有生成/输入保护验收，也不保证每次官网30秒内响应。
+- 用户要求重新发起发布验证后，旧session60618实读done-auth GET E404退出；匿名索引确认latest0.1.11且0.1.12不存在。npm whoami确认原账号仍正常登录，0ac/canonical SHA与138225bytes不变。重新正常publish同一最终0ac绝对包session10510，用户完成新官方单次2FA后exit0、+ dsh-deepseek-chat@0.1.12。processing首轮匿名完整和install-v1索引仍0.1.11，随后专用版本、完整与install-v1索引均确认0.1.12/latest。不读凭据、不改版本或包；AX已恢复，未Git写/新增运行测试。
+- 正式公开tgz138225bytes、SHA1 `93c4d881c53c56e871226cb4e048126bd92079e5`、SHA256与最终0ac一致，整个包字节同本机验收包/canonical；本机已安装23/23文件同公开包。DSH实际primary Node及pnpm11.7.0，独立consumer/空store/空元数据cache正常add裸名dsh-deepseek-chat，exit0、12包、版本0.1.12、23/23分发文件同公开包，无allowBuilds/ignore-scripts覆盖；minimumReleaseAgeExclude由pnpm自身正常生成。临时consumer/store/cache全部清理。
+- 收尾只经SHA确认删除已被最终0ac取代的651b/e76f两份本轮中间包，保留0ac/canonical与有效回退版；本轮临时原生/截图工具、匿名行指纹、图片、Swift缓存及公开包核对脚本已清理，用户附件与既有工具未动。最终包/源码分发/README字节一致，git diff --check通过。公开包与实机安装字节相同，本轮发布后不重复重装/GUI验收；GitHub仍需用户手动提交源码/lib/README及图片和上下文，npm发布不表示仓库代码已推送。
+
+---
+
 # W027：退出页面、登录入口与收起导航恢复 · 2026-10-12（新流程与重启已验收，0.1.11已公开发布）
 
 基线main/远端 `51cf995`，开工fetch确认一致、工作区干净；W026已由用户提交。本轮 `0.1.10 → 0.1.11` 已递增一次，后续同轮重包不再增号。Git仍由用户手动提交/推送。

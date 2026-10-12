@@ -23,6 +23,9 @@ let epochNumber = 0
 let sidebarMounted = false
 let sidebarCollapsed = false
 let websiteReloadRevision = 0
+let websiteNavigationRefreshRequestId = 0
+let websiteNavigationRefreshing = false
+let websiteNavigationRefreshError: string | null = null
 let webLoading = false
 let webError: string | null = null
 let websiteAuthenticationStatus: DshChatViewState['websiteAuthenticationStatus']='loading'
@@ -31,7 +34,7 @@ let websiteSignInRequested=false
 let websiteSessionStatus: DshChatViewState['websiteSessionStatus']='idle'
 let websiteSessionError: string | null = null
 let fixtureAccountLabel='官网模拟账号 A'
-let settingsViewport: DshChatViewportRect | null = null
+let settingsOpen = false
 let viewport: DshChatViewportRect | null = null
 let brandAnchor: DshChatViewportRect | null = null
 let sidebarAdapted: boolean | null = null
@@ -73,6 +76,8 @@ const controller = new ModeController({
     authorizationGeneration++
     webLoading = false
     webError = null
+    websiteNavigationRefreshing = false
+    websiteNavigationRefreshError = null
     websiteNavigation = emptyNavigation(); navigationHandler = null
     record({ action: `invalidate:${accountId}` })
   },
@@ -104,9 +109,10 @@ function publish(): void {
     mode: state.mode, modeEnabled: controller.canEnter(), authorizationStatus: state.authorization.status,
     availabilityMessage: authorized ? '开发模拟：CHAT 独立官网登录，模式切换不受 HARNESS 登录影响。网页容器不联网。' : '开发模拟：登录保存服务未连接，模式切换仍可用。',
     accountLabel: websiteNavigation.accountName ?? null,
-    error: state.error ?? (state.authorization.error ? '开发模拟：登录保存服务暂时不可用，请重试连接。' : null), desktopAvailable: true, webLoading, webError, settingsViewport, preferenceError:null, viewport, brandAnchor, sidebarAdapted,
+    error: state.error ?? (state.authorization.error ? '开发模拟：登录保存服务暂时不可用，请重试连接。' : null), desktopAvailable: true, webLoading, webError, settingsOpen, preferenceError:null, viewport, brandAnchor, sidebarAdapted,
     accountStorageKey: authorized && state.authorization.accountId ? `preview:website:${state.authorization.accountId}` : null,
     authorizationGeneration, websiteReloadRevision, websiteNavigation, showWebsiteNavigation,
+    websiteNavigationRefreshing, websiteNavigationRefreshError,
     websiteAuthenticationStatus,websiteAuthenticationRevision,websiteSessionStatus,websiteSessionError,
   }
   sidebar?.sync()
@@ -129,10 +135,11 @@ function sameAccountRefresh(): void {
 }
 
 const bridge: DshChatUIBridge = {
-  updateSettingsViewport: next=>{settingsViewport=next;publish()},
+  setSettingsOpen: open=>{if(settingsOpen===open)return;settingsOpen=open;publish()},
   logoutWebsite:()=>{
     fixtureWebsiteMode='sign-in';websiteSignInRequested=false;websiteAuthenticationRevision++
     websiteAuthenticationStatus='signed-out';websiteSessionStatus='idle';websiteSessionError=null
+    websiteNavigationRefreshRequestId++;websiteNavigationRefreshing=false;websiteNavigationRefreshError=null
     websiteNavigation={...emptyNavigation(),status:'sign-in'};publish()
   },
   getSnapshot: () => cached,
@@ -144,7 +151,8 @@ const bridge: DshChatUIBridge = {
   },
   manageAccount: () => { bridge.beginWebsiteSignIn() },
   beginWebsiteSignIn: () => {
-    if (!settingsViewport) controller.select('chat')
+    controller.select('chat')
+    if (!websiteSignInRequested) websiteAuthenticationRevision++
     websiteSignInRequested=true;websiteAuthenticationStatus='signing-in';websiteSessionError=null;publish()
   },
   loadWebsiteSession: async () => null,
@@ -166,6 +174,20 @@ const bridge: DshChatUIBridge = {
     brandAnchor = next; publish()
   },
   reloadWebsite: () => { websiteReloadRevision++; publish() },
+  refreshWebsiteNavigation: () => {
+    if (!navigationHandler || cached.mode!=='chat' || !cached.modeEnabled || websiteNavigationRefreshing || webLoading
+      || websiteAuthenticationStatus!=='signed-in' || websiteNavigation.status!=='ready' || websiteNavigation.settings?.pending) return
+    const generation=authorizationGeneration
+    const requestId=++websiteNavigationRefreshRequestId
+    bridge.reportWebsiteNavigationRefresh(generation,{requestId,refreshing:true,error:null})
+    void navigationHandler({type:'refresh',requestId,authenticationRevision:websiteAuthenticationRevision}).catch(()=>{
+      bridge.reportWebsiteNavigationRefresh(generation,{requestId,refreshing:false,error:'模拟列表刷新未完成，请重试。'})
+    })
+  },
+  reportWebsiteNavigationRefresh: (generation,state) => {
+    if (generation!==authorizationGeneration || state.requestId!==websiteNavigationRefreshRequestId) return
+    websiteNavigationRefreshing=state.refreshing;websiteNavigationRefreshError=state.error;publish()
+  },
   attachSidebar: element => { sidebar?.attach(element) },
   reportWebsiteState: (generation, state) => {
     if (generation !== authorizationGeneration) return
@@ -187,7 +209,7 @@ const bridge: DshChatUIBridge = {
   },
   bindWebsiteNavigation: (generation, handler) => { navigationHandler = handler; return () => { if (navigationHandler === handler) navigationHandler = null } },
   commandWebsite: command => {
-    if ((cached.mode !== 'chat' && !settingsViewport) || !cached.modeEnabled) return
+    if ((cached.mode !== 'chat' && !settingsOpen) || !cached.modeEnabled) return
     if (command.type==='settings-read' || command.type==='setting') {showWebsiteNavigation=false;publish()}
     void navigationHandler?.(command)
   },
@@ -209,8 +231,16 @@ function simulateGuest(element: HTMLElement): void {
   const load = async (url: string) => {
     currentUrl = url
     record({ action: 'loadURL', lease, url })
+    const navigation = Object.assign(new Event('did-start-navigation'), {isMainFrame:true,isInPlace:false})
+    element.dispatchEvent(navigation)
     element.dispatchEvent(new Event('did-start-loading'))
-    queueMicrotask(() => { if (element.isConnected) element.dispatchEvent(new Event('did-stop-loading')) })
+    await new Promise<void>(resolve => queueMicrotask(() => {
+      if (element.isConnected) {
+        element.dispatchEvent(new Event('dom-ready'))
+        element.dispatchEvent(new Event('did-stop-loading'))
+      }
+      resolve()
+    }))
   }
   const fixtureDoc = document.implementation.createHTMLDocument('navigation fixture')
   fixtureDoc.body.innerHTML = '<div class="fixture-grid"><div class="fixture-track"><aside><button>开启新对话</button><div>置顶</div><a href="/a/chat/s/fixture-a">模拟对话 A</a><div>昨天</div><a href="/a/chat/s/fixture-b">模拟对话 B</a><footer><img alt="fixture avatar"><button>官网模拟账号 A</button></footer></aside></div><main><div class="fixture-chrome"><button><svg/></button><button><svg/></button></div><textarea aria-label="fixture draft">fixture draft</textarea></main></div>'
@@ -245,6 +275,8 @@ function simulateGuest(element: HTMLElement): void {
   fixtureDoc.querySelector('button')!.addEventListener('click', () => { fixturePath = '/'; fixtureNewCount++ })
   fixtureDoc.querySelectorAll('a').forEach(link => link.addEventListener('click', event => { event.preventDefault(); fixturePath = link.getAttribute('href')! }))
   Object.assign(element, { loadURL: load, getURL: () => currentUrl, reload: () => { void load(currentUrl) }, executeJavaScript: async (code: string) => {
+    // A fixed, content-free readiness result for this simulated guest only.
+    if (code.includes('function websiteRefreshReadiness(')) return 'ready'
     const prefix = ')(document,location,'
     const commandStart=code.lastIndexOf(prefix)
     // Session scripts never execute against this fixture and never receive a grant.

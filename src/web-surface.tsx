@@ -8,6 +8,33 @@ import { parseWebsiteSession, websiteSessionCaptureScript, websiteSessionRestore
 
 const WEBSITE_URL = 'https://chat.deepseek.com/'
 
+/** Runs entirely in our guest. Only an enum crosses back; no draft text is exported or stored. */
+function websiteRefreshReadiness(doc: Document, origin: string): 'ready' | 'draft' | 'busy' | 'unavailable' {
+  if (origin!=='https://chat.deepseek.com') return 'unavailable'
+  const visible = (node: Element) => {
+    const rect=node.getBoundingClientRect()
+    const style=doc.defaultView?.getComputedStyle(node)
+    return rect.width>0 && rect.height>0 && style?.display!=='none' && style?.visibility!=='hidden'
+  }
+  for (const field of doc.querySelectorAll('textarea,input[type="text"],input:not([type]),[contenteditable="true"]')) {
+    if (!visible(field)) continue
+    if (field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement) {
+      if (field.value.trim().length>0) return 'draft'
+      if (field.disabled || field.readOnly) return 'busy'
+    } else if ((field.textContent ?? '').trim().length>0) return 'draft'
+  }
+  for (const field of doc.querySelectorAll<HTMLInputElement>('input[type="file"]')) {
+    if (field.files?.length) return 'draft'
+  }
+  const stopping=/^(停止|停止生成|停止回答|停止响应|取消生成|Stop|Stop generating|Stop generation|Stop response|Cancel generation)$/i
+  for (const button of doc.querySelectorAll('button,[role="button"]')) {
+    if (visible(button) && [button.getAttribute('aria-label'),button.getAttribute('title'),button.textContent?.trim()]
+      .some(label=>label && stopping.test(label))) return 'busy'
+  }
+  if ([...doc.querySelectorAll('[aria-busy="true"]')].some(visible)) return 'busy'
+  return 'ready'
+}
+
 /** Public Electron methods on our approved, isolated DSH Browser guest. */
 interface WebsiteWebview extends HTMLElement {
   loadURL(url: string): Promise<void>
@@ -116,14 +143,23 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     let websiteHadSession = false
     let savedSessionFingerprint: string | null = null
     let pendingSessionCapture: Promise<void> | null = null
+    let navigationRefresh: { requestId:number; authenticationRevision:number; documentRevision:number } | null = null
+    let navigationRefreshTimer: ReturnType<typeof setTimeout> | undefined
+    const refreshTimeoutMessage='官网加载超时，请点击「重试网页」。'
     let fastPollingUntil = Date.now()+8000
     let lastPolled = 0
     let lastNavigationStatus: string | null = null
-    retryGuestSession.current=()=>{restorationAttempted=false;restoredFromVault=false;restoreDeadline=0}
+    const finishNavigationRefresh = (error: string | null, request=navigationRefresh) => {
+      if (!request || navigationRefresh!==request) return
+      navigationRefresh=null;clearTimeout(navigationRefreshTimer);navigationRefreshTimer=undefined
+      bridge.reportWebsiteNavigationRefresh(generation,{requestId:request.requestId,refreshing:false,error})
+    }
+    retryGuestSession.current=()=>{finishNavigationRefresh(null);restorationAttempted=false;restoredFromVault=false;restoreDeadline=0}
     const report = (loading: boolean, error: string | null = null) => {
       if (loading) lastError = null
       else if (error !== null) lastError = error
       if (!events.signal.aborted) bridge.reportWebsiteState(generation, { loading, error: lastError })
+      if (error) finishNavigationRefresh('官网对话列表刷新失败，请检查网络后重试。')
     }
     const resetDocumentPresentation = () => {
       documentRevision++
@@ -217,6 +253,13 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
           // Publish account/login/navigation before vault I/O. Both login surfaces
           // observe the same website state without waiting for a save or Settings open.
           bridge.reportWebsiteNavigation(generation,result);if(result.status!=='loading' || !documentPresented) setPresentationReady(result.status!=='loading')
+          if (result.status==='ready' && result.authenticated===true && lastError===refreshTimeoutMessage) {
+            lastError=null;report(false)
+          }
+          if (navigationRefresh && requestDocumentRevision>navigationRefresh.documentRevision) {
+            if (result.status==='ready' && result.authenticated===true) finishNavigationRefresh(null)
+            else if (result.status==='sign-in') finishNavigationRefresh('官网登录已失效，请重新登录后刷新列表。')
+          }
         }
         if(result.authenticated===true) {
           websiteHadSession=true;restoredFromVault=false
@@ -248,11 +291,41 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     }
     const stopCommands = bridge.bindWebsiteNavigation(generation, command => {
       if(command.type!=='snapshot') fastPollingUntil=Date.now()+8000
-      queued = queued.then(() => adapt(command)).then(() => adapt(snapshotCommand()))
+      if (command.type==='refresh') {
+        queued=queued.then(async()=>{
+          clearTimeout(navigationRefreshTimer);navigationRefreshTimer=undefined
+          const refreshRequest={requestId:command.requestId,authenticationRevision:command.authenticationRevision,documentRevision}
+          navigationRefresh=refreshRequest
+          const sameRequest=()=>navigationRefresh===refreshRequest && active() && bridge.getSnapshot().websiteAuthenticationRevision===command.authenticationRevision
+          if (!sameRequest() || !approvedOrigin()) {finishNavigationRefresh('官网页面状态已变化，请稍后重试刷新。',refreshRequest);return}
+          try {
+            const readiness=await executeScript(`(${websiteRefreshReadiness.toString()})(document,location.origin)`)
+            if (!sameRequest() || documentRevision!==refreshRequest.documentRevision) {finishNavigationRefresh('官网页面状态已变化，请稍后刷新。',refreshRequest);return}
+            if (readiness!=='ready') {
+              finishNavigationRefresh(readiness==='draft' ? '请先发送或清空未发送内容，再刷新对话列表。'
+                : readiness==='busy' ? '请等当前回复或网页操作完成，再刷新对话列表。' : '当前官网页面暂时无法刷新，请稍后重试。',refreshRequest)
+              return
+            }
+            // Reload the same guest at its current URL. Keep its lease/session,
+            // and finish only after a new document yields a confirmed list.
+            navigationRefreshTimer=setTimeout(()=>{
+              if (navigationRefresh!==refreshRequest) return
+              if (!sameRequest()) {finishNavigationRefresh('官网登录状态已变化，请稍后刷新。',refreshRequest);return}
+              finishNavigationRefresh('官网对话列表刷新超时，请点击右侧「重试网页」。',refreshRequest)
+              report(false,refreshTimeoutMessage)
+            },30_000)
+            report(true);current.reload()
+          } catch {
+            if (!sameRequest()) return
+            report(false)
+            finishNavigationRefresh('无法刷新官网对话列表，请重试。',refreshRequest)
+          }
+        })
+      } else queued = queued.then(() => adapt(command)).then(() => adapt(snapshotCommand()))
       return queued
     })
     const timer = setInterval(()=>{if(Date.now()-lastPolled>=(Date.now()<fastPollingUntil ? 200 : 1200)) syncNavigation()},200)
-    events.signal.addEventListener('abort', () => { clearInterval(timer); stopCommands() }, { once: true })
+    events.signal.addEventListener('abort', () => { clearInterval(timer); finishNavigationRefresh('网页已关闭，刷新未完成。'); stopCommands() }, { once: true })
     const navigate = (url: string) => {
       const revision = ++navigationRevision
       report(true)

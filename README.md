@@ -4,7 +4,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.1.11** · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
+当前版本 **0.1.12** · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -13,7 +13,8 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 ![CHAT 模式：DSH 原侧栏与 DeepSeek 官网聊天页面](docs/images/chat-overview.png)
 
 - 共用 DSH 原侧栏，显示官网对话标题、置顶和日期分组。
-- 点击历史对话继续聊天；顶部“新会话”和列表旁的＋用于新建官网对话。
+- 点击历史对话继续聊天；顶部“新会话”用于新建官网对话。
+- 点击“对话”右侧的刷新图标，重新加载官网当前页面并更新列表。在其他网页端新建对话后，可用它同步，无需退出 DSH。
 - 搜索筛选已加载的对话标题，聊天正文和输入框由官网提供。
 - 对话标题位于左上角，点击标题使用官网原有的名称编辑功能。
 
@@ -53,6 +54,24 @@ dsh plugin --profile desktop add dsh-deepseek-chat
 
 这是 npm 上的插件包，由 DSH 安装；无需运行独立的 npx 命令。
 
+### 升级已有安装
+
+已有安装可能继续使用之前锁定的版本。升级到当前版本时，在 DSH 的插件安装输入框中明确输入：
+
+```text
+dsh-deepseek-chat@0.1.12
+```
+
+使用命令行指定要升级的版本：
+
+```bash
+dsh plugin --profile desktop add dsh-deepseek-chat@0.1.12
+```
+
+**完整退出并重新打开 DSH**，在插件管理页检查已安装版本为 **0.1.12**。进入 CHAT 后，“对话”标题右侧应显示刷新图标，未登录时登录按钮应有蓝色背景。
+
+使用其他 profile 时替换 `desktop`。通过 DSH 官方插件管理器或 CLI 更新，让依赖记录和锁文件一起更新；直接覆盖安装目录中的文件不能保证下次启动仍使用新版。
+
 ### 使用仓库地址安装
 
 在 DSH 的插件安装输入框中粘贴：
@@ -76,7 +95,7 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 将构建生成的 `.tgz` 文件交给 DSH 官方插件管理器安装，或使用 CLI：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.11.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.12.tgz
 ```
 
 将路径替换成你的实际安装包；使用其他 profile 时替换 `desktop`。**安装或更新后，完整退出并重新打开 DSH**，让新插件生效。
@@ -94,6 +113,8 @@ dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.11.tgz
 当前登录在插件网页中完成。外部浏览器登录后自动授权回跳需要官网提供面向 Chat 的授权交换接口，目前未确认可用；直接在其他浏览器登录不会自动登录本插件。
 
 页面加载失败时，可在故障提示中重试；登录保存服务连接失败时，会显示原因和重试入口。插件会自动收起官网固定的“使用环境异常”说明，其他提示、验证码和认证错误仍由官网处理。
+
+刷新列表会重新加载当前官网页面，并保留当前对话地址。检测到未发送的输入或正在生成等状态时，会提示先完成当前操作；插件不会保存草稿。刷新中请稍候；官网加载失败或超时后，可点击右侧提示中的“重试网页”。
 
 ## 使用限制
 
@@ -123,7 +144,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.1.11.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.1.12.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 

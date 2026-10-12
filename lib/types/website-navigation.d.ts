@@ -41,6 +41,12 @@ export type WebsiteCommand = {
     readonly language: string;
 } | {
     readonly type: 'logout';
+}
+/** Handled by the guest owner; never a DOM-only snapshot. */
+ | {
+    readonly type: 'refresh';
+    readonly requestId: number;
+    readonly authenticationRevision: number;
 } | {
     readonly type: 'new';
 } | {

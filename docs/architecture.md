@@ -1,6 +1,10 @@
 # 架构与可行性
 
-当前状态：2026-10-12，W027 / 0.1.11，开工HEAD与origin/main为51cf995，补丁已增一次。最终0ce1d5c753e8构建/分发及正常安装23文件一致，本轮正常GUI流程已通过：原生设置真实退出→Owner close自动关设置→主CHAT999×820正常登录→用户完成后自动恢复nav103/create=true/originalNew0/compact0/sessionSaved；再次完整quit确认旧44883/44897结束，新45240/45249无需登录仍nav103/create=true/compact0/已保存。错误/过期/隔离等独立矩阵仍待。npm已正常重新登录，whoami=xingxingbk；用户完成官方单次2FA，同一0ce包publish session34434 exit0。匿名完整与install-v1索引均确认0.1.11/latest，公开下载与已验收0ce包完全一致，DSH内置pnpm11.7.0空store/空元数据缓存按裸名安装0.1.11及23/23文件一致通过。无单元/浏览器测试或Git写操作，进度见[handoff](handoff.md)。
+当前检查W030（2026-10-12）：公开0.1.12包仍同验收0ac，用户desktop此前实际加载旧0.1.9已确认。官方CLI指定0.1.12安装成功，持久依赖/lock/installed为`^0.1.12`/0.1.12/0.1.12，23/23文件同正式包；完整退出重开后，当前未登录界面的蓝色主登录按钮、刷新入口和纯原生CHAT设置已确认。旧依赖由哪次操作恢复未知，本轮未重新登录或验证登录记忆；具体持久安装边界见下文及[handoff](handoff.md)。以下W028结果为历史分发与当时界面证据。
+
+历史交付W028：2026-10-12，W028 / 0.1.12，仅从0.1.11递增一次，开工HEAD与origin/main为086b7abd01ed82b1b44aeafdb3de5d617c9d9a98。最终0ac/14px包构建/分发、pack/CLI安装23/23一致；quit旧50867/50878结束后重开51380/51389无需重登，官网999×820/nav103/compact0/originalNew0/已保存。实际刷新自然30秒超时后中文提示和右侧可用“重试网页”出现，正常点击无需重登恢复导航、刷新可用与记忆，两处错误清除、首页URL哈希保持；最终真实超时→重试流程通过。单条外部新增实证来自旧651b的同一manual reload核心，100行匿名指纹added=1/removed=1，未输出标题/正文；e76f无重试入口失败保留历史，651b/e76f不发布。其他保护/故障矩阵仍待，同一0ac包正常发布0.1.12，匿名版本/两索引、下载同包及空store/空元数据裸名安装12包、23/23文件一致通过；无单元/浏览器测试，未stage/commit/push，源码/lib/README截图待用户提交，进度见[handoff](handoff.md)。
+
+历史交付W027 / 0.1.11：最终0ce1d5c753e8构建/分发及正常安装23文件一致，本轮正常GUI流程已通过：原生设置真实退出→Owner close自动关设置→主CHAT999×820正常登录→用户完成后自动恢复nav103/create=true/originalNew0/compact0/sessionSaved；再次完整quit确认旧44883/44897结束，新45240/45249无需登录仍nav103/create=true/compact0/已保存。错误/过期/隔离等独立矩阵仍待。npm已正常重新登录，whoami=xingxingbk；用户完成官方单次2FA，同一0ce包publish session34434 exit0。匿名完整与install-v1索引均确认0.1.11/latest，公开下载与已验收0ce包完全一致，DSH内置pnpm11.7.0空store/空元数据缓存按裸名安装0.1.11及23/23文件一致通过。无单元/浏览器测试或Git写操作，进度见[handoff](handoff.md)。
 
 历史交付：W026 / 0.1.10。最终e031严格footer-v1/布局包完成构建/分发核对及官方CLI安装，23/23文件与tgz一致；一次正常quit确认旧主/Host结束后重开，无再次填写登录。原生固定状态确认已登录/已记住网页登录/简体中文，create-enabled=true；账号group昵称长度4、无侧栏文字，退出按钮86×38。修正临时AX URL的系统类型桥接后，自有guest官网origin确认，native导航103按钮、官网原新建按钮0，新建可用。用户完成新npm验证后publish exit0，公开完整与install-v1索引均确认0.1.10/latest；下载tgz与e031完全一致，DSH pnpm11.7.0空store/空元数据缓存裸名安装12包、版本0.1.10及23/23文件一致通过。本机保留相同字节的e031本地tgz来源，不重复安装或GUI验收；该轮未新增或运行单元/浏览器测试，收尾未stage/commit/push，后由用户提交51cf995。有限证据不扩大为全部官网分支通过。
 
@@ -46,7 +50,29 @@ Client集中维护官网登录status、revision、公开账号信息和记忆状
 
 系统浏览器可正常打开HTTPS链接，`dsh://open`只唤回DSH窗口；当前公开资料未找到Chat第三方授权码交换/回调。官方Platform Provider默认platform.deepseek.com并固定/dsh/authorize、/dsh/authorized及/oauth/callback，不能换成Chat OAuth。当前采用同guest正常官网登录，不伪造外部浏览器确认授权，也不宣称服务方永远没有该能力。W025的0.1.9生产候选构建、类型、产物、分发及安装检查通过，收尾未重启/GUI验收、未运行单元/浏览器回归；用户随后实报的官网问题由W026修正和重新验收。
 
-## W027：原生CHAT设置与主页面登录（本轮正常GUI、公开发布及裸名安装已通过）
+## W028：列表手动刷新（最终0ac/14px构建安装、完整重开与真实超时重试恢复通过）
+
+列表旁“＋”改为有明确名称的14px刷新图标（原16px按用户反馈缩小），顶部“新会话”仍创建官网对话。手动刷新只重载插件自己的同一guest，保留当前URL、lease及guest生命周期代次，不创建新容器或切换对话；显示busy/error/pending状态并防连点。发现未发送输入、已识别的生成中状态、登录/退出或settings操作pending时先暂缓，不自动定时或焦点触发重载。未发送输入只在自有guest内判断是否非空，返回有限枚举，不传输、保存或输出实际编辑器文本；重载没有插件草稿备份，不能将授权状态刷新保持草稿的既有规则当作整页重载会保存草稿。公开生成识别仅限精确Stop标签、aria-busy及disabled/readonly字段等已知信号，不宣称所有匿名生成控件或附件都有保护；这些保护分支仍待独立实机。
+
+现有串行DOM轮询/MutationObserver只读取官网已经加载的公开导航，不触发服务端历史拉取。专用refresh命令由`web-surface.tsx`拦截，使用官网当前URL正常reload同一guest；后续文档ready和导航重识别沿用原生命周期栅栏，迟到结果不得覆盖新文档。刷新按钮反馈busy/error/pending，重复点击只维持一次活动请求；暂缓不是成功，不偷偷在定时器、focus或模式往返时重载，也不调用私有历史API。输入保护仅允许自有guest内判空并返回枚举，正文和编辑器原文不进入Host、Client状态或日志。
+
+本轮0.1.11→0.1.12已仅递增一次，同一已验收0ac包正式公开及空缓存裸名安装通过。本轮未新增或运行单元/浏览器测试，未stage/commit/push；HEAD与origin/main仍086b7abd，源码、lib和README截图待用户自行提交，npm公开不等于Git源码已推送。其他独立刷新矩阵继续分开记录。
+
+最终已验收包`artifacts/dsh-deepseek-chat-0.1.12-0acaca2e5f6b.tgz`为138225bytes，SHA256 `0acaca2e5f6b10f1d8e26100db0d25ab075744ee98ba6c006d4008f618e94e4f`、SHA1 `93c4d881c53c56e871226cb4e048126bd92079e5`，Client SHA256 `46a6041d6c144746b485d03809ea1aff6f6a6c5591b314f76309b500df4d3e72`，Host与W027相同，刷新图标14px。生产build/check-distribution、18编译文件/4模块lazy-CJS、正常pack和官方CLI安装exit0，23/23文件与0ac包一致；正常quit50867/50878后pgrep exit1确认结束并normal open51380/51389，无需重登，最终真实超时重试恢复通过。
+
+e76f真实再次reload后30秒timeout，busy=false、nav2、列表refresh disabled且无重试入口；失败记录保留，旧包不发布。0ac最小恢复：timeout仅在request identity及auth/generation仍有效时结束刷新，给出中文明确入口并report(false, webError)，使既有右侧“重试网页”入口可用。Client reload清理旧requestId/error，surface取消旧timer；旧await/catch按request身份和docrevision隔离，迟到真实ready只清对应timeout，不覆盖后来错误。恢复处理已随同一0ac包完成真实自然超时重试流程，其他竞态/保护分支仍待。
+
+0ac正常重开51380/51389无需重登，官网999×820/nav103/compact0/originalNew0/sessionSaved。实际refresh出现busy=true/disabled及nav2 loading；官网自然再次30秒超时后busy=false，显示“官网加载超时，请点击「重试网页」。”，原生retry-web enabled=true。正常AXPress重试后无需重登，恢复999×820/nav103/compact0/originalNew0/sessionSaved、refresh enabled=true/busy=false，两处旧错误清除，首页URL哈希仍7ea330。该真实超时→重试恢复流程通过，没有故障注入，不承诺每次刷新都在30秒内完成。
+
+历史14px中间包：旧候选`artifacts/dsh-deepseek-chat-0.1.12-e76f15b7b457.tgz`为138018bytes，SHA256 `e76f15b7b4577c6bf5e6880fa5a18003c83d8d00399fe492934d0ceec91ce235`、SHA1 `93c77707afe69aea4226f4080e665dcfc1b1bd15`，Client SHA256 `6d80df5c40a6c52fcc2496d0ff8beed9f0cfb1ce8a6dd6868444129ba9b41489`，Host与W027相同。用户反馈图标偏大后刷新图标由16px减为14px；生产build/check-distribution通过18编译文件和4模块lazy-CJS检查，DSH pnpm正常pack/官方CLI安装exit0，23/23文件与e76f包一致。首次正常重开后再次刷新暴露上述30秒timeout；e76f不作为最终候选且不发布。
+
+历史16px候选：旧包`artifacts/dsh-deepseek-chat-0.1.12-651b67307c03.tgz`为138016bytes，SHA256 `651b67307c03041f6717d9038e06eccb60722faf8f1e4dd916fcdea1f99b627b`、SHA1 `50f68e0a4c6c3b3581748b25c1589d6511697c75`。Client SHA256 `4cee3e36d9d4c47eb6c173584e1d2164e584cc17d97275563f335acb20c532b6`，Host与W027相同；build.mjs/check-distribution通过18编译文件及4模块lazy-CJS检查，DSH pnpm正常pack、官方CLI安装exit0，23/23文件与651b包逐字节一致。651b不是最终候选且不发布。
+
+旧651b候选正常quit旧49255/49267后pgrep exit1确认结束，重开50344/50353无需登录；官网999×820、nav103/originalNew0/compact0/sessionSaved恢复。实际点击新refresh时按钮disabled/busy=true并显示中文刷新状态，随后busy=false且enabled=true、nav103/compact0/sessionSaved保留，无错误。前后URL SHA256前缀均为7ea330，确认是公开官网首页；这是同guest当前URL保留的正常循环证据，不证明历史对话URL全矩阵。
+
+用户在外部网页新增一条对话后，未重启DSH，插件自有列表刷新前后均100行，匿名SHA行指纹比较added=1/removed=1；官网最多加载100行，置顶首行保持。正常刷新完成后enabled=true、官网999×820/nav103/originalNew0/compact0/sessionSaved，首页URL哈希仍7ea330；只比较匿名指纹，不输出标题/正文。该单条外部新增场景实机通过，不扩大为全部历史或多条/分页同步保证。
+
+## 历史W027：原生CHAT设置与主页面登录（本轮正常GUI、公开发布及裸名安装已通过）
 
 用户最新要求设置使用普通状态显示，取消整个设置内网页登录pane。Client/WebSurface使用独立settingsOpen boolean记录设置打开，取代settingsViewport的几何/显露职责；设置完全原生展示账号、认证/记忆/识别状态、语言、退出、登录。后台自有guest保持正常窗口尺寸继续识别官网，不以原生设置卡尺寸触发mobile布局，也不覆盖原生输入。设置只读取同一已确认公开profile投影，unknown不推断登出，退出barrier及旧代次隔离保持原规则。
 
@@ -99,7 +125,7 @@ e031有限实机：官方CLI安装后23/23文件与tgz一致；正常quit确认�
 - 两种模式共用原生SidebarRoot；仅CHAT期间通过slots.inject注册 `sidebar.workspaces`，退出后dispose恢复工作区；owner仅wide/expandSidebar。顶部窗口/品牌/新会话视觉、底部真实settings及背景透明/模糊由原组件持续管理，不创建另一套侧栏。
 - W017删除整个网页工具栏。CHAT期间按官方shell.leading契约注册展开/官网新建图标，与rc.2原生HeaderLeadingControls使用同一公开图标、28px尺寸、8px间距和Tooltip；HARNESS/卸载dispose恢复内置项。Mac官方AppFrame仅在全折叠时挂载该Slot。guest矩形扣除官方--dsh-frame-top-clearance，避免overlay遮住原生窗口控制；不硬改核心z-index或窗口按钮。
 - 官方settings.section注册持久“CHAT设置”，owner仅close；原设置导航/弹窗继续由DSH维护。新增ui-settings开发类型和manifest依赖，不复制私有组件，也不增加运行时共享模块。设置显示真实官网可见账号、系统语言，CHAT固定暗色，无外观选择。
-- 原菜单/快捷键仍调用uiWorkspace.startSession，没有公开模式替换回调；W016有限例外仅处理顶部鼠标/键盘激活click及非Mac品牌按钮，列表＋仍可新建。监听主面板离开CHAT后清理覆盖，不改写原导航选择；不能把顶部按钮结果当作菜单/快捷键Session保真。
+- 原菜单/快捷键仍调用uiWorkspace.startSession，没有公开模式替换回调；W016有限例外仅处理顶部鼠标/键盘激活click及非Mac品牌按钮，列表＋曾可新建，W028将其改为手动刷新，顶部新会话保留。监听主面板离开CHAT后清理覆盖，不改写原导航选择；不能把顶部按钮结果当作菜单/快捷键Session保真。
 - 所有注册与 stream 都由 Cordis enclosing effect 管理，末尾清理先恢复 panel，再卸载贡献和 guest。完整 Desktop 卸载恢复还需真实验收。
 
 证据：ui-layout/src/client/service.ts:18–49、AppFrame.tsx:40–42；ui-sidebar/src/client/index.ts:65–99、SidebarRoot.tsx:223–249,304–310；ui-slots/src/index.ts:1241–1246；shortcuts/src/client/native.ts:17–30。
@@ -130,19 +156,27 @@ e031有限实机：官方CLI安装后23/23文件与tgz一致；正常quit确认�
 
 W016登录核查：固定deepseek-account-platform默认Platform origin为platform.deepseek.com、inference origin为api.deepseek.com；公开PlatformSession仅用于平台嵌入，Browser acquire由主进程生成进程内隔离partition。未发现面向chat.deepseek.com的官方SSO/凭据交换入口，不能复用Platform token冒充官网登录，也不迁移Cookie。这一阶段尚未实现最小grant保存；W024改用官方credentials保存官网自身授权，同账号三次完整退出重开已通过；这仍不构成Platform到Chat的兑换。
 
-串行刷新可见导航；设置与对话页共用官网认证结果，HARNESS普通隐藏不需要导航适配，设置登录/退出仍可访问同一guest。Client限定自身revision、文档代次及已加载链接，旧账号回包不能污染新列表。网页payload过滤origin、大小和类型，标题仅作React文本。确认sign_in后清空旧公开账号/导航并呈现正常登录入口，不回HARNESS、不禁用模式，不以此断言DSH退出或两处账号相同。
+串行DOM读取更新可见导航，仅镜像已加载内容，不主动拉取官网服务器历史；设置与对话页共用官网认证结果，HARNESS普通隐藏不需要导航适配，设置登录/退出仍可访问同一guest。Client限定自身revision、文档代次及已加载链接，旧账号回包不能污染新列表。网页payload过滤origin、大小和类型，标题仅作React文本。确认sign_in后清空旧公开账号/导航并呈现正常登录入口，不回HARNESS、不禁用模式，不以此断言DSH退出或两处账号相同。
 
-当前适配已在Mac真实官网确认分组列表、选择联动和＋新建；空账号/官网布局变化、动态加载更多与网页内部账号切换仍需扩展实测。公开webview方法文档及固定Sidebar owner契约见references。
+历史适配已在Mac真实官网确认分组列表、选择联动和当时的＋新建；W028旧651b正常刷新及单条外部新增场景通过，e76f超时失败保留，0ac/14px完整重开与自然超时重试恢复通过，其他保护分支仍待实机，顶部新会话保留；空账号/官网布局变化、动态加载更多与网页内部账号切换仍需扩展实测。公开webview方法文档及固定Sidebar owner契约见references。
 
 ## 构建与边界
 
+W029交付边界：构建、打包和本机检查产出本地可审查成果；npm/npx公开发布必须用户确认当轮验收，再明确给出当轮发布指令后执行，既往授权或Agent自验不触发后续发布，也不提前启动发布登录/2FA。Git提交/推送同样依用户当轮指令，版本递增不授权任一对外交付；完整规则见AGENTS。以下公开包与历史发布记录保留为事实。
+
+W030持久安装边界（2026-10-12）：公开latest/0.1.12正式包现场仍同0ac验收包，升级前desktop却为持久依赖`^0.1.9`、lock解析0.1.9、installed0.1.9。宽范围接受已锁定旧版；npm发布或临时覆盖node_modules不等于profile依赖与lock升级，具体哪次操作恢复旧依赖未确定。正常升级指定`dsh-deepseek-chat@0.1.12`，官方CLI `dsh plugin --profile desktop add dsh-deepseek-chat@0.1.12`更新profile安装。本轮正常CLI exit0，23/23文件同正式包；即使传入`--save-exact`，实际保存仍为`^0.1.12`，不承诺精确依赖。正常quit旧main51380/Host51389并确认全结束，新main52900/Host52916；官方`dsh://open/`恢复主窗后CHAT selected1，主登录145×48且primary=true，刷新入口存在（当前未登录enabled=false符合规则）；设置为纯原生状态页，登录144×43且primary=true，可见AXWebArea1，无设置guest。重启后再次核对manifest依赖`^0.1.12`、lock解析0.1.12、installed0.1.12及23/23文件同公开0ac，安装与当前未登录界面有限复核已完成。未操作登录表单、退出重登或验证本轮登录记忆，不扩充W027历史登录证据。以后升级须按同一profile核对持久依赖、lock解析版本/来源、实际版本/完整分发文件、完整重启真实界面四层；fresh consumer或tgz字节一致只证明相应分发层。本轮不改代码/版本、不重新发布，详细结果见[handoff](handoff.md)。
+
 锁定 Cordis 4.0.4、官方 DSH 包 0.2.0-rc.2、React 18.3.1；TSX 支持，Host ESM、Client 单个 lazy-CJS factory、lib/types 声明。Client 仅共享固定 baseline 模块，第三方 Zod inline；feature 服务只通过 ctx/注入使用。build/check-artifact 校验精确 module requests、Host 依赖声明和单工厂结构，tarball 不含源码开发 harness、依赖或凭据。
 
-当前分发方案：包名/仓库名为dsh-deepseek-chat，预编译lib继续随Git与npm包交付；开发者手动build:plugin、release:prepare与package:plugin，不增加prepare或安装生命周期构建。2026-10-12用户完成新的官方单次2FA，session34434正常publish exit0；npm处理期间短暂保留旧索引，随后匿名公开完整与install-v1索引均确认0.1.11/latest。正式tgz为136151bytes，SHA256 `0ce1d5c753e85368fa6857fcb005c9b2b80476ed069458b1e5ab58656adc4a21`、SHA1 `cf6e95e2d03fa590b20ef0fc60fe41370a6e288d`，与已验收0ce包完全字节一致，本机已安装23/23文件相同。
+当前分发方案：包名/仓库名为dsh-deepseek-chat，预编译lib继续随Git与npm包交付；开发者手动build:plugin、release:prepare与package:plugin，不增加prepare或安装生命周期构建。W028正式发布：旧session60618以done-auth E404结束且未发布；同一0ac包在session10510经用户官方单次2FA后publish exit0，0.1.12正式受理。processing首轮索引仍0.1.11保留为历史；随后匿名专用版本、完整与install-v1索引均确认0.1.12/latest。正式tgz为138225bytes，SHA1 `93c4d881c53c56e871226cb4e048126bd92079e5`、SHA256 `0acaca2e5f6b10f1d8e26100db0d25ab075744ee98ba6c006d4008f618e94e4f`，与验收0ac及canonical包完整字节相同，本机23/23文件一致。
+
+历史W027/0.1.11：2026-10-12用户完成新的官方单次2FA，session34434正常publish exit0；npm处理期间短暂保留旧索引，随后匿名公开完整与install-v1索引均确认0.1.11/latest。正式tgz为136151bytes，SHA256 `0ce1d5c753e85368fa6857fcb005c9b2b80476ed069458b1e5ab58656adc4a21`、SHA1 `cf6e95e2d03fa590b20ef0fc60fe41370a6e288d`，与已验收0ce包完全字节一致，本机已安装23/23文件相同。
 
 历史W026最终e031生产构建与分发检查通过，正式包23files/135131bytes，SHA256 `e0316b056d4683160a7df4aa915d10795e2cf8c6a2df1ed14864014ea8ea845d`、SHA1 `3e9e15715a6e8a213754bbfe5bce3e7de0ddd9a7`。2026-10-12用户完成新的正常npm验证，session24376 publish exit0；匿名完整与install-v1索引均确认0.1.10/latest，正式下载tgz与已验e031本机包完全字节一致。
 
-DSH真实primary Node与内置pnpm11.7.0在独立consumer、空store及空元数据缓存中正常add裸名`dsh-deepseek-chat`，exit0、版本0.1.11、12包，23/23文件与公开tgz逐字节一致。无手动allowBuilds或ignore-scripts等policy覆盖；minimumReleaseAgeExclude由pnpm自身添加，临时consumer/store/cache全部finally清理。当前W027 0ce已完成本轮正常GUI退出重登及完整重启恢复，本机保留同字节0ce本地tgz，最终包不重打；无单元/浏览器测试或Git写操作。分发结果不代替其他过期/隔离/异常等独立矩阵，完整证据见[handoff](handoff.md)，npm发布与Git代码推送分别记录。
+DSH实际primary Node与内置pnpm11.7.0在独立consumer、空store和空元数据缓存中正常add裸名`dsh-deepseek-chat`，exit0、12包、版本0.1.12，23/23文件与公开包逐字节一致。没有手动allowBuilds/ignore-scripts等policy覆盖，minimumReleaseAgeExclude由pnpm自身添加；finally临时consumer/store/cache全部清理。公开包沿用同字节0ac已确认的重启与真实超时重试证据；其他保护/故障矩阵仍独立待验。本轮未新增或运行单元/浏览器测试，未stage/commit/push；HEAD与origin/main仍086b7abd，源码、lib和README截图待用户自行提交，npm公开不等于Git源码已推送。完整证据见[handoff](handoff.md)。
+
+历史W027/0.1.11：DSH真实primary Node与内置pnpm11.7.0在独立consumer、空store及空元数据缓存中正常add裸名`dsh-deepseek-chat`，exit0、版本0.1.11、12包，23/23文件与公开tgz逐字节一致。无手动allowBuilds或ignore-scripts等policy覆盖；minimumReleaseAgeExclude由pnpm自身添加，临时consumer/store/cache全部finally清理。当时W027 0ce已完成本轮正常GUI退出重登及完整重启恢复，本机保留同字节0ce本地tgz，最终包不重打；无单元/浏览器测试或Git写操作。分发结果不代替其他过期/隔离/异常等独立矩阵，完整证据见[handoff](handoff.md)，npm发布与Git代码推送分别记录。
 
 历史W026/0.1.10安装：DSH真实primary Node与pnpm11.7.0在独立consumer、空store和空元数据缓存中正常add裸名安装12包exit0，实际版本0.1.10，23/23文件与公开tgz逐字节一致。未使用allowBuilds、ignore-scripts等policy覆盖；新包minimumReleaseAgeExclude记录由pnpm自身添加，临时consumer/store/cache在finally全部清理。W026当时本机保留同字节e031本地tgz，不重复安装或GUI验收。该次分发检查不扩大为真实退出/重登/迁移、全部登录过渡或跨浏览器历史一致性通过；该轮未新增或运行单元/浏览器测试，收尾未stage/commit/push，后由用户提交51cf995。
 

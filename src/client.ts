@@ -39,6 +39,9 @@ export function apply(ctx: Context): void {
   let refreshing: Promise<void> | null = null
   let authorizationGeneration = 0
   let websiteReloadRevision = 0
+  let websiteNavigationRefreshing = false
+  let websiteNavigationRefreshError: string | null = null
+  let websiteNavigationRefreshRequest = 0
   let webLoading = false
   let webError: string | null = null
   let connectionError: string | null = null
@@ -84,7 +87,7 @@ export function apply(ctx: Context): void {
       const leading = ctx.slots.inject('shell.leading', () => ctx.slots.register({name:'shell.leading',priority:-100,inject:()=>({bridge})}, DshChatLeadingControls))
       return () => { leading(); navigation() }
     },
-    cancelAccount: () => { authorizationGeneration++; webLoading = false; webError = null; websiteNavigation = emptyNavigation(); navigationHandler = null; publish() },
+    cancelAccount: () => { authorizationGeneration++; resetNavigationRefresh(); webLoading = false; webError = null; websiteNavigation = emptyNavigation(); navigationHandler = null; publish() },
   }, Boolean(nativeBrowser))
   function availability(): string {
     if (!nativeBrowser) return '网页嵌入需要 DSH 桌面版的官方浏览器能力。'
@@ -105,15 +108,21 @@ export function apply(ctx: Context): void {
       websiteSessionStatus, websiteSessionError, websiteAuthenticationStatus, websiteAuthenticationRevision,
       accountStorageKey: state.authorization.status === 'authorized' && state.authorization.accountId
         ? `dsh-deepseek-chat:website:${state.authorization.accountId}` : null,
-      authorizationGeneration, websiteReloadRevision, websiteNavigation, showWebsiteNavigation,
+      authorizationGeneration, websiteReloadRevision, websiteNavigationRefreshing, websiteNavigationRefreshError, websiteNavigation, showWebsiteNavigation,
     }
     sidebar?.sync()
     for (const listener of listeners) listener()
+  }
+  function resetNavigationRefresh(): void {
+    websiteNavigationRefreshRequest++
+    websiteNavigationRefreshing=false
+    websiteNavigationRefreshError=null
   }
   function acceptAuthorization(value: AuthorizationState): void {
     const next = authorizationSchema.parse(value)
     const previous = mode.getSnapshot().authorization
     if (next.accountId !== previous.accountId || next.epoch !== previous.epoch) {
+      resetNavigationRefresh()
       authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; showWebsiteNavigation = false;websiteSignedOut=false;restorationBlocked=false;logoutRequested=false;websiteHadSession=false;preferencesGeneration=-1
       websiteSessionStatus='idle';websiteSessionError=null;websiteAuthenticationStatus='loading';websiteAuthenticationRevision++;websiteSignInRequested=false;logoutFailed=false;logoutVaultCleared=false
       forgettingWebsiteSession=false
@@ -289,6 +298,7 @@ export function apply(ctx: Context): void {
     manageAccount: () => { bridge.beginWebsiteSignIn() },
     beginWebsiteSignIn: () => {
       if (disposed || !nativeBrowser || logoutRequested) return
+      resetNavigationRefresh()
       if (mode.getSnapshot().mode!=='chat') mode.select('chat')
       restorationBlocked=true
       if (!websiteSignInRequested) websiteAuthenticationRevision++
@@ -311,9 +321,28 @@ export function apply(ctx: Context): void {
     attachSidebar: element => { sidebar?.attach(element) },
     reportWebsiteState: (generation, state) => {
       if (disposed || generation !== authorizationGeneration) return
+      const recovered=webError!==null && !state.loading && state.error===null
       webLoading = state.loading; webError = state.error; publish()
+      if (recovered && !websiteNavigationRefreshing) {websiteNavigationRefreshError=null;publish()}
     },
-    reloadWebsite: () => { websiteReloadRevision++; publish() },
+    reloadWebsite: () => { resetNavigationRefresh();websiteReloadRevision++;publish() },
+    refreshWebsiteNavigation: () => {
+      if (disposed || !mode.canEnter() || !nativeBrowser || websiteNavigationRefreshing || webLoading
+        || websiteNavigation.authenticated!==true || logoutRequested || logoutFailed
+        || ['signing-in','signing-out'].includes(websiteAuthenticationStatus)
+        || restoringPreferences || websiteNavigation.settings?.pending) return
+      if (!navigationHandler) {websiteNavigationRefreshError='官网页面尚未就绪，请稍后刷新。';publish();return}
+      const requestId=++websiteNavigationRefreshRequest
+      const generation=authorizationGeneration
+      websiteNavigationRefreshing=true;websiteNavigationRefreshError=null;publish()
+      void navigationHandler({type:'refresh',requestId,authenticationRevision:websiteAuthenticationRevision}).catch(()=>{
+        bridge.reportWebsiteNavigationRefresh(generation,{requestId,refreshing:false,error:'无法刷新官网对话列表，请重试。'})
+      })
+    },
+    reportWebsiteNavigationRefresh: (generation, state) => {
+      if (disposed || generation!==authorizationGeneration || state.requestId!==websiteNavigationRefreshRequest || !websiteNavigationRefreshing) return
+      websiteNavigationRefreshing=state.refreshing;websiteNavigationRefreshError=state.error;publish()
+    },
     reportWebsiteNavigation: (generation, value, newDocument = false) => {
       if (disposed || generation !== authorizationGeneration) return
       let next: typeof websiteNavigation
@@ -385,6 +414,7 @@ export function apply(ctx: Context): void {
     commandWebsite: command => {
       if (disposed || !mode.canEnter() || !navigationHandler) return
       if ((logoutRequested || logoutFailed) && command.type!=='logout' && command.type!=='snapshot') return
+      if (websiteNavigationRefreshing && !['logout','snapshot','restore','settings-close'].includes(command.type)) return
       if (websiteNavigation.status!=='ready' && command.type!=='logout' && command.type!=='snapshot' && command.type!=='restore') return
       if (command.type==='settings-read' && (restoringPreferences || websiteNavigation.settings?.pending)) return
       if (command.type === 'open' && !websiteNavigation.conversations.some(item => item.href === command.href)) return
@@ -407,6 +437,7 @@ export function apply(ctx: Context): void {
     logoutWebsite: () => {
       if (logoutRequested || !navigationHandler || (!websiteHadSession && !logoutFailed)) return
       if (!logoutFailed && websiteNavigation.status!=='ready') return
+      resetNavigationRefresh()
       const generation=authorizationGeneration
       const handler=navigationHandler
       clearTimeout(logoutTimer);logoutTimer=undefined

@@ -32,6 +32,8 @@ export interface DshChatViewState {
     readonly brandAnchor: DshChatViewportRect | null;
     readonly sidebarAdapted: boolean | null;
     readonly websiteNavigation: WebsiteNavigation;
+    readonly websiteNavigationRefreshing: boolean;
+    readonly websiteNavigationRefreshError: string | null;
     readonly showWebsiteNavigation: boolean;
 }
 export interface DshChatUIBridge {
@@ -47,6 +49,12 @@ export interface DshChatUIBridge {
     updateBrandAnchor(rect: DshChatViewportRect | null): void;
     attachSidebar(element: HTMLElement): void;
     reloadWebsite(): void;
+    refreshWebsiteNavigation(): void;
+    reportWebsiteNavigationRefresh(generation: number, state: {
+        readonly requestId: number;
+        readonly refreshing: boolean;
+        readonly error: string | null;
+    }): void;
     reportWebsiteState(generation: number, state: {
         readonly loading: boolean;
         readonly error: string | null;

@@ -32,6 +32,7 @@ export const chatStyles = String.raw`
 .dsh-chat-navigation-header{display:flex;align-items:center;justify-content:space-between;padding:0 14px 8px 16px;min-height:36px;color:var(--dsw-alias-label-secondary,#8b8d91);font-size:14px}
 .dsh-chat-navigation-header>div{display:flex;gap:2px}
 .dsh-chat-icon-button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#8b8d91);cursor:pointer;font-size:21px!important}.dsh-chat-icon-button:hover{background:var(--dsw-alias-interactive-bg-hover,#ffffff0d)}.dsh-chat-icon-button:disabled{opacity:.4;cursor:default}
+.dsh-chat-refreshing{animation:dsh-chat-refresh-spin .8s linear infinite}@keyframes dsh-chat-refresh-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.dsh-chat-refreshing{animation:none}}
 .dsh-chat-navigation-search{margin:0 14px 8px;padding:7px 9px;min-width:0;border:1px solid var(--dsw-alias-border-l2,#85858b40);border-radius:6px;background:transparent;color:inherit;font:inherit;font-size:12px}
 .dsh-chat-navigation-list{flex:1;min-height:0;overflow:auto;padding:0 12px 12px;scrollbar-width:thin}
 .dsh-chat-conversation-group h3{font-size:12px;font-weight:400;color:var(--dsw-alias-label-secondary,#8b8d91);margin:15px 4px 6px}

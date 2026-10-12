@@ -1,5 +1,5 @@
 import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -41,6 +41,8 @@ export interface DshChatViewState {
   readonly brandAnchor: DshChatViewportRect | null
   readonly sidebarAdapted: boolean | null
   readonly websiteNavigation: WebsiteNavigation
+  readonly websiteNavigationRefreshing: boolean
+  readonly websiteNavigationRefreshError: string | null
   readonly showWebsiteNavigation: boolean
 }
 
@@ -57,6 +59,8 @@ export interface DshChatUIBridge {
   updateBrandAnchor(rect: DshChatViewportRect | null): void
   attachSidebar(element: HTMLElement): void
   reloadWebsite(): void
+  refreshWebsiteNavigation(): void
+  reportWebsiteNavigationRefresh(generation: number, state: { readonly requestId: number; readonly refreshing: boolean; readonly error: string | null }): void
   reportWebsiteState(generation: number, state: { readonly loading: boolean; readonly error: string | null }): void
   reportWebsiteNavigation(generation: number, value: unknown, newDocument?: boolean): void
   bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void
@@ -167,7 +171,7 @@ export function DshChatBrandControl({ bridge }: PropsRuntime<'shell.overlay'> & 
     <DshChatStyles />
     <DshChatModeSelector bridge={bridge} state={state} />
     <DshChatAuthorizationNotice bridge={bridge} state={state} />
-    {state.sidebarAdapted === false && <div className="dsh-chat-authorization-notice" role="alert">当前侧栏不兼容：顶部新会话仍使用 HARNESS。CHAT 请使用对话列表旁的＋。</div>}
+    {state.sidebarAdapted === false && <div className="dsh-chat-authorization-notice" role="alert">当前侧栏不兼容：顶部新会话仍使用 HARNESS。CHAT 请展开官网导航后新建对话。</div>}
   </div>
 }
 
@@ -177,6 +181,9 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
   const navigation = state.websiteNavigation
+  const refreshing = state.websiteNavigationRefreshing
+  const refreshDisabled = !state.modeEnabled || !state.desktopAvailable || refreshing || state.webLoading
+    || navigation.authenticated!==true || ['signing-in','signing-out'].includes(state.websiteAuthenticationStatus) || navigation.settings?.pending
   const groups = new Map<string, typeof navigation.conversations[number][]>()
   for (const item of navigation.conversations) {
     if (!item.title.toLocaleLowerCase().includes(query.toLocaleLowerCase())) continue
@@ -188,10 +195,11 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
     {!wide ? <button type="button" className="dsh-chat-icon-button" onClick={expandSidebar} aria-label="展开官网对话列表"><PanelIcon /></button> : <>
       <header className="dsh-chat-navigation-header"><span>对话</span><div>
         <button type="button" className="dsh-chat-icon-button" aria-label="搜索官网对话" onClick={() => setSearching(value => !value)}><svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" stroke="currentColor" strokeWidth="1.4"/><path d="m13 13 4 4" stroke="currentColor" strokeWidth="1.4"/></svg></button>
-        <button type="button" className="dsh-chat-icon-button" aria-label="新建官网对话" disabled={!navigation.canCreate} onClick={() => bridge.commandWebsite({type:'new'})}>＋</button>
+        <Tooltip label={refreshing ? '正在刷新官网对话列表…' : '刷新官网对话列表'} delayMs={500}><button type="button" className="dsh-chat-icon-button" aria-label="刷新官网对话列表" aria-busy={refreshing} disabled={refreshDisabled} onClick={()=>bridge.refreshWebsiteNavigation()}><IconRefreshOutlineRegular size={14} className={refreshing ? 'dsh-chat-refreshing' : undefined}/></button></Tooltip>
       </div></header>
       {searching && <input className="dsh-chat-navigation-search" aria-label="搜索已加载的官网对话标题" placeholder="搜索对话" value={query} onChange={event => setQuery(event.target.value)} autoFocus />}
       <div className="dsh-chat-navigation-list">
+        {refreshing && <p className="dsh-chat-navigation-status" role="status">正在刷新官网对话列表…</p>}
         {navigation.authenticated===true && navigation.status==='ready' ? <>
           {[...groups].map(([label, rows]) => <section key={label} className="dsh-chat-conversation-group" aria-label={label}>
             <h3>{label}</h3>
@@ -201,6 +209,7 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
           {!query && navigation.conversations.length > 0 && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.commandWebsite({type:'more'})}>加载更早的对话</button>}
         </> : <p className="dsh-chat-navigation-status" role="status">{navigation.status === 'sign-in' ? 'CHAT 尚未登录。请在右侧点击登录 DeepSeek，完成后自动显示官网对话。' : navigation.status === 'unsupported' ? '暂未识别官网列表，请使用右侧官网导航。' : '正在加载官网对话…'}</p>}
         {navigation.error && <p className="dsh-chat-navigation-status" role="alert">{navigation.error}</p>}
+        {state.websiteNavigationRefreshError && <p className="dsh-chat-navigation-status" role="alert">{state.websiteNavigationRefreshError}</p>}
       </div>
     </>}
   </section>

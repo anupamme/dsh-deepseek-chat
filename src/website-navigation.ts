@@ -23,6 +23,8 @@ export type WebsiteCommand = { readonly type: 'snapshot'; readonly showOriginal:
   | { readonly type: 'settings-read' } | { readonly type: 'settings-close' } | { readonly type: 'setting'; readonly key: 'language' | 'theme'; readonly value: string }
   | { readonly type: 'preferences'; readonly language: string }
   | { readonly type: 'logout' }
+  /** Handled by the guest owner; never a DOM-only snapshot. */
+  | { readonly type: 'refresh'; readonly requestId: number; readonly authenticationRevision: number }
   | { readonly type: 'new' } | { readonly type: 'more' } | { readonly type: 'restore' }
 
 export const emptyNavigation = (): WebsiteNavigation => ({ status: 'loading', authenticated: false, conversations: [], selectedHref: null, canCreate: false, error: null })
@@ -463,6 +465,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
 }
 
 export function websiteCommandScript(command: WebsiteCommand): string {
+  if (command.type==='refresh') throw new Error('Website refresh must be handled by the guest owner')
   return `(() => { const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
 }
 
