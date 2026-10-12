@@ -360,22 +360,16 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   }
   if (!identifiedProfile) identifiedProfile = findVisibleProfile()
   if (!identifiedProfile && confirmedBoundary && trackRect.width === 0 && viewportHeight > 0) {
-    // A late avatar can mount after we hid the confirmed column. Measure only
-    // that owned track, invisibly and out of flow, within this synchronous call.
-    // The website's original display rules are restored for the measurement;
-    // finally restores both our sheet and exact inline style before any paint.
+    // A late avatar can mount after we hid the confirmed column. Measure the
+    // site's natural layout invisibly within this synchronous call. Forcing a
+    // fixed track changes responsive footer geometry and can reject a real
+    // profile forever after reload. Restore the sheet/style before any paint.
     const sheet = (doc.getElementById(styleId) as HTMLStyleElement | null)?.sheet
     if (sheet) {
       const inlineStyle = track.getAttribute('style'), disabled = sheet.disabled
-      const width = Number(track.getAttribute(navigationWidthMarker)) || Number.parseFloat(getComputedStyle(track).width)
       try {
         track.style.setProperty('visibility', 'hidden', 'important')
         track.style.setProperty('pointer-events', 'none', 'important')
-        track.style.setProperty('position', 'fixed', 'important')
-        track.style.setProperty('left', '0px', 'important')
-        track.style.setProperty('top', '0px', 'important')
-        track.style.setProperty('height', `${viewportHeight}px`, 'important')
-        if (Number.isFinite(width) && width >= 160 && width <= 480) track.style.setProperty('width', `${width}px`, 'important')
         sheet.disabled = true
         identifiedProfile = findVisibleProfile()
       } finally {

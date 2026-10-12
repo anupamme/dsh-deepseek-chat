@@ -1,11 +1,11 @@
 {
   "format": 1,
   "name": "dsh-deepseek-chat",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "inputs": {
     "assets/icon.svg": "ad1b0fda90c1c1f2a0b9208bc86f5fe8c21d505a1208576be4e3110b26b4f79c",
     "cordis.patch.yml": "05edb71cd276de1251ae67644ec68b54efc26258814956fa0e932d36da741bdc",
-    "package.json": "c71ffe743031d1d35b55ea474eb4bec84394b89ba1b0edbc94be90ed095f63d9",
+    "package.json": "22426296b3e9960c9d4721bdfef8b5f2293b5f5e15e5b3f9c22dfe567ef46bec",
     "pnpm-lock.yaml": "c4f600b0d599b85f6181d295cd5f9f06f1eb0435eeeb2e7cf1a376b3c6a4ca15",
     "scripts/build.mjs": "a9a2961e09fb16b99e206c4d191c9e970a4a3999979df9a626fa310c0fdee5b1",
     "scripts/check-artifact.mjs": "6fec38fb74e41dfeacef7147280c69854087d0665747d7d65137cc98f9dc673b",
@@ -23,7 +23,7 @@
     "src/ui.tsx": "e4bfd54ae2e9e7baf54f688bddba0f10f1b4bcb0ab993d1004667b12009825eb",
     "src/web-surface.tsx": "a13ec7ad7d151877d27e7cb79c80e6bf549cbd08f84a53eeadd56d4667419918",
     "src/website-header.ts": "ac4972a28a5f0968de4d5f98d54fbac853f901c7eda00c0849984a2e66f291f3",
-    "src/website-navigation.ts": "54ea4f6dea0d459cf2abfd354498327d391337230ca31aa595293195c4ba8439",
+    "src/website-navigation.ts": "06301187d05b6fccd047b87f1e3328520bfcd64fbf57e31d8a6b861272555eb9",
     "src/website-notice.ts": "65c781bec41e6c2e541d9512cc0051864d64fc3204b3ba5f2e005bdc955f39c9",
     "src/website-session-store.ts": "8ef6d49465e0034f12b763a666b4a90c8c9819fb8baea06dcaba340fd97d72f1",
     "src/website-session.ts": "f2434fafc40adb15b5f16fc8b6152bd8df7e85f5210330a1337502c9a08136d8",
@@ -31,7 +31,7 @@
     "tsconfig.json": "1ad0b3b39537564a180dc7f4084ceb3098b567f509320c77d71bc37aaf4f1879"
   },
   "artifacts": {
-    "lib/client.js": "c9e4fd164a2c9a49e0a55648897dc934877decd7a62ea15b549057a659dacaa8",
+    "lib/client.js": "e1546802acdf78f56ec3a4d5b5e71d0ee42f108876972d1d9fc82feb2e385112",
     "lib/index.js": "e9c50cc544f24c60d086538ab1283ae0ed2811f23c9bb469916a2e89c3ffb38d",
     "lib/types/authorization.d.ts": "130649eed3635e75c3f50c13de93c52440a27f1b88136ab2297552570c013d49",
     "lib/types/client.d.ts": "a79702d5d86c75e81f1e954b3e9f4a562a6b3082d68d798d6a1b37bd41b908a7",

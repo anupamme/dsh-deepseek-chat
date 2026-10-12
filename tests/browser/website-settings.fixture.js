@@ -1,7 +1,7 @@
 import { adaptWebsiteSettings } from '/adapter.js'
 import { adaptWebsiteHeader } from '/header.js'
 import { chatStyles } from '/styles.js'
-import { adaptWebsiteNavigation } from '/navigation.js'
+import { adaptWebsiteNavigation, parseWebsiteNavigation } from '/navigation.js'
 // Fictional public controls, no website requests, credentials or storage.
 const results=[]
 const check=(name,passed)=>results.push({name,passed:!!passed})
@@ -90,6 +90,7 @@ headerFrame.remove()
 // Header replacements are timed by the browser; only the initial adapter call is made.
 await nativeHeaderRegressions()
 const keyboardSelect=componentStyleRegressions()
+lateProfileRegressions()
 const keyboardInstructions=document.querySelector('#keyboard-instructions')
 const finish=()=>{
  document.querySelector('#results').textContent=JSON.stringify(results,null,2)
@@ -316,4 +317,32 @@ async function nativeHeaderRegressions(){
  const headerMarkers=['row','title','share','title-host','editor','native-depth']
  check('show-original cleanup removes header CSS markers and restores native mobile flex',!doc.getElementById('dsh-chat-header-style') && !doc.documentElement.style.getPropertyValue('--dsh-chat-title-inset') && !doc.querySelector('[data-dsh-chat-content]') && headerMarkers.every(marker=>!doc.querySelector(`[data-dsh-chat-header-${marker}]`)) && doc.defaultView.getComputedStyle(mobile).display==='flex')
  frame.remove()
+}
+
+// A padded public sidebar plus a late avatar reproduced the real reload race.
+// Only fictional DOM is used; there are no account requests or storage reads.
+function lateProfileRegressions(){
+ const doc=document,root=doc.documentElement
+ const layout=doc.createElement('div')
+ layout.style.cssText='position:fixed;left:0;top:0;display:flex;width:100vw;height:100vh'
+ layout.innerHTML='<aside style="width:240px;height:calc(100vh - 20px);padding:10px;box-sizing:content-box;display:flex;flex-direction:column;flex-shrink:0"><button>New chat</button><a href="https://chat.deepseek.com/a/chat/s/fixture">Fixture history</a></aside><main style="flex:1;height:100vh"><textarea></textarea></main>'
+ doc.body.append(layout)
+ root.setAttribute('data-dsh-chat-dark-complete','')
+ const track=layout.querySelector('aside'),originalStyle=track.getAttribute('style')
+ const snapshot=()=>parseWebsiteNavigation(adaptWebsiteNavigation(doc,{origin:'https://chat.deepseek.com',pathname:'/'},{type:'snapshot',showOriginal:false}))
+ try {
+  snapshot()
+  const row=doc.createElement('div')
+  row.style.cssText='height:44px;min-height:44px;width:240px;margin-top:auto;display:flex;align-items:center'
+  row.innerHTML='<img style="width:32px;height:32px" alt="fictional avatar"><span>Fixture account</span>'
+  track.append(row)
+  const state=snapshot()
+  check('late avatar in a padded hidden sidebar confirms the real footer account',state.authenticated===true && state.accountName==='Fixture account')
+  check('late profile measurement restores exact inline geometry and hidden navigation',track.getAttribute('style')===originalStyle && getComputedStyle(track).display==='none')
+  check('late account proof releases the public conversation list',state.status==='ready' && state.conversations.length===1 && state.canCreate===true)
+ } finally {
+  doc.dispatchEvent(new Event('dsh-chat-stop-adapting'))
+  adaptWebsiteNavigation(doc,location,{type:'snapshot',showOriginal:true})
+  layout.remove()
+ }
 }
