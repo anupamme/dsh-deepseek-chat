@@ -1,8 +1,18 @@
 # 开发路线
 
-当前阶段W026 / 0.1.10（2026-10-12）：最终e031严格footer-v1/布局包已完成构建/分发与官方CLI安装23/23文件一致；正常quit确认旧主/Host结束后重开，无再次填写登录。原生create-enabled=true，账号group昵称长度4/无侧栏文字/退出按钮86×38，固定已登录/已记住网页登录/简体中文齐全。修正临时AX URL的系统类型桥接后，自有guest官网origin确认，native导航103按钮、官网原新建按钮0，新建可用；固定布局未显示重复新建入口。用户完成新npm验证后publish exit0，公开完整与install-v1索引确认0.1.10/latest，正式下载与e031同字节；DSH pnpm11.7.0空store/空元数据缓存按裸名安装12包、版本0.1.10及23/23文件一致通过。本机保留同字节e031本地tgz，不重复安装或GUI验收；同轮不重复增号，未新增或运行单元/浏览器测试，未stage/commit/push，不声明全部官网流程验收通过。
+当前阶段W027 / 0.1.11（2026-10-12）：开工HEAD与origin/main为51cf995，补丁已增一次不再增。最终0ce构建/分发/正常pack/官方CLI安装23文件一致，本轮正常GUI流程通过：设置真实退出后的登录按钮经Owner close自动关闭设置，主CHAT同一guest999×820正常登录，用户完成后nav103/create=true/originalNew0/compact0/sessionSaved自动恢复。再次完整退出确认44883/44897结束，45240/45249重开无需登录，仍列表103/create=true/compact0/已保存。npm已正常重新登录，whoami=xingxingbk；用户完成官方单次2FA，同一0ce包publish session34434 exit0。匿名完整与install-v1索引均确认0.1.11/latest，公开下载与已验收0ce包完全一致，DSH内置pnpm11.7.0空store/空元数据缓存按裸名安装0.1.11及23/23文件一致通过。无单元/浏览器测试或Git写操作，其他独立矩阵仍待。
 
-## W026当前工作与验收边界
+## W027当前工作与验收边界
+
+1. 最新要求替代设置内signing-in官网viewport：CHAT设置完全原生账号/状态/语言/退出/登录，Client/WebSurface独立settingsOpen boolean协调正常尺寸的后台guest，不再嵌入或缩小官网。
+2. 设置与主区共用蓝色最小144×40px登录主按钮；设置点击以官方Props.close()关闭settings并总select chat，主CHAT同一guest完成正常官网登录，两处读取同一已确认profile投影与status/revision。
+3. compact/footer证明保持受限公共行/有界几何，不因mobile失败放宽；recovering提前fallback前只正常展开一次，完整footer/list/布局确认才ready。API Key/Bearer公开接口不代用官网登录；本次未找到Chat账户查询公开契约，不模拟私有接口，依据见[DeepSeek官方API文档](https://api-docs.deepseek.com/api/deepseek-api/)。
+4. 当前正式0ce包136151bytes、SHA256 `0ce1d5c753e85368fa6857fcb005c9b2b80476ed069458b1e5ab58656adc4a21`，构建/分发、正常pack/官方CLI安装exit0，23/23文件一致。完整退出旧43609/43621后重开44883/44897无登录输入，导航/保存与原生设置账号/中文恢复；设置父级仅1 WebArea、无可见嵌入官网。实际logout后仅signed-out card/login144×43px，无旧账号/残线、模式可用；设置login Props.close()自动关设置并到主CHAT999×820、无设置heading。用户已完成新路线正常登录，nav103/create=true/originalNew0/compact0/sessionSaved自动恢复；再次完整quit旧44883/44897结束后45240/45249重开无需登录，仍列表103/create=true/compact0/已保存，本轮正常GUI流程通过。正常重新登录及用户官方单次2FA后，同一0ce包publish session34434 exit0；0.1.11不再增，匿名完整与install-v1索引0.1.11/latest、公开下载同包及DSH pnpm11.7.0空store/空元数据缓存裸名安装12包、23/23文件一致均通过，无单元/浏览器测试或Git写，其他独立矩阵仍待。
+5. c041中间包经SHA核对已清理，主页面登录/设置退出有限证据与失败记录保留历史，settings重登564×480/mobile、unsupported/native2/create=false为失败；手动关闭设置恢复桌面导航只用于保留用户会话，不当新方案验收。仅保留当前包及有效回退，AXManualAccessibility已恢复false。最新进度和加载失败/profile隔离/过期/迁移/换账号/卸载/跨浏览器历史剩余矩阵见[handoff](handoff.md)。
+
+历史交付W026 / 0.1.10：最终e031严格footer-v1/布局包已完成构建/分发与官方CLI安装23/23文件一致；正常quit确认旧主/Host结束后重开，无再次填写登录。原生create-enabled=true，账号group昵称长度4/无侧栏文字/退出按钮86×38，固定已登录/已记住网页登录/简体中文齐全。修正临时AX URL的系统类型桥接后，自有guest官网origin确认，native导航103按钮、官网原新建按钮0，新建可用；固定布局未显示重复新建入口。用户完成新npm验证后publish exit0，公开完整与install-v1索引确认0.1.10/latest，正式下载与e031同字节；DSH pnpm11.7.0空store/空元数据缓存按裸名安装12包、版本0.1.10及23/23文件一致通过。本机保留同字节e031本地tgz，不重复安装或GUI验收；该轮未新增或运行单元/浏览器测试，收尾未stage/commit/push，后由用户提交51cf995，不声明全部官网流程验收通过。
+
+## W026历史修复与验收边界
 
 1. 首次导航结构识别保留5秒宽限，fallback持续安全结构探测；只有sidebar、新对话、layout/content完整确认后恢复适配，替代同文档永久fallback规则，避免重复遮罩/compact点击/重开guest。
 2. unknown、暂缺导航或profile不推断官网登出；profile出现后才读取设置/恢复偏好，结构未识别提示与网络连接错误区分，旧授权异常按代次/生命周期隔离。
@@ -63,9 +73,11 @@ W017按用户登录截图补布局占位、紧凑头部和首屏闪现保护；�
 
 ## 阶段 5：发布
 
-用户在W025已明确授权仓库改名与npm名称发布。当前W026正式e031生产构建/分发、官方CLI安装及一次完整重启的有限原生观察完成；2026-10-12用户完成新的正常npm验证，session24376 publish exit0。匿名公开完整与install-v1索引确认0.1.10/latest，正式tgz为135131bytes、SHA256 `e0316b056d4683160a7df4aa915d10795e2cf8c6a2df1ed14864014ea8ea845d`、SHA1 `3e9e15715a6e8a213754bbfe5bce3e7de0ddd9a7`，与已验本机包完全一致。DSH真实primary Node与pnpm11.7.0在独立consumer/空store/空元数据缓存正常add裸名安装12包exit0，版本0.1.10，23/23文件与公开tgz一致；无allowBuilds/ignore-scripts等policy覆盖，minimumReleaseAgeExclude由pnpm自身添加，临时consumer/store/cache全部finally清理。本机仍用同字节e031本地tgz，不重复安装或GUI验收。
+用户在W025已明确授权仓库改名与npm名称发布。当前公开版本为W027/0.1.11；最终0ce已完成本轮正常GUI退出重登及完整重启恢复。npm正常重新登录whoami=xingxingbk，2026-10-12用户完成新的官方单次2FA，session34434正常publish exit0；npm处理期间短暂保留旧索引，随后匿名公开完整与install-v1索引均确认0.1.11/latest。正式tgz为136151bytes，SHA256 `0ce1d5c753e85368fa6857fcb005c9b2b80476ed069458b1e5ab58656adc4a21`、SHA1 `cf6e95e2d03fa590b20ef0fc60fe41370a6e288d`，与已验收0ce包完全字节一致，本机已安装23/23文件相同。DSH真实primary Node与内置pnpm11.7.0在独立consumer、空store及空元数据缓存中正常add裸名`dsh-deepseek-chat`，exit0、版本0.1.11、12包，23/23文件与公开tgz逐字节一致。无手动allowBuilds或ignore-scripts等policy覆盖；minimumReleaseAgeExclude由pnpm自身添加，临时consumer/store/cache全部finally清理。本机已安装同字节0ce本地tgz，不重复安装或GUI验收，最终包不重打。
 
-W025的0.1.9发布、fresh Git、公开裸名安装及本机npm来源检查保留为历史；此前fixture源码manifest排版差异及正式23/23基准见[handoff](handoff.md)。各登录过渡/异常、退出/重登、迁移、过期、跨浏览器发送与历史一致性仍分别待验；分发成功不替代这些官网流程。本轮未新增或运行单元/浏览器测试，Git仍由用户自行提交/推送代码与上下文；未推送不声称跨设备同步，npm发布与Git提交分别记录。
+历史：以下保留W026正式e031生产构建/分发、官方CLI安装及一次完整重启的有限原生观察：2026-10-12用户完成新的正常npm验证，session24376 publish exit0。匿名公开完整与install-v1索引确认0.1.10/latest，正式tgz为135131bytes、SHA256 `e0316b056d4683160a7df4aa915d10795e2cf8c6a2df1ed14864014ea8ea845d`、SHA1 `3e9e15715a6e8a213754bbfe5bce3e7de0ddd9a7`，与已验本机包完全一致。DSH真实primary Node与pnpm11.7.0在独立consumer/空store/空元数据缓存正常add裸名安装12包exit0，版本0.1.10，23/23文件与公开tgz一致；无allowBuilds/ignore-scripts等policy覆盖，minimumReleaseAgeExclude由pnpm自身添加，临时consumer/store/cache全部finally清理。W026当时保留同字节e031本地tgz，不重复安装或GUI验收。
+
+W025的0.1.9发布、fresh Git、公开裸名安装及本机npm来源检查保留为历史；此前fixture源码manifest排版差异及正式23/23基准见[handoff](handoff.md)。W027本轮正常退出→主页面重登及完整重启已通过；其他登录过渡/异常、迁移、过期、跨浏览器发送与历史一致性仍分别待验，分发结果不替代这些独立流程。本轮未新增或运行单元/浏览器测试，Git仍由用户自行提交/推送代码与上下文；未推送不声称跨设备同步，npm发布与Git提交分别记录。
 
 W019范围已由用户收敛：取消完整四Tab和语音，本轮先交付网页账号、当前会话退出和语言切换，并统一标题/分享顶部布局。原生账号、真实语言读写及配置落盘、暗色和标题/分享展开折叠布局已实机确认；退出当前账号入口有回归覆盖，尚未实际登出用户。W019时重启登录尚未修复；后续W023采用插件自身grant候选，完整Session仍受Browser限制。语言偏好保存不能冒充认证恢复。具体产物、尝试与下一步以handoff/worklog为准。
 

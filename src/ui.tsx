@@ -31,7 +31,7 @@ export interface DshChatViewState {
   readonly accountStorageKey: string | null
   readonly authorizationGeneration: number
   readonly websiteReloadRevision: number
-  readonly settingsViewport: DshChatViewportRect | null
+  readonly settingsOpen: boolean
   readonly preferenceError: string | null
   readonly websiteAuthenticationStatus: 'loading' | 'signed-out' | 'signing-in' | 'signed-in' | 'signing-out' | 'error'
   readonly websiteAuthenticationRevision: number
@@ -62,7 +62,7 @@ export interface DshChatUIBridge {
   bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void
   commandWebsite(command: WebsiteCommand): void
   toggleWebsiteNavigation(): void
-  updateSettingsViewport(rect: DshChatViewportRect | null): void
+  setSettingsOpen(open: boolean): void
   logoutWebsite(): void
   loadWebsiteSession(generation: number): Promise<WebsiteSession | null>
   saveWebsiteSession(generation: number, session: WebsiteSession): Promise<boolean>
@@ -244,33 +244,25 @@ export function DshChatLeadingControls({bridge}: PropsRuntime<'shell.leading'> &
   </div>
 }
 
-export function DshChatChatSettings({bridge}: PropsRuntime<'settings.section'> & DshChatBridgeProps) {
+export function DshChatChatSettings({bridge,close}: PropsRuntime<'settings.section'> & DshChatBridgeProps) {
   const state = useDshChat(bridge)
-  const pane = useRef<HTMLDivElement>(null)
   const enabled = state.desktopAvailable
   useLayoutEffect(() => {
-    const element = pane.current
-    if (!element || !enabled) { bridge.updateSettingsViewport(null); return }
-    const measure = () => {
-      const rect = element.getBoundingClientRect()
-      bridge.updateSettingsViewport({left:rect.left,top:rect.top,width:rect.width,height:rect.height})
-    }
-    const resize = new ResizeObserver(measure); resize.observe(element)
-    globalThis.addEventListener('resize',measure)
-    globalThis.addEventListener('scroll',measure,true)
-    measure()
-    return () => { resize.disconnect(); globalThis.removeEventListener('resize',measure);globalThis.removeEventListener('scroll',measure,true);bridge.updateSettingsViewport(null) }
+    if (!enabled) { bridge.setSettingsOpen(false); return }
+    bridge.setSettingsOpen(true)
+    return () => { bridge.setSettingsOpen(false) }
   }, [bridge,enabled])
-  useLayoutEffect(() => {
-    if (!enabled || !pane.current) return
-    const rect=pane.current.getBoundingClientRect()
-    bridge.updateSettingsViewport({left:rect.left,top:rect.top,width:rect.width,height:rect.height})
-  }, [bridge,enabled,state.preferenceError,state.websiteNavigation.accountName,state.websiteNavigation.settings?.error,state.websiteAuthenticationStatus])
+  const signIn = () => {
+    bridge.setSettingsOpen(false)
+    close()
+    bridge.beginWebsiteSignIn()
+  }
   const navigation=state.websiteNavigation
   const settings=navigation.settings
+  const showAccount=enabled && navigation.authenticated===true && !['signed-out','signing-in','signing-out'].includes(state.websiteAuthenticationStatus)
   const language=/中文|Chinese/i.test(settings?.language ?? '') ? 'zh-CN' : /English|英语/i.test(settings?.language ?? '') ? 'en' : /^(System|跟随系统|系统|Follow system)$/i.test(settings?.language ?? '') ? 'system' : ''
   return <section className="dsh-chat-settings"><DshChatStyles/><h2>CHAT设置</h2>
-    {enabled && navigation.authenticated===true && state.websiteAuthenticationStatus!=='signing-out' && <div className="dsh-chat-settings-card">
+    {showAccount && <div className="dsh-chat-settings-card">
       <div className="dsh-chat-settings-account" role="group" aria-label="DeepSeek 官网账号"><div><strong title={navigation.accountName || 'DeepSeek Chat'}>{navigation.accountName || 'DeepSeek Chat'}</strong><p>已登录</p></div><button type="button" disabled={navigation.status!=='ready'} onClick={()=>bridge.logoutWebsite()}>退出登录</button></div>
       {state.websiteSessionStatus==='saved' && <p role="status">已记住网页登录。下次启动会由官网验证并恢复；授权失效时需重新登录。</p>}
       {navigation.status!=='ready' && <p className="dsh-chat-settings-progress" role="status">正在重新识别官网页面，账号登录状态保持不变。</p>}
@@ -284,12 +276,10 @@ export function DshChatChatSettings({bridge}: PropsRuntime<'settings.section'> &
       {state.websiteSessionError && <p className="dsh-chat-settings-error" role="alert">{state.websiteSessionError} {state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError) && <button type="button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button>}</p>}
     </div>}
     {!enabled && <p role="status">需要 DSH 桌面版的官方网页容器。</p>}
-    {enabled && state.websiteAuthenticationStatus==='signed-out' && <div className="dsh-chat-settings-card"><p>CHAT 尚未登录。这里与对话页面使用同一个官网账号，登录后自动同步。</p><button type="button" onClick={()=>bridge.beginWebsiteSignIn()}>登录 DeepSeek</button></div>}
-    {enabled && state.websiteAuthenticationStatus==='signing-in' && <p role="status">请在下方官网完成登录。登录成功后账号、对话列表和登录记忆会自动同步。</p>}
-    {enabled && state.websiteAuthenticationStatus==='signing-out' && <p role="status">正在清除登录记忆并退出官网…</p>}
-    {enabled && state.websiteAuthenticationStatus==='error' && state.websiteSessionError && navigation.authenticated!==true && <p className="dsh-chat-settings-error" role="alert">{state.websiteSessionError} <button type="button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button></p>}
-    {enabled && state.websiteAuthenticationStatus!=='signing-out' && navigation.authenticated!==true && navigation.status!=='sign-in' && <p role="status">{state.webError || (navigation.status==='unsupported' ? '官网页面已打开，暂未识别到账号和对话区域，正在自动重试。' : '正在识别 DeepSeek 官网登录状态…')} <button type="button" onClick={()=>bridge.reloadWebsite()}>重新加载</button></p>}
-    <div ref={pane} className={`dsh-chat-settings-pane${enabled && state.websiteAuthenticationStatus==='signing-in' ? '' : ' dsh-chat-settings-pane-hidden'}`} aria-label="CHAT官网登录区域">
-    </div>
+    {enabled && state.websiteAuthenticationStatus==='signed-out' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong>CHAT 尚未登录</strong><p>登录会打开 CHAT 对话页面。完成官网登录后，这里的账号与官网对话会自动同步。</p><button type="button" className="dsh-chat-primary-button" onClick={signIn}>登录 DeepSeek</button></div>}
+    {enabled && state.websiteAuthenticationStatus==='signing-in' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong role="status">正在登录 DeepSeek</strong><p>请在 CHAT 对话页面完成官网登录。登录成功后，账号和登录记忆会自动同步。</p><button type="button" className="dsh-chat-primary-button" onClick={signIn}>继续登录</button></div>}
+    {enabled && state.websiteAuthenticationStatus==='signing-out' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong role="status">正在退出登录</strong><p>正在清除登录记忆并退出官网…</p></div>}
+    {enabled && state.websiteAuthenticationStatus==='error' && !showAccount && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong>登录状态暂时无法同步</strong><p className="dsh-chat-settings-error" role="alert">{state.websiteSessionError || state.webError || '暂时无法确认官网登录状态，请重试。'}</p>{/退出/.test(state.websiteSessionError ?? '') ? <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button> : <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.reloadWebsite()}>重新加载</button>}</div>}
+    {enabled && !showAccount && state.websiteAuthenticationStatus==='loading' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong role="status">正在同步官网账号</strong><p>{state.webError || (navigation.status==='unsupported' ? '官网页面已打开，正在同步账号和对话列表…' : '正在识别 DeepSeek 官网登录状态…')}</p><button type="button" className="dsh-chat-text-button" onClick={()=>bridge.reloadWebsite()}>重新加载</button></div>}
   </section>
 }

@@ -22,7 +22,7 @@ export interface DshChatViewState {
     readonly accountStorageKey: string | null;
     readonly authorizationGeneration: number;
     readonly websiteReloadRevision: number;
-    readonly settingsViewport: DshChatViewportRect | null;
+    readonly settingsOpen: boolean;
     readonly preferenceError: string | null;
     readonly websiteAuthenticationStatus: 'loading' | 'signed-out' | 'signing-in' | 'signed-in' | 'signing-out' | 'error';
     readonly websiteAuthenticationRevision: number;
@@ -55,7 +55,7 @@ export interface DshChatUIBridge {
     bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void;
     commandWebsite(command: WebsiteCommand): void;
     toggleWebsiteNavigation(): void;
-    updateSettingsViewport(rect: DshChatViewportRect | null): void;
+    setSettingsOpen(open: boolean): void;
     logoutWebsite(): void;
     loadWebsiteSession(generation: number): Promise<WebsiteSession | null>;
     saveWebsiteSession(generation: number, session: WebsiteSession): Promise<boolean>;
@@ -81,4 +81,4 @@ export declare function DshChatChatNavigation({ bridge, wide, expandSidebar }: P
 export declare function DshChatChatPanel({ bridge }: PropsRuntime<'main'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
 /** Same public primitive icons, geometry and tooltip behavior as native rc.2 chrome. */
 export declare function DshChatLeadingControls({ bridge }: PropsRuntime<'shell.leading'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
-export declare function DshChatChatSettings({ bridge }: PropsRuntime<'settings.section'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
+export declare function DshChatChatSettings({ bridge, close }: PropsRuntime<'settings.section'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;

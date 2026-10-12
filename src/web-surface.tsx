@@ -53,12 +53,12 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
   const lastReload = useRef(state.websiteReloadRevision)
 
   useEffect(() => {
-    if ((state.mode === 'chat' && state.modeEnabled || state.settingsViewport) && state.authorizationStatus === 'authorized') {
+    if ((state.mode === 'chat' && state.modeEnabled || state.settingsOpen) && state.authorizationStatus === 'authorized') {
       setRequestedGeneration(state.authorizationGeneration)
       if (previousMode.current === 'harness' && needsRecovery.current) setRecoveryRevision(value => value + 1)
     }
     previousMode.current = state.mode
-  }, [state.mode, state.modeEnabled, state.authorizationStatus, state.authorizationGeneration, state.settingsViewport])
+  }, [state.mode, state.modeEnabled, state.authorizationStatus, state.authorizationGeneration, state.settingsOpen])
 
   useEffect(() => {
     let stopped = false
@@ -233,7 +233,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
           // A failed DOM projection cannot prove that the website signed out.
           // Drop only unconfirmed navigation and keep the real website usable.
           bridge.reportWebsiteNavigation(generation, { status: 'unsupported', conversations: [], selectedHref: null, canCreate: false, error: null })
-          setPresentationReady(!snapshot.settingsViewport)
+          setPresentationReady(!snapshot.settingsOpen)
           if (currentProjection()) {
             try { await execute({type:'restore'}) } catch { /* Polling probes the recovered page without restarting its first paint. */ }
           }
@@ -329,17 +329,20 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
 
   useEffect(() => () => { guestEvents.current?.abort() }, [])
 
-  const inSettings = state.settingsViewport !== null
-  const rect = inSettings && state.websiteNavigation.status!=='sign-in' ? {left:0,top:0,width:globalThis.innerWidth,height:globalThis.innerHeight} : state.settingsViewport ?? state.viewport
-  // Leave native connection/retry controls visible while the sign-in guest
-  // is still loading or being verified after a session restore.
-  const visible = (inSettings && state.websiteNavigation.status==='sign-in' && presentationReady || !inSettings && state.mode === 'chat' && state.modeEnabled) && rect !== null
+  const inSettings = state.settingsOpen
+  // Settings is a native status page. Its shared guest stays hidden at desktop
+  // size for account/preferences reads; login always uses the main CHAT panel.
+  const rect = inSettings
+    ? state.viewport ?? {left:0,top:0,width:globalThis.innerWidth,height:globalThis.innerHeight}
+    : state.viewport
+  const visible = !inSettings && state.mode === 'chat' && state.modeEnabled
+    && rect !== null && rect.width > 0 && rect.height > 0
   const activeReservation = reservation !== null && reservation.generation === state.authorizationGeneration
     && reservation.storageKey === state.accountStorageKey ? reservation : null
   const clearance = 0
   const logoutError=state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError ?? '')
   return createPortal(<section id="dsh-chat-website-surface" className="dsh-chat-web-surface" aria-label="DeepSeek 官网网页" aria-hidden={!visible} style={{
-    zIndex: inSettings ? (visible ? 1001 : 0) : 14,
+    zIndex: inSettings ? 0 : 14,
     visibility: visible ? 'visible' : 'hidden',
     display: (inSettings || state.mode==='chat') && rect ? 'flex' : 'none',
     opacity: visible ? 1 : 0,
@@ -348,7 +351,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     top: (rect?.top ?? 0) + clearance,
     width: rect?.width ?? 0,
     height: Math.max(0,(rect?.height ?? 0) - clearance),
-    borderRadius: inSettings ? 12 : 0, overflow: 'hidden',
+    borderRadius: 0, overflow: 'hidden',
   }}>
     <DshChatStyles />
     {state.websiteSessionStatus==='saved' && <span className="dsh-chat-sr-only" role="status" aria-label="CHAT 网页登录状态已保存">CHAT 网页登录状态已保存</span>}
@@ -370,7 +373,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         <strong>{nativeBrowser === undefined ? '当前环境无法内嵌网页' : state.webError !== null ? '网页暂时无法使用' : logoutError ? '退出登录未完成' : state.websiteAuthenticationStatus==='signed-out' ? '登录 DeepSeek Chat' : state.websiteAuthenticationStatus==='signing-out' ? '正在退出登录' : '正在打开 DeepSeek 官网'}</strong>
         <p>{state.webError || (logoutError ? state.websiteSessionError : nativeBrowser === undefined ? '需要提供官方浏览器能力的 DSH 桌面版。' : state.websiteAuthenticationStatus==='signing-out' ? '正在清除登录记忆并退出官网。' : 'CHAT 使用独立的官网登录，登录后自动同步账号和官网对话。')}</p>
         {logoutError && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button>}
-        {state.websiteAuthenticationStatus==='signed-out' && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.beginWebsiteSignIn()}>登录 DeepSeek</button>}
+        {state.websiteAuthenticationStatus==='signed-out' && <button type="button" className="dsh-chat-primary-button" onClick={()=>bridge.beginWebsiteSignIn()}>登录 DeepSeek</button>}
         {state.authorizationStatus!=='authorized' && nativeBrowser!==undefined && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.refreshAuthorization()}>重试连接</button>}
         {(state.webError !== null) && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.reloadWebsite()} disabled={nativeBrowser === undefined || !state.modeEnabled}>重试网页</button>}
       </div>}

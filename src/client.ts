@@ -42,7 +42,7 @@ export function apply(ctx: Context): void {
   let webLoading = false
   let webError: string | null = null
   let connectionError: string | null = null
-  let settingsViewport: DshChatViewportRect | null = null
+  let settingsOpen = false
   let settingsReadRequested=false
   let preferenceError: string | null = null
   let preferences: {language:string} | null = null
@@ -101,7 +101,7 @@ export function apply(ctx: Context): void {
       error: state.error ?? connectionError ?? (state.authorization.error === 'profile-context-unavailable'
         ? '当前 DSH 未提供可信配置上下文，网页登录可用，但不能保存登录记忆。'
         : state.authorization.error ? 'CHAT 登录保存服务暂时不可用，请重试连接。' : null),
-      desktopAvailable: Boolean(nativeBrowser), webLoading, webError, settingsViewport, preferenceError, viewport, brandAnchor, sidebarAdapted,
+      desktopAvailable: Boolean(nativeBrowser), webLoading, webError, settingsOpen, preferenceError, viewport, brandAnchor, sidebarAdapted,
       websiteSessionStatus, websiteSessionError, websiteAuthenticationStatus, websiteAuthenticationRevision,
       accountStorageKey: state.authorization.status === 'authorized' && state.authorization.accountId
         ? `dsh-deepseek-chat:website:${state.authorization.accountId}` : null,
@@ -289,7 +289,7 @@ export function apply(ctx: Context): void {
     manageAccount: () => { bridge.beginWebsiteSignIn() },
     beginWebsiteSignIn: () => {
       if (disposed || !nativeBrowser || logoutRequested) return
-      if (mode.getSnapshot().mode!=='chat' && !settingsViewport) mode.select('chat')
+      if (mode.getSnapshot().mode!=='chat') mode.select('chat')
       restorationBlocked=true
       if (!websiteSignInRequested) websiteAuthenticationRevision++
       websiteSignInRequested=true;websiteAuthenticationStatus='signing-in';webError=null
@@ -396,11 +396,11 @@ export function apply(ctx: Context): void {
       void navigationHandler(command)
     },
     toggleWebsiteNavigation: () => { showWebsiteNavigation = !showWebsiteNavigation; publish() },
-    updateSettingsViewport: next => {
-      if (settingsViewport?.left===next?.left && settingsViewport?.top===next?.top && settingsViewport?.width===next?.width && settingsViewport?.height===next?.height) return
-      const opening = !settingsViewport && !!next
+    setSettingsOpen: next => {
+      if (settingsOpen === next) return
+      const opening = !settingsOpen && next
       if(opening) settingsReadRequested=false
-      settingsViewport=next;publish()
+      settingsOpen=next;publish()
       if(!next && navigationHandler) void navigationHandler({type:'settings-close'})
       else readSettingsWhenReady()
     },
@@ -490,7 +490,7 @@ export function apply(ctx: Context): void {
     publish()
   }
   function readSettingsWhenReady(): void {
-    if(!settingsViewport || !navigationHandler || websiteNavigation.status!=='ready' || websiteNavigation.authenticated!==true || settingsReadRequested || restoringPreferences || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
+    if(!settingsOpen || !navigationHandler || websiteNavigation.status!=='ready' || websiteNavigation.authenticated!==true || settingsReadRequested || restoringPreferences || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
     settingsReadRequested=true
     // Preference restoration already reads the public language value; reuse it.
     if (websiteNavigation.settings?.language && !websiteNavigation.settings.error) return

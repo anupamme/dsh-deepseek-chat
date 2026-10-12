@@ -515,3 +515,54 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 - 安装核对第一回用了runtime/bin/node包装脚本，缺少DSH_DESKTOP_NODE_EXECUTABLE宿主环境而exit127；改用已确认的primary-runtime实际Node后，第二回空store仍沿用全局旧元数据并安装0.1.9，版本断言失败。两回finally清理临时目录，不当成功；没有改用户全局缓存。
 - 最终使用DSH实际primary Node、内置pnpm11.7.0及独立consumer/空store/空元数据缓存正常add裸名dsh-deepseek-chat，12包安装exit0、版本0.1.10、23/23文件与正式公开tgz一致。没有allowBuilds/ignore-scripts政策覆盖；新包minimumReleaseAgeExclude由pnpm自动生成。全部临时consumer/store/cache已清理，临时脚本不进仓库。
 - 本机保持前轮已安装/完整重启验收的e031来源，公开包字节相同，本轮不重复重装或GUI验收；未新增或运行单元/浏览器测试。文档同步正式发布及分发证据，源码/lib和上下文仍留本地由用户手动提交/推送，npm发布不表示GitHub代码已同步。
+
+### W027开工与源码整合（2026-10-12）
+
+- 基线main/origin 51cf995，fetch一致、开工干净，W026已由用户手动提交。用户截图新增明确退出→重登三项缺陷，本轮0.1.10→0.1.11只递增一次。
+- 1px settings guest残留已定位，settingsViewport保留挂载信号但非signing-in高度0，surface只在显式signing-in有效区域可见、隐藏guest保留正常尺寸；两处144×40蓝色主按钮统一。compact导航受限完整三图标行正常展开一次置于recovering返回之前，失败保持原官网且不重复点击；原footer-v1证明不放宽。
+- native AX只读复现旧0.1.10 guest999×820、原生nav2、create=false、未识别固定提示；compact三控件63/99/135,15且34×34、匿名无文本。只记录固定状态/计数/几何，不输出个人信息。
+- 当前源码4文件整合完成，生产构建、官方CLI安装、真实退出→正常官网登录/重启及发布待执行；没有新增或运行测试。版本/README安装例子同步0.1.11，文档不能提前宣称通过。
+
+### W027生产包与未登录界面检查
+
+- 生产build及分发清单通过，c04108c69ee3（136331bytes，完整SHA见handoff）正常pack/官方CLI安装成功，23文件逐字节一致。独立静态审查指出设置signing-in加载失败可能隐藏自身重试，root允许显式登录状态卡可见，website仍presentationReady才显现；修改已包含该候选。
+- 正常quit/reopen后初始未登录，主/设置蓝色按钮视觉确认，native尺寸145×48/144×43，设置下无裁剪残留。旧helper Escape未实际关闭设置，不记关闭通过；改为自己的设置右上角固定几何X正常AXPress关闭，再打开主入口。第一次sandbox pgrep无法读进程，不拿其exit3当主/Host已结束；本次仅正常重开候选界面确认。
+- 当前已请用户本人正常官网登录，候选真正退出→重登/列表同步/重启以及npm发布仍待实证。没有新增或运行测试；临时截图只查看裁剪自身卡片，未输出私人侧栏/正文/昵称/授权值。
+
+- 阶段交还：已请用户本人登录，尚未收到完成回复，依赖登录的真实退出/重登、列表恢复、重启与发布保持待办；npm whoami正常确认xingxingbk，可待验收后用同一最终包正常发布。原始临时截图已删除，只保留非个人卡片裁图；Git未stage/commit/push。
+
+### W027主页面登录同步与真实设置退出实证
+
+- 用户回复已登录。c041原生guest999×820、nav103/create=true/originalNew0/compact0、固定已保存，无手动展开官网。CHAT设置直接显示昵称长度4且不含侧栏文字、logout86×38、已登录/记忆/简体中文，未用刷新补同步。
+- 正常插件logout执行成功，等待后signed-out设置仅未登录card/蓝色144×43按钮，无旧账号/原1px残线；两模式仍enabled。设置裁剪图只含固定文案，原始临时图立刻删除。已经从settings同一guest点击login，因登录表单仅用户本人可操作，等待其正常重登完成，再核对同步和完整重启。未修改源码/版本/分发，0.1.11未发布。
+
+- 本阶段等待设置内正常重登完成；当前原生仍为signing-in入口，无账号ready证明，不执行应用退出/发布。临时AXManualAccessibility已恢复false。收到用户重登回复后继续原生同步和完整重启，不能将第一次主页面登录成功替代整个重登矩阵。
+
+### W027设置内重登失败与用户新方向
+
+- 用户回复重登完成但c041实机仍unsupported、native2/create=false；settings guest564×480，公开顶部匿名控件198,24/232,24各16×16和10,12的44×44，属于mobile而非desktop同行3图标。小尺寸依赖signing-in、signing-in又等待desktop结构证明，形成循环。没有猜mobile SVG按钮或放宽账号/footer。
+- 用户截图明确要求CHAT设置普通状态、调用登录数据。核实官方settings.section owner close()公开支持启动会话离开设置；决定完全取消设置网页登录容器，settingsOpen布尔保留同guest后台读写，login关闭settings并总切主CHAT。当前公开官方API文档认证为API Key/Bearer，未发现官网Chat账户公开查询契约，原生状态采用统一已确认profile投影。不将URL、保存grant或平台登录当Chat身份。
+- UI/styles子Agent修改，rootclient/surface，仍0.1.11一次、c041将由新唯一包替代；未构建/验收新方案或发布。为保留用户刚登录的官网会话，root正常关闭旧设置让guest回主区正常尺寸，该操作不算新方案自动恢复验收。
+
+### W027原生状态页候选安装
+
+- 新settingsOpen布尔替代viewport、官网guest只在主CHAT显现，设置始终纯native；login false→官方close→begin、begin总select chat。Host/Client和官方type contract生产构建通过，0ce1d5c753e8包normal pack/CLI安装、23分发文件一致，136151bytes/完整SHA见handoff。版本仍0.1.11。
+- 安装前旧c041正常关闭设置后已回desktop guest999×820并恢复nav103/sessionSaved，仅为保留刚正常重登的会话，不算新方案自动恢复验收。normal quit旧main43609/Host43621后pgrep exit1确认全结束，normal reopen新44883/44897，正在核实状态页与授权恢复。没有运行单元或浏览器测试、未发布或Git写操作。
+
+### W027原生状态页、完整重启与新登录路线
+
+- 新0ce在旧主/Host全结束后重开44883/44897，无再次登录输入。进入CHAT后guest999×820，nav103/create=true/originalNew0/compact0/sessionSaved；新设置仅原生账号/语言/记忆，nick4/sidebartextfalse/logout86×38，parent仅1AXWebArea且guest不在可见树。初始化首个CHAT press尚未选中，稍后正常再点进入，未当第一次成功证据。
+- 新方案实际settings正常logout后native signedout card144×43、无旧账号/残线、切换器可用；正常点login后官方close自动关闭设置，主CHAT官网999×820打开，身份仍未登录且native2/createfalse（此时正常，不当登录成功）。已问用户正常登录复验最后同步，等待回复；0.1.11未发布。临时原始截图立刻删除，只查看固定native卡片裁图；没有额外读取表单/授权/对话内容。
+
+### W027新登录路线最终验收与npm重新授权
+
+- 用户回复已登录，新0ce主CHAT无需刷新恢复nav103/create=true/originalNew0/compact0/sessionSaved，官网guest999×820；打开CHAT设置直接出现原生账号昵称长度4、无侧栏文字、退出86×38、已登录/记忆/简体中文，设置没有可见嵌入官网。
+- 再次normal quit确认旧main44883/Host44897结束（pgrep exit1），normal reopen新main45240/Host45249，无再次输入登录，CHAT正常尺寸、nav103/create=true/compact0与sessionSaved恢复。实际新设置退出→主页面正常重登→自动同步→完整重启矩阵通过；不把此前c041失败或关闭旧设置的手动恢复当作通过。完成后AXManualAccessibility恢复false、setter success，AXEnhancedUI未改。
+- 同一最终0ce绝对包正常npm publish session77399以PUT E404退出，未收到单次2FA挑战。随后npm whoami返回E401，公开包version/latest=0.1.10、维护者xingxingbk，确认当前npm授权失效。启动正常npm login --auth-type=web session62506，官方登录页已打开并请求用户本人正常登录；不读npmrc、token或可能包含敏感数据的debug日志，不报告0.1.11已发布。此npm授权与CHAT授权独立。
+
+### W027公开发布与名称安装完成
+
+- 用户完成正常npm web登录，session62506 exit0，whoami确认xingxingbk；同一最终0ce绝对tgz重新publish session34434，用户本人完成新官方单次2FA后exit0、+ dsh-deepseek-chat@0.1.11。registry processing阶段两次读取尚为旧版，不当公開可用证据；随后专用版本、完整与install-v1索引均确认0.1.11/latest。
+- 正式公开下载包136151bytes，SHA1 cf6e95e2d03fa590b20ef0fc60fe41370a6e288d，SHA256 0ce1d5c753e85368fa6857fcb005c9b2b80476ed069458b1e5ab58656adc4a21，与实机验收0ce/canonical整个包字节一致，本机已安装23/23文件同公开包。仓库文件检查22个非manifest分发文件完全相同；直接按源package.json原始字节断言失败仅因为pnpm正常pack改写packageManager，结构化核对确认只有该字段变化，不是源码或已发布包漂移。
+- DSH实际primary Node及内置pnpm11.7.0，独立consumer/空store/空元数据cache正常add裸名dsh-deepseek-chat，exit0、版本0.1.11、12包，23/23分发文件与公开包相同。未手动修改allowBuilds/ignore-scripts；pnpm自身生成minimumReleaseAgeExclude；finally清理全部临时consumer/store/cache。
+- 清理仅删除SHA核实的失败c041中间包，保留最终0ce/canonical和有效回退版本；源码、编译产物、README、上下文留本地供用户手动提交/推送。原生AX已恢复false；只读设置生命周期审查无阻断缺陷，git diff --check通过，没有新增/运行单元或浏览器测试。现有README设置图已为脱敏账号状态卡，与当前原生状态界面相符，不新增私人原始截图。

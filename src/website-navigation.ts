@@ -39,17 +39,19 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   const profileProofMarker = 'data-dsh-chat-profile-confirmed'
   const profileAvatarMarker = 'data-dsh-chat-profile-avatar'
   const navigationWidthMarker = 'data-dsh-chat-navigation-width'
+  const expandingMarker = 'data-dsh-chat-expanding'
+  const compactToggleMarker = 'data-dsh-chat-compact-toggle'
   const conversationError = '该对话不在当前官网列表，请刷新列表。'
   const styleId = 'dsh-chat-website-navigation-style'
   const preparingStyleId = 'dsh-chat-website-preparing-style'
-  const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, profileMarker, profileProofMarker, profileAvatarMarker, navigationWidthMarker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-expanding', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor', 'data-dsh-chat-header-native-depth']
+  const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, profileMarker, profileProofMarker, profileAvatarMarker, navigationWidthMarker, expandingMarker, compactToggleMarker, 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor', 'data-dsh-chat-header-native-depth']
   const empty = (status: WebsiteNavigation['status']): WebsiteNavigation => ({ status, ...(status === 'sign-in' ? { authenticated: false } : {}), conversations: [], selectedHref: null, canCreate: false, error: null })
   const clearSettings = (preserveConfirmedPreferences = false) => {
     const confirmed = ['data-dsh-chat-language', 'data-dsh-chat-theme', 'data-dsh-chat-dark-complete', 'data-dsh-chat-settings-restored']
     for (const attr of [...doc.documentElement.attributes]) if (/^data-dsh-chat-(settings-|language$|theme$|dark-complete$)/.test(attr.name)
       && !(preserveConfirmedPreferences && confirmed.includes(attr.name))) doc.documentElement.removeAttribute(attr.name)
   }
-  const restore = (preserveConfirmedPreferences = false) => {
+  const restore = (preserveConfirmedPreferences = false, preserveCompactAttempt = false) => {
     clearSettings(preserveConfirmedPreferences)
     doc.getElementById(styleId)?.remove()
     doc.getElementById('dsh-chat-header-style')?.remove()
@@ -58,12 +60,16 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     doc.getElementById('dsh-chat-settings-view-style')?.remove()
     doc.documentElement.removeAttribute('data-dsh-chat-voice')
     doc.documentElement.removeAttribute('data-dsh-chat-preparing')
-    owned.forEach(attr => doc.querySelectorAll(`[${attr}]`).forEach(node => node.removeAttribute(attr)))
+    owned.forEach(attr => {
+      if (preserveCompactAttempt && (attr === expandingMarker || attr === compactToggleMarker)) return
+      doc.querySelectorAll(`[${attr}]`).forEach(node => node.removeAttribute(attr))
+    })
   }
   const fallback = (error: 'open' | null = null): WebsiteNavigation => {
     // Leave confirmed public preferences intact when revealing the original
     // website. A later structural recovery must not restart completed settings.
-    restore(page.origin === origin && !/^\/sign_in\/?$/.test(page.pathname) && command.type !== 'restore')
+    const preserveRecovery = page.origin === origin && !/^\/sign_in\/?$/.test(page.pathname) && command.type !== 'restore'
+    restore(preserveRecovery, preserveRecovery)
     if (page.origin === origin && /^\/sign_in\/?$/.test(page.pathname)) return empty('sign-in')
     if (!(command.type === 'snapshot' && command.showOriginal)) {
       doc.documentElement.setAttribute(fallbackMarker, '')
@@ -81,7 +87,8 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     restore()
   }
   // React can briefly remove navigation while a login/route commit is pending.
-  // Keep probing a failed document without hiding it or clicking its controls.
+  // Keep probing a failed document without hiding it. Only a confirmed compact
+  // navigation row may open its own sidebar once while waiting for that layout.
   const recovering = doc.documentElement.hasAttribute(fallbackMarker)
   // Own observer runs in the same DOM microtask checkpoint as the site's React
   // commit, before paint. No app globals or data stores cross the guest boundary.
@@ -168,27 +175,80 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     if (started !== previous) doc.documentElement.setAttribute(missingSidebarMarker, String(started))
     return now - started >= 5000
   }
+  const iconButtonSelector = 'button,[role="button"],.ds-icon-button'
+  const compactNavigation = () => {
+    const toggleLabels = /^(展开侧边栏|打开侧边栏|侧边栏|切换侧边栏|Open sidebar|Expand sidebar|Toggle sidebar|Sidebar)$/i
+    const openingLabels = /^(展开侧边栏|打开侧边栏|Open sidebar|Expand sidebar)$/i
+    const searchLabels = /^(搜索|搜索对话|Search|Search chats|Search conversations)$/i
+    const newLabels = /^(开启新对话|新对话|新建对话|New chat|New Chat)$/i
+    const namedAs = (button: HTMLElement, expected: RegExp) => {
+      const names = ['aria-label', 'title'].map(attr => (button.getAttribute(attr) ?? '').trim()).filter(Boolean)
+      return names.length === 0 || names.every(name => expected.test(name))
+    }
+    for (const row of doc.querySelectorAll<HTMLElement>('div,header,nav')) {
+      const bounds = row.getBoundingClientRect()
+      if (bounds.top < -1 || bounds.top > 72 || bounds.left < -1 || bounds.left > 160
+        || bounds.width < 72 || bounds.width > 360 || bounds.height < 24 || bounds.height > 80
+        || row.textContent?.trim() || row.closest('[role="dialog"],[role="menu"],[data-dsh-chat-settings-dialog],.ds-modal-content,.ds-dropdown-menu')
+        || row.querySelector('a[href],input,textarea,[contenteditable="true"]')) continue
+      const rowButtons = [...row.querySelectorAll<HTMLElement>(iconButtonSelector)].filter(button => {
+        const parentButton = button.parentElement?.closest(iconButtonSelector)
+        return !parentButton || !row.contains(parentButton)
+      })
+      if (rowButtons.length !== 3) continue
+      const buttons = rowButtons.filter(button => {
+        const rect = button.getBoundingClientRect()
+        return rect.width >= 20 && rect.width <= 64 && rect.height >= 20 && rect.height <= 64
+          && rect.left >= bounds.left - 1 && rect.right <= bounds.right + 1
+          && rect.top >= bounds.top - 1 && rect.bottom <= bounds.bottom + 1
+          && !button.textContent?.trim() && !!button.querySelector('svg')
+          && !button.closest('[hidden],[aria-hidden="true"]') && getComputedStyle(button).visibility !== 'hidden'
+          && button.getAttribute('aria-disabled') !== 'true' && !button.matches(':disabled')
+      }).sort((left, right) => left.getBoundingClientRect().left - right.getBoundingClientRect().left)
+      // Anonymous SVG controls are accepted only as the entire compact
+      // sidebar/search/new row, never an arbitrary upper-left icon.
+      if (buttons.length !== 3 || buttons[0].getAttribute('aria-expanded') === 'true' || !namedAs(buttons[0], toggleLabels)
+        || !namedAs(buttons[1], searchLabels) || !namedAs(buttons[2], newLabels)) continue
+      const rects = buttons.map(button => button.getBoundingClientRect())
+      if (rects.some(rect => Math.abs(rect.top - rects[0].top) > 8)
+        || rects[1].left < rects[0].right - 1 || rects[2].left < rects[1].right - 1) continue
+      return { row, toggle: buttons[0] }
+    }
+    // Smaller layouts can omit search. A single/mobile control must name its
+    // sidebar purpose publicly; geometry plus a generic SVG is insufficient.
+    for (const toggle of doc.querySelectorAll<HTMLElement>(iconButtonSelector)) {
+      const bounds = toggle.getBoundingClientRect()
+      const name = (toggle.getAttribute('aria-label') || toggle.getAttribute('title') || '').trim()
+      const expanded = toggle.getAttribute('aria-expanded')
+      if (!toggleLabels.test(name) || expanded === 'true' || (!openingLabels.test(name) && expanded !== 'false')
+        || bounds.left < 0 || bounds.left > 160 || bounds.top < 0 || bounds.top > 72
+        || bounds.width < 20 || bounds.width > 64 || bounds.height < 20 || bounds.height > 64
+        || toggle.textContent?.trim() || !toggle.querySelector('svg') || toggle.getAttribute('aria-disabled') === 'true'
+        || toggle.matches(':disabled') || getComputedStyle(toggle).visibility === 'hidden'
+        || toggle.closest('[hidden],[aria-hidden="true"],a[href],[role="dialog"],[role="menu"],[data-dsh-chat-settings-dialog],.ds-modal-content,.ds-dropdown-menu')) continue
+      return { row: toggle.parentElement, toggle }
+    }
+    return null
+  }
   if (!sidebar || !newChat) {
+    // Login can return to the site's retained compact layout. The sidebar must
+    // be opened before its full navigation/footer proof can become available,
+    // including after fallback; do not let fallback prevent that one action.
+    const compact = !isOriginalSnapshot && command.type === 'snapshot' ? compactNavigation() : null
+    if (compact && !doc.documentElement.hasAttribute(expandingMarker)) {
+      const started = String(Date.now())
+      compact.toggle.setAttribute(compactToggleMarker, started)
+      doc.documentElement.setAttribute(expandingMarker, started)
+      doc.documentElement.setAttribute(missingSidebarMarker, started)
+      compact.toggle.click()
+      return empty('loading')
+    }
+    // The document guard survives fallback and a React replacement of the same
+    // control. Neither a disappearing compact row nor a new node repeats clicks.
+    const expandedAt = Number(doc.documentElement.getAttribute(expandingMarker))
+    if (!isOriginalSnapshot && Number.isFinite(expandedAt) && expandedAt > 0 && Date.now() - expandedAt < 5000) return empty('loading')
     if (recovering) return fallbackNavigation()
     if (isOriginalSnapshot || structureExpired()) return fallback()
-    // A narrow viewport can initially mount only the site's compact controls.
-    // Open its own navigation once per initial preparation, never on recovery.
-    if (!doc.documentElement.hasAttribute(presentedMarker) && !doc.documentElement.hasAttribute('data-dsh-chat-expanding')) {
-      const compact = [...doc.querySelectorAll<HTMLElement>('div,header')].find(el => {
-        const r = el.getBoundingClientRect()
-        const buttons = el.querySelectorAll('button,[role="button"]')
-        return r.top >= -1 && r.top < 80 && r.left >= -1 && r.left < 180 && r.width > 30 && r.width < 400 && r.height > 16 && r.height < 80
-          && buttons.length >= 2 && buttons.length <= 3 && el.querySelector('svg,img') && !el.textContent?.trim()
-      })
-      const mobileToggle = [...doc.querySelectorAll<HTMLElement>('button,[role="button"]')].find(el => {
-        const r=el.getBoundingClientRect(); return r.left>=0 && r.left<80 && r.top>=0 && r.top<80 && r.width>=20 && r.width<=72 && r.height>=20 && r.height<=72 && !el.textContent?.trim() && !!el.querySelector('svg') && !el.closest('[data-dsh-chat-settings-dialog]')
-      })
-      const expandable = compact ?? mobileToggle
-      if (expandable) {
-        doc.documentElement.setAttribute('data-dsh-chat-expanding', String(Date.now()))
-        ;(compact?.querySelector<HTMLElement>('button,[role="button"]') ?? mobileToggle)?.click()
-      }
-    }
     // Login can enter the home route before either sidebar or compact controls
     // are mounted. Use the same fixed grace period as later route replacement.
     return empty('loading')
@@ -231,6 +291,8 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
     return empty('loading')
   }
   doc.documentElement.removeAttribute(missingSidebarMarker)
+  doc.documentElement.removeAttribute(expandingMarker)
+  doc.querySelectorAll(`[${compactToggleMarker}]`).forEach(button => button.removeAttribute(compactToggleMarker))
   if (recovering) {
     doc.documentElement.removeAttribute(fallbackMarker)
     doc.documentElement.removeAttribute(fallbackErrorMarker)
@@ -376,7 +438,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
       for (const candidate of content.querySelectorAll<HTMLElement>('div,header')) {
         const r = candidate.getBoundingClientRect()
         if (r.top >= -1 && r.top <= 72 && r.height > 0 && r.height <= 80 && r.width <= 400
-          && candidate.querySelectorAll('button,[role="button"]').length >= 2 && candidate.querySelectorAll('button,[role="button"]').length <= 3 && candidate.querySelector('svg,img')
+          && candidate.querySelectorAll(iconButtonSelector).length >= 2 && candidate.querySelectorAll(iconButtonSelector).length <= 3 && candidate.querySelector('svg,img')
           && !candidate.querySelector('textarea,[contenteditable="true"]') && !candidate.textContent?.trim()) candidate.setAttribute('data-dsh-chat-web-chrome', '')
       }
     }

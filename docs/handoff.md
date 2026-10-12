@@ -1,3 +1,28 @@
+# W027：退出页面、登录入口与收起导航恢复 · 2026-10-12（新流程与重启已验收，0.1.11已公开发布）
+
+基线main/远端 `51cf995`，开工fetch确认一致、工作区干净；W026已由用户提交。本轮 `0.1.10 → 0.1.11` 已递增一次，后续同轮重包不再增号。Git仍由用户手动提交/推送。
+
+- 目标：退出后CHAT设置只显示完整未登录卡片；主页面/设置登录入口醒目一致；重新登录自动恢复真实官网账号/原生历史并隐藏重复官网导航。
+- 分工：w027_settings_ui修改UI/CSS，w027_compact_navigation修改受限导航恢复，w027_login_state只读状态审查；root整合surface、版本、生产构建/安装和实机流程；browser_publish_research同步需求/架构/路线。前三项源码已交还，无新增/运行测试。
+- 根因：隐藏settings pane仍发布1px有效viewport，surface根据旧sign-in导航显示裁剪guest；登录按钮分别使用默认灰色/弱文字样式；recovering在compact展开之前返回，官网保留收起导航时无法获得完整sidebar/footer证明。
+- 首个c041候选修复（后被原生状态页替代）：只有显式signing-in及有效尺寸显示设置guest，未登录/退出/已登录阶段height0且guest后台维持正常尺寸；settings挂载信号保留供偏好同步，不随身份切换触发settings-close。两处登录蓝色144×40主按钮。仅有界完整三SVG导航行或明确公开展开按钮可正常点击一次，document/node guard跨fallback保留；完整track/content与footer证明后恢复，失败不重复点击或重遮罩。
+- 原生复现旧0.1.10：官网guest999×820，原生导航2控件、新建disabled、固定未识别提示；相对顶部三个匿名AXButton为63/99/135,15，各34×34，未读取个人标题/正文/表单或授权值。此时尚未安装0.1.11，也未执行退出重登。
+- 生产`build.mjs`与`check-distribution.mjs`通过，18编译文件清单一致；DSH内置pnpm11.7.0正常pack/官方CLI安装exit0，23分发文件与候选逐字节一致。包`artifacts/dsh-deepseek-chat-0.1.11-c04108c69ee3.tgz`，136331bytes，SHA256 `c04108c69ee36251ec0002272fab658891ec0bb037e753e260c0028dc5218bc1`；Host沿用W026相同哈希，Client `045cda9cb5ae0cee40273fab06b5cd8af1072b77f78655cc545d19ad313ddfc1`。无allowBuilds/ignore-scripts。
+- 正常quit/reopen加载候选后处于未登录：设置卡片无1px官网残留、主/设置两处蓝色登录按钮实际视觉确认，原生尺寸145×48/144×43。此初始状态不等于候选真实退出验收；已从主入口打开官网，请用户本人正常登录。显式设置signing-in允许加载/错误状态卡显示，guest仍待presentationReady才显现。
+- 用户正常完成主页面登录后，本次无需手动展开官网：自有guest999×820，原生nav103、create-enabled=true、原官网新建0/compact顶部按钮0、固定sessionSaved。打开CHAT设置无需刷新，昵称长度4/sidebar-text=false、退出86×38，已登录/已记住/简体中文同步。
+- root已从插件设置真实正常退出，完成后原生仅未登录卡片/蓝色144×43入口，无旧账号、无1px残线；CHAT/HARNESS均enabled。只查看裁剪自身卡片，原始截图已删除。已从设置同一guest打开登录，请用户本人再次完成正常登录复验。
+- 用户回复设置内重登完成，但c041实机仍unsupported/native2/create=false；guest564×480切到官网mobile布局（按钮16×16、44×44），authenticated未证明导致signing-in继续使用小viewport，形成呈现/账号识别循环。此真实失败保留，不能写重登通过。
+- 用户新增明确要求：CHAT设置改普通状态显示，不再内嵌官网，询问登录数据接口。新方案同一轮0.1.11不增号：settingsOpen布尔只协调后台正常尺寸guest；设置仅原生账号/状态/语言/退出/登录，点击login用已核实官方SettingsSectionOwnerProps.close()关闭设置，总进入主CHAT同一guest。严格footer/compact限制不放宽，URL不证明身份。
+- 官方公开DeepSeek API文档认证为API Key/Bearer（https://api-docs.deepseek.com/api/deepseek-api/），未找到官网Chat公开账号/OAuth查询契约；设置消费单一已确认公开profile投影，不模拟私有API或把保存grant当账号认证。新方案源码已整合并build/install，原生状态页及登录路线/重启已实际通过；c041不作为最终settings重登成功证据。
+- 新原生状态页候选`artifacts/dsh-deepseek-chat-0.1.11-0ce1d5c753e8.tgz`，136151bytes，SHA256 `0ce1d5c753e85368fa6857fcb005c9b2b80476ed069458b1e5ab58656adc4a21`，Client `00c9df0385a2b53eb7aa16f2d2ebd167710f533346ceb8beab096ebe63cf88d4`，Host与W026相同。生产build/check-distribution、DSH内置pnpm pack/CLI安装exit0，23分发文件逐字节一致。normal quit旧main43609/Host43621后pgrep exit1确认全结束；重开新44883/44897，未再次输入登录，主CHAT999×820/nav103/create=true/originalNew0/compact0及sessionSaved恢复。新设置仅native账号卡，nickname长度4/sidebartext=false/logout86×38，已登录/记忆/简体中文；可见AX树没有guest。
+- 新0ce实际正常logout完成：native仅未登录状态卡/蓝色144×43按钮，无旧账号、无残线，两模式enabled；点设置login使用官方close自动关设置，主CHAT官网999×820打开，不再564px mobile。用户已完成新路线正常登录，无刷新自动恢复nav103/create=true/originalNew0/compact0/sessionSaved；打开设置同样自动显示账号昵称长度4、退出86×38、中文和登录记忆。
+- 新路线重登后再次normal quit，pgrep exit1确认旧main44883/Host44897全结束；normal reopen新main45240/Host45249，无再次登录输入，CHAT999×820/nav103/create=true/originalNew0/compact0/sessionSaved恢复。此证据独立于此前关闭旧设置保留会话的手动操作，新流程与重启GUI验收已完成。
+- 发布同一0ce绝对tgz时旧npm授权导致publish E404、whoami E401。正常npm web重新登录由用户完成，whoami确认xingxingbk；重新publish session34434由用户完成官方单次2FA后exit0，+ dsh-deepseek-chat@0.1.11，短暂processing后公开完整及install-v1索引latest/version均0.1.11。正式tgz136151bytes、SHA1 `cf6e95e2d03fa590b20ef0fc60fe41370a6e288d`、SHA256与0ce相同，完整字节匹配本机验收包与canonical包；本机已安装23/23文件同公开包。未读npmrc/token/表单或绕过验证。
+- 名称安装：DSH实际primary Node+内置pnpm11.7.0，在独立consumer/空store/空元数据cache正常add dsh-deepseek-chat，exit0、版本0.1.11、12包、23/23分发文件同公开包；未手动修改allowBuilds/ignore-scripts，minimumReleaseAgeExclude由pnpm自身生成。临时consumer/store/cache全清理。本机仍用已验收本地0ce来源，不重复重装相同代码。
+- 收尾：仅经SHA确认删除本轮失败中间c041包；当前0ce/canonical及有效旧版回退包保留。AXManualAccessibility已恢复false（setter success），AXEnhancedUI未改。只读审查未发现阻断问题、git diff --check通过；无新增/运行单元或浏览器测试，无stage/commit/push。用户自行提交整个源码/lib/文档后仓库地址才能取得本轮代码；npm名称安装入口已实证更新。
+
+---
+
 # W026：登录过渡恢复与账号栏修正 · 2026-10-11至12（已安装、有限实机确认并公开发布）
 
 基线main/远端`25fc3a2`，fetch确认一致，开工干净；用户实报0.1.9登录后官网原侧栏重复出现、DSH列表未识别，以及CHAT设置“暂时无法连接官网”。本轮0.1.9→0.1.10只增一次，Git提交/推送仍由用户手动完成。
