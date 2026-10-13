@@ -20,8 +20,8 @@ export const chatStyles = String.raw`
 .dsh-chat-brand-name{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;flex:1;width:100%}
 .dsh-chat-brand-wordmark{display:block;flex:0 1 102px;min-width:0;width:102px;height:24px;overflow:hidden}
 .dsh-chat-brand-wordmark svg{display:block;width:156px;max-width:none;height:24px}
-.dsh-chat-brand-anchor{display:block;width:112px;height:24px;flex:none;margin-left:auto;pointer-events:none}
-.dsh-chat-brand-control{position:fixed;z-index:30;pointer-events:auto;display:flex;align-items:center;-webkit-app-region:no-drag}
+.dsh-chat-brand-control-host{display:flex;align-items:center;width:112px;height:24px;flex:none;margin-left:auto;-webkit-app-region:no-drag}
+.dsh-chat-brand-control{position:relative;width:100%;height:24px;pointer-events:auto;display:flex;align-items:center;-webkit-app-region:no-drag}
 .dsh-chat-brand-control .dsh-chat-modes{height:23px;min-height:23px;max-height:23px;padding:1px;border-radius:5px;gap:0;overflow:hidden}
 .dsh-chat-brand-control .dsh-chat-mode-wrap,.dsh-chat-brand-control .dsh-chat-modes{width:100%}
 .dsh-chat-brand-control .dsh-chat-modes button{flex:1}

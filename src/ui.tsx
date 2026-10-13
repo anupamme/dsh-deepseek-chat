@@ -119,58 +119,47 @@ export function DshChatModeSelector({ bridge, state, compact = false }: DshChatB
   </div>
 }
 
-/** The brand seat owns identity and its portalled controls as one lifetime. */
+/** Keep interactive controls in the sidebar row, outside its decorative/new-chat brand. */
 export function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> & DshChatBridgeProps) {
   const name = useRef<HTMLSpanElement>(null)
-  const anchor = useRef<HTMLSpanElement>(null)
-  const [localAnchor, setLocalAnchor] = useState<DshChatViewportRect | null>(null)
+  const [controlHost, setControlHost] = useState<HTMLElement | null>(null)
   useLayoutEffect(() => {
-    const element = anchor.current
     const group = name.current
-    if (!element || !group) return
-    // Slot changes may replace the sidebar ancestry without replacing our seat.
-    // Reconcile the binding and measure current geometry rather than waiting for
-    // an IntersectionObserver notification tied to the old layout.
-    const measure = () => {
-      if (!group.isConnected || !element.isConnected) return
-      ensureChatStyles(document)
+    if (!group) return
+    const host = document.createElement('span')
+    host.className = 'dsh-chat-brand-control-host'
+    const reconcile = () => {
+      if (!group.isConnected) { host.remove(); return }
       bridge.attachSidebar(group)
-      const rect = element.getBoundingClientRect()
-      // Mode switching must remain usable if the optional sidebar adapter
-      // temporarily cannot identify a control during a host/locale update.
-      const visible = rect.width > 0 && rect.height > 0
-        && rect.right > 0 && rect.left < window.innerWidth
-        && rect.bottom > 0 && rect.top < window.innerHeight
-        && getComputedStyle(group).visibility !== 'hidden'
-      const next = visible ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null
-      setLocalAnchor(previous => previous?.left === next?.left && previous?.top === next?.top
-        && previous?.width === next?.width && previous?.height === next?.height ? previous : next)
-      bridge.updateBrandAnchor(next, group)
+      const outlet = group.parentElement
+      const seat = outlet?.getAttribute('data-slot') === 'sidebar.brand.name' ? outlet.parentElement : outlet
+      const identity = seat?.parentElement
+      const brand = identity?.parentElement
+      const row = brand?.parentElement
+      if (!identity || identity.getAttribute('aria-hidden') !== 'true' || !brand || !row?.hasAttribute('data-window-drag')) {
+        host.remove()
+        return
+      }
+      // A sibling of the brand is accessible and cannot trigger its New Session action.
+      if (host.parentElement !== row || brand.nextElementSibling !== host) brand.after(host)
     }
-    const resize = new ResizeObserver(measure)
-    resize.observe(group); resize.observe(element)
-    // Also recover a replaced ancestor when dimensions
-    // did not change. This owns no website reloads or account requests.
-    const reconcile = window.setInterval(measure, 250)
-    measure()
-    window.addEventListener('focus', measure)
-    document.addEventListener('visibilitychange', measure)
-    window.addEventListener('resize', measure)
-    window.addEventListener('scroll', measure, true)
+    reconcile()
+    setControlHost(host)
+    const observer = new MutationObserver(reconcile)
+    observer.observe(host.parentElement?.parentElement ?? group, { childList: true, subtree: true })
+    // Preserve the independent CSSOM recovery needed after plugin reloads.
+    // Position, clipping and sidebar animations are entirely browser-owned.
+    const styleRecovery = window.setInterval(() => ensureChatStyles(document), 250)
     return () => {
-      resize.disconnect(); window.clearInterval(reconcile)
-      window.removeEventListener('focus', measure)
-      document.removeEventListener('visibilitychange', measure)
-      window.removeEventListener('resize', measure)
-      window.removeEventListener('scroll', measure, true)
-      bridge.updateBrandAnchor(null, group)
+      observer.disconnect()
+      window.clearInterval(styleRecovery)
+      host.remove()
     }
   }, [bridge])
   return <><span ref={name} className="dsh-chat-brand-name">
     <DshChatStyles />
     <DshChatWordmark />
-    <span ref={anchor} className="dsh-chat-brand-anchor" />
-  </span>{createPortal(<DshChatBrandControl bridge={bridge} rect={localAnchor}/>, document.body)}</>
+  </span>{controlHost && createPortal(<DshChatBrandControl bridge={bridge}/>, controlHost)}</>
 }
 
 function DshChatAuthorizationNotice({ bridge, state }: DshChatBridgeProps & { readonly state: DshChatViewState }) {
@@ -182,13 +171,9 @@ function DshChatAuthorizationNotice({ bridge, state }: DshChatBridgeProps & { re
 }
 
 /** The interactive surface is outside the brand slot's hidden/button ancestry. */
-export function DshChatBrandControl({ bridge, rect: ownedRect }: DshChatBridgeProps & { readonly rect?: DshChatViewportRect | null }) {
+export function DshChatBrandControl({ bridge }: DshChatBridgeProps) {
   const state = useDshChat(bridge)
-  const rect = ownedRect === undefined ? state.brandAnchor : ownedRect
-  if (rect === null) return null
-  return <div className="dsh-chat-brand-control" aria-label="dsh-deepseek-chat 模式选择" style={{
-    left: rect.left, top: rect.top, width: rect.width, height: rect.height,
-  }}>
+  return <div className="dsh-chat-brand-control" aria-label="dsh-deepseek-chat 模式选择">
     <DshChatStyles />
     <DshChatModeSelector bridge={bridge} state={state} />
     <DshChatAuthorizationNotice bridge={bridge} state={state} />

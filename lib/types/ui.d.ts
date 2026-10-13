@@ -81,12 +81,10 @@ export declare function DshChatModeSelector({ bridge, state, compact }: DshChatB
     readonly state: DshChatViewState;
     readonly compact?: boolean;
 }): import("react/jsx-runtime").JSX.Element;
-/** The brand seat owns identity and its portalled controls as one lifetime. */
+/** Keep interactive controls in the sidebar row, outside its decorative/new-chat brand. */
 export declare function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
 /** The interactive surface is outside the brand slot's hidden/button ancestry. */
-export declare function DshChatBrandControl({ bridge, rect: ownedRect }: DshChatBridgeProps & {
-    readonly rect?: DshChatViewportRect | null;
-}): import("react/jsx-runtime").JSX.Element | null;
+export declare function DshChatBrandControl({ bridge }: DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
 /** rc.2 replays its retained request counter on WorkspaceBrowser remount.
  * Adapt only the view hook; never mutate the host request store or actions. */
 export declare function guardHarnessSearchReplay(entry: StoredEntry): (() => void) | null;
