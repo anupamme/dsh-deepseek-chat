@@ -1,6 +1,8 @@
 import { createPortal } from 'react-dom'
-import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { createElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { BrandWordmark, IconSearchOutlineRegular, IconCloseFillRegular, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import type { ComponentType } from 'react'
+import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
@@ -248,12 +250,51 @@ function DshChatRenameConversation({bridge, item, onClose}: DshChatBridgeProps &
   </Modal>
 }
 
+/** rc.2 replays its retained request counter on WorkspaceBrowser remount.
+ * Adapt only the view hook; never mutate the host request store or actions. */
+export function guardHarnessSearchReplay(entry: StoredEntry): (() => void) | null {
+  if (entry.locale !== 'workspace' || typeof entry.component !== 'function'
+    || !entry.children?.['sidebar.workspaces.session.menu.item'] || !entry.inject) return null
+  const original = entry.component as ComponentType<Record<string, unknown>>
+  type SearchState = { searchRequest: number; [key: string]: unknown }
+  type SearchHook = <T>(selector: (state: SearchState) => T) => T
+  function SearchRequestGuard(props: Record<string, unknown>) {
+    const originalHook = props.useWorkspaceShortcuts as SearchHook
+    const request = originalHook(state => state.searchRequest)
+    const mountedRequest = useRef(request)
+    const guardedHook = useCallback<SearchHook>(selector => originalHook(state =>
+      selector(state.searchRequest === mountedRequest.current ? {...state, searchRequest: 0} : state)), [originalHook])
+    return createElement(original, {...props, useWorkspaceShortcuts: guardedHook})
+  }
+  function GuardedWorkspace(props: Record<string, unknown>) {
+    return typeof props.useWorkspaceShortcuts === 'function'
+      ? createElement(SearchRequestGuard,props) : createElement(original,props)
+  }
+  entry.component = GuardedWorkspace
+  return () => { if (entry.component === GuardedWorkspace) entry.component = original }
+}
+
 /** Only the middle browsing region changes; the shipped shell and Settings stay mounted. */
 export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRuntime<'sidebar.workspaces'> & DshChatBridgeProps) {
   const state = useDshChat(bridge)
   const [renameTarget,setRenameTarget] = useState<WebsiteNavigation['conversations'][number] | null>(null)
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
+  const searchRoot = useRef<HTMLDivElement>(null)
+  const searchInput = useRef<HTMLInputElement>(null)
+  const searchButton = useRef<HTMLButtonElement>(null)
+  const closeSearch = () => {setQuery('');setSearching(false)}
+  useLayoutEffect(() => {if (wide && searching) searchInput.current?.focus({preventScroll:true})}, [wide, searching])
+  useEffect(() => {
+    if (!wide || !searching) return
+    const outside = (event: MouseEvent) => {
+      if (!(event.target instanceof Node) || searchRoot.current?.contains(event.target)) return
+      searchInput.current?.blur()
+      if (!query.trim()) setSearching(false)
+    }
+    document.addEventListener('click',outside)
+    return () => document.removeEventListener('click',outside)
+  },[wide,searching,query])
   const navigation = state.websiteNavigation
   const refreshing = state.websiteNavigationRefreshing
   const refreshDisabled = !state.modeEnabled || !state.desktopAvailable || refreshing || state.webLoading
@@ -268,11 +309,17 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
     <DshChatStyles />
     {renameTarget && <DshChatRenameConversation key={renameTarget.href} bridge={bridge} item={renameTarget} onClose={()=>setRenameTarget(null)}/>}
     {!wide ? <button type="button" className="dsh-chat-icon-button" onClick={expandSidebar} aria-label="展开官网对话列表"><PanelIcon /></button> : <>
-      <header className="dsh-chat-navigation-header"><span>对话</span><div>
-        <button type="button" className="dsh-chat-icon-button" aria-label="搜索官网对话" onClick={() => setSearching(value => !value)}><svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="6" stroke="currentColor" strokeWidth="1.4"/><path d="m13 13 4 4" stroke="currentColor" strokeWidth="1.4"/></svg></button>
-        <Tooltip label={refreshing ? '正在刷新官网对话列表…' : '刷新官网对话列表'} delayMs={500}><button type="button" className="dsh-chat-icon-button" aria-label="刷新官网对话列表" aria-busy={refreshing} disabled={refreshDisabled} onClick={()=>bridge.refreshWebsiteNavigation()}><IconRefreshOutlineRegular size={14} className={refreshing ? 'dsh-chat-refreshing' : undefined}/></button></Tooltip>
-      </div></header>
-      {searching && <input className="dsh-chat-navigation-search" aria-label="搜索已加载的官网对话标题" placeholder="搜索对话" value={query} onChange={event => setQuery(event.target.value)} autoFocus />}
+      <header className="dsh-chat-navigation-header" data-searching={searching || undefined}>
+        <span className="dsh-chat-search-label">对话</span>
+        <div className="dsh-chat-search-slot">
+          <div ref={searchRoot} className="dsh-chat-search" onClick={()=>setSearching(true)}>
+            <Tooltip label="搜索官网对话" delayMs={500} disabled={searching}><button ref={searchButton} type="button" className="dsh-chat-search-button" aria-label="搜索官网对话" aria-expanded={searching} onClick={()=>setSearching(true)}><IconSearchOutlineRegular size={searching ? 11 : 14}/></button></Tooltip>
+            <input ref={searchInput} className="dsh-chat-search-input" type="text" aria-label="搜索已加载的官网对话标题" placeholder="搜索会话名称" maxLength={300} value={query} tabIndex={searching ? 0 : -1} onChange={event=>setQuery(event.target.value)} onKeyDown={event=>{if(event.key==='Escape' && !event.nativeEvent.isComposing){event.preventDefault();event.stopPropagation();closeSearch();searchButton.current?.focus({preventScroll:true})}}}/>
+            {searching && <button type="button" className="dsh-chat-search-clear" aria-label="关闭官网对话搜索" onClick={event=>{event.stopPropagation();closeSearch()}}><IconCloseFillRegular/></button>}
+          </div>
+        </div>
+        <div className="dsh-chat-search-actions"><Tooltip label={refreshing ? '正在刷新官网对话列表…' : '刷新官网对话列表'} delayMs={500}><button type="button" className="dsh-chat-icon-button" aria-label="刷新官网对话列表" aria-busy={refreshing} disabled={refreshDisabled} onClick={()=>bridge.refreshWebsiteNavigation()}><IconRefreshOutlineRegular size={14} className={refreshing ? 'dsh-chat-refreshing' : undefined}/></button></Tooltip></div>
+      </header>
       <div className="dsh-chat-navigation-list">
         {refreshing && <p className="dsh-chat-navigation-status" role="status">正在刷新官网对话列表…</p>}
         {navigation.authenticated===true && navigation.status==='ready' ? <>

@@ -1,3 +1,18 @@
+## 0.1.18 npm 发布与 README 提示（2026-10-13）
+
+用户明确发布授权并完成本次2FA；npm publish exit0。匿名公开索引latest=0.1.18，公开包SHA256=17897ab734dab6781da1d2347bc9bf91be9cdd5b327d4e58de3813ccc3cd1ce7，完全同本机验收17897包。随后用户要求README建议仓库地址获取更新，已补充锁定/缓存/最低发布时间策略，1440分钟是24小时发布年龄而非固定缓存；仓库只能获取已推送代码/lib，指定版本亦不承诺绕过策略。README为发布后的本地修改，将在后续授权打包中包含；未重新发布或Git提交/推送。
+
+## 0.1.18 搜索交互与请求重放修复（2026-10-13，本机候选）
+
+- 用户要求CHAT搜索同HARNESS标题栏内展开，以及修复HARNESS关闭后模式往返重新打开。
+- 静态读取当前官方app.asar的ui-workspace：WorkspaceBrowser.searchExpanded本地state关闭后，shortcutControls.searchRequest仍非0；单一sidebar.workspaces槽位替换卸载，回挂effect重放旧计数。
+- CHAT使用相同header/searchSlot/input/clear结构及官方IconSearchOutlineRegular/IconCloseFillRegular/Tooltip；官方搜索CSS抽取到自有类，30px展开高、0.18秒动画，标题/刷新收起，叉/Escape清空关闭，空查询点击外部关闭，IME Escape不误关。仍仅过滤已加载官网标题，不变成HARNESS或私有全文接口。
+- rc.2有界兼容层只包装locale workspace且声明session menu的原StoredEntry.component，在每次挂载对原useWorkspaceShortcuts视图屏蔽首个旧searchRequest，其后计数变化正常响应。保留其它props/children/store/locale/actions，不写源store；未知hook回退原组件，条目卸载/插件cleanup只恢复自有包装，订阅清理。此原工作区组件未公开导出搜索子组件，未宣称完整组件直接复用。
+- 虚构React/样式页面10项通过（图标/Tooltip轻量替身）：聚焦、同栏30px、筛选、X、Escape、旧请求不重放、新请求、关闭后重挂、新请求仍可用、cleanup。生产build/distribution19文件/diff检查通过。
+- 正式候选artifacts/dsh-deepseek-chat-0.1.18-17897ab734da.tgz，SHA256=17897ab734dab6781da1d2347bc9bf91be9cdd5b327d4e58de3813ccc3cd1ce7。官方CLI正常安装desktop，24/24文件同包；正常quit/open加载。
+- 实机仅固定AX控件：搜索会话AXPress0→清除搜索出现→清除0→CHAT0→HARNESS0后无清除搜索；再次搜索0→清除出现，关闭0。CHAT0→搜索官网对话0→关闭官网对话搜索出现，关闭0→关闭按钮消失、刷新恢复。无个人标题/账号输出；AXManualAccessibility已恢复false。DSH停在CHAT搜索关闭态。
+- 待用户验收。未npm发布/登录、未Git提交/推送。npm公开仍0.1.17。中间fc7379包哈希核对后删除；虚构浏览器/服务器关闭。
+
 # 0.1.17 npm 发布完成（2026-10-13）
 
 用户明确要求发布，并完成 npm 登录及本次 2FA。发布此前已安装核对的27190285439e包，npm publish exit0；匿名公开索引latest=0.1.17，公开tgz SHA256=27190285439ef05c88dc8e8f0a9562b0f2fdbe421b088418610dca76541665f6，与本机验收包完全相同。未Git提交/推送。后续修改仍须用户当轮验收并明确发布授权。

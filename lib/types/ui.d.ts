@@ -1,3 +1,4 @@
+import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js';
 import type { WebsiteSession } from './protocol.js';
@@ -86,6 +87,9 @@ export declare function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand
 export declare function DshChatBrandControl({ bridge, rect: ownedRect }: DshChatBridgeProps & {
     readonly rect?: DshChatViewportRect | null;
 }): import("react/jsx-runtime").JSX.Element | null;
+/** rc.2 replays its retained request counter on WorkspaceBrowser remount.
+ * Adapt only the view hook; never mutate the host request store or actions. */
+export declare function guardHarnessSearchReplay(entry: StoredEntry): (() => void) | null;
 /** Only the middle browsing region changes; the shipped shell and Settings stay mounted. */
 export declare function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRuntime<'sidebar.workspaces'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
 /** Measures only this plugin's own element; website content lives in the retained overlay. */

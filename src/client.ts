@@ -9,7 +9,7 @@ import { CHAT_PANEL, ModeController } from './core/mode.js'
 import { authorizationSchema, DSH_CHAT_REMOTE_CONTRIBUTION } from './protocol.js'
 import type { AuthorizationState, DshChatClientMetadata, WebsiteSession } from './protocol.js'
 import { acquireChatStyles } from './styles.js'
-import { DshChatBrandName, DshChatChatNavigation, DshChatChatPanel, DshChatLeadingControls, DshChatChatSettings } from './ui.js'
+import { guardHarnessSearchReplay, DshChatBrandName, DshChatChatNavigation, DshChatChatPanel, DshChatLeadingControls, DshChatChatSettings } from './ui.js'
 import type { DshChatUIBridge, DshChatViewState, DshChatViewportRect } from './ui.js'
 import { DshChatWebSurface } from './web-surface.js'
 import { emptyNavigation, parseWebsiteNavigation, type WebsiteCommand } from './website-navigation.js'
@@ -591,6 +591,18 @@ export function apply(ctx: Context): void {
   publish()
   // The enclosing effect's final cleanup restores navigation before registered main keys disappear.
   ctx.effect(() => {
+    const guardedEntries = new Map<ReturnType<typeof ctx.slots.entries>[number], () => void>()
+    const guardSearch = () => {
+      const current = ctx.slots.entries('sidebar.workspaces')
+      for (const [entry, cleanup] of guardedEntries) if (!current.includes(entry)) {cleanup();guardedEntries.delete(entry)}
+      for (const entry of ctx.slots.entries('sidebar.workspaces')) {
+        if (guardedEntries.has(entry)) continue
+        const cleanup = guardHarnessSearchReplay(entry)
+        if (cleanup) guardedEntries.set(entry, cleanup)
+      }
+    }
+    guardSearch()
+    const stopSearchGuard = ctx.slots.subscribe('sidebar.workspaces',guardSearch)
     const releaseStyles = typeof document === 'undefined' ? () => {} : acquireChatStyles(document)
     ctx.slots.inject('settings.section', () => ctx.slots.register({name:'settings.section',id:'dsh-deepseek-chat.chat-settings',order:80,label:'CHAT设置',inject:()=>({bridge})}, DshChatChatSettings))
     ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: CHAT_PANEL, inject: () => ({ bridge }) }, DshChatChatPanel))
@@ -605,6 +617,7 @@ export function apply(ctx: Context): void {
     void refreshAuthorization()
     return () => {
       clearTimeout(logoutTimer)
+      stopSearchGuard(); for (const cleanup of guardedEntries.values()) cleanup(); guardedEntries.clear()
       mode.dispose(); sidebar?.dispose(); releaseStyles(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
       globalThis.removeEventListener('focus', refreshOnFocus)
     }
