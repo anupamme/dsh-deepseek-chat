@@ -4,7 +4,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前本地候选版本 **0.1.19**（npm 公开版本为 0.1.18） · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
+当前版本 **0.1.19** · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -85,16 +85,16 @@ dsh plugin --profile desktop add dsh-deepseek-chat
 已有安装可能继续使用之前锁定的版本。升级到当前版本时，在 DSH 的插件安装输入框中明确输入：
 
 ```text
-dsh-deepseek-chat@0.1.18
+dsh-deepseek-chat@0.1.19
 ```
 
 指定版本可以明确安装目标，但仍可能受到发布时间策略限制。使用命令行指定要升级的版本：
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.1.18
+dsh plugin --profile desktop add dsh-deepseek-chat@0.1.19
 ```
 
-**完整退出并重新打开 DSH**，在插件管理页检查已安装版本为 **0.1.18**。进入 CHAT 后，“对话”标题右侧应显示刷新图标，未登录时登录按钮应有蓝色背景。
+**完整退出并重新打开 DSH**，在插件管理页检查已安装版本为 **0.1.19**。进入 CHAT 后，“对话”标题右侧应显示刷新图标，未登录时登录按钮应有蓝色背景。
 
 使用其他 profile 时替换 `desktop`。通过 DSH 官方插件管理器或 CLI 更新，让依赖记录和锁文件一起更新；直接覆盖安装目录中的文件不能保证下次启动仍使用新版。
 
@@ -162,3 +162,7 @@ pnpm package:plugin
 ```bash
 dsh plugin --profile desktop remove dsh-deepseek-chat
 ```
+
+## 已知问题：分享链接复制
+
+CHAT 模式可以正常创建分享链接，但点击“创建并复制”或“复制”可能提示复制失败。DSH 桌面版内嵌浏览器会拒绝网页的剪贴板权限请求，目前没有提供开启此权限的配置项。遇到此问题，请选中完整链接，在 macOS 按 `⌘C`、Windows 按 `Ctrl+C` 手动复制。
