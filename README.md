@@ -4,7 +4,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.1.18**（已发布 npm） · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
+当前本地候选版本 **0.1.19**（npm 公开版本为 0.1.18） · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -104,7 +104,7 @@ dsh plugin --profile desktop add dsh-deepseek-chat@0.1.18
 将构建生成的 `.tgz` 文件交给 DSH 官方插件管理器安装，或使用 CLI：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.18.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.19.tgz
 ```
 
 将路径替换成你的实际安装包；使用其他 profile 时替换 `desktop`。**安装或更新后，完整退出并重新打开 DSH**，让新插件生效。
@@ -153,7 +153,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.1.18.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.1.19.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 

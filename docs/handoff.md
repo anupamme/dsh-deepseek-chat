@@ -1,3 +1,35 @@
+## 0.1.19 复制实验已撤回（2026-10-13）
+
+用户实测 bbe2 候选仍复制失败，并要求撤回全部复制修复。已删除分享点击拦截、临时选中字段、原生 Copy 握手与自定义复制状态提示，web-surface.tsx 恢复 HEAD 原实现。保留独立的原生侧栏收起与右侧目录修复，版本仍为未发布的 0.1.19。已重新构建并通过分发检查（20 compiled files），本地包 40acb97ca391 已通过官方 CLI 安装，并正常重启 DSH 清除旧注入。下方复制候选记录均为失败历史，不代表验收通过。未提交、推送或发布 npm。
+
+## 0.1.19 原生复制与目录状态修正（2026-10-13，bbe2最终候选）
+
+用户ce8c仍失败，明确手动选中链接+CmdC可成功；改为用户trusted分享按钮直接选中已有公开URL，execCommand copy；失败时由只含随机token/id的takeRequest/prepare/finish握手调用该leased webview.copy（Electron标准原生命令），不override网页Clipboard API、不读剪贴板、不发console URL。官网继续负责创建；只观察它实际渲染的唯一strict URL，成功以命令接受/原生执行反馈；失败不伪造成功。selection/焦点/readonly textarea、超时5秒、订阅和原API生命周期清理。实际OS复制还待用户点击并粘贴验收，已发问题，未创建新的公开对话分享。
+
+用户1440屏幕对比说明官网原生sidebar展开时目录隐藏。原隐藏CSS保持JS展开状态确实可造成此问题。增加website-sidebar-collapse：仅已经确认footer-v1的原导航边界，用公开命名控件或右上角两个图标/共同header（12..56px，最后右侧图标）调用官网自己的收起；同document一次尝试，保留原DOM供账号/列表投影，未知未来结构走既有恢复路径防循环，不变更私有store。不是强制显示CSS/仿造目录。
+
+临时布局候选实机明确1000px、隐藏sidebar原宽259；初20px/semantic button过滤未命中实际小图标（controls=0），补有界小图标及公开命名/SVG父控件后native attempt=true。实机将DSH窗口调1440px，guest1160px：原._189b4a0目录1个，width34，nav100/profile1。原生收起后账号和列表持续可识别。最终无诊断bbe2候选正常重启进入CHAT，真实刷新AXPress0后100个conversation menu控件恢复/refresh enabled；辅助统计需计AXPopUpButton而非仅Button。临时窗口尺寸及AX已还原。
+
+复制8项、native handshake5项、collapse4项虚构浏览器通过（clipboard命令为spy/原生ack模拟，不能声称实机OS复制通过）；生产build/distribution21 compiled files/diff通过。最终artifacts/dsh-deepseek-chat-0.1.19-bbe206c886f8.tgz，SHA256= bbe206c886f8ca3560ee1166086773de405aeaab289017e338e37531d0723258；官方CLI正常安装，26/26同包，normal quit/open已加载。所有临时诊断源及CSS检查stage移除、浏览器/服务器关闭。ce8c等废弃0.1.19包已清理，保留最终bbe2。
+
+仍0.1.19本机候选、npm公开0.1.18。等待复制真实粘贴验收及当轮发布指令；未npm发布/登录、未Git提交推送。此前ce8c/097b一律为已失败历史候选。
+
+## 0.1.19 分享弹窗识别补修（2026-10-13，ce8c候选待真实复制验收）
+
+用户实测097b仍复制失败。临时bebf诊断包实机只输出步骤/数量：guest clipboard installed，但真实官网分享弹窗dialog=0/headings=0，原role/dialog与固定class假设不成立；固定AX创建分享链接存在，未自动创建公开分享或读取正文/剪贴板。原10项role-dialog虚构回归不能代表现官网。
+
+移除全部诊断后改为role/已知class优先，匿名分支最多6层父节点、200..720宽/90..850高、最多8控件、精确静态分享标题叶；排除textarea/code/导航/contenteditable，不按hash类匹配；增加官网实际创建分享链接文案。最终ce8c包build/distribution20 compiled files/diff通过，匿名div+固定标题/实际文案的10项虚构回归全通过；安装25/25同包，正常重启。SHA256=ce8cb2c9972876dfed0a6923a6ce7a9e4f3eb6c1d4cc747f05645a6387a6147e。仍需用户对已有公开链接真实点击复制，已发复验问题，不声称实机成功。临时诊断移除/AX恢复false/浏览器关闭，本轮此前候选097b与69b清理。npm仍0.1.18，未提交推送或发布。下节097b及第一轮验收均为历史。
+
+## 0.1.19 分享复制候选与目录澄清（2026-10-13）
+
+- 用户报告官网分享创建并复制/复制失败；读取当前app.asar静态DesktopBrowserService.configureSession确认所有guest权限请求及检查false，主窗口非media检查true。网站Clipboard API因此拒绝；不改主程序权限策略。
+- 新website-share-clipboard只在本插件guest准确官网origin安装；仅trusted share-dialog copy点击及15秒内strict https://chat.deepseek.com/share/id URL，经原生writeText失败后发起带随机token/单调request id的host写请求；host确认当前授权/CHAT/同官网/不在设置，使用官方writeClipboard，临时聚焦自有host控件，回写布尔ack后官网promise正常反馈；不读剪贴板、不跨出消息正文，未确认不返回成功。5000ms超时、源API恢复、节点与listener清理；其它复制维持官网原行为。未接私有接口。
+- 用户随后说明右侧目录整体消失；初候选曾收窄chrome隐藏范围，但用户确认实际为窗口太小导致官网响应式隐藏，所以最终已完全撤回目录改动，不改变官网目录交互。
+- 一并修复已有websiteCommandScript错误setAttribute三参数字符串，恢复conversation-error设置（不影响目录）。
+- 虚构公开URL页面10项通过：创建/重复复制ack、host失败reject、无trusted点击/外域/任意文本/弹窗外拒绝、cleanup及strictURL/action-script语法。官方图标等隔离替身；未真实创建公开分享或读取用户剪贴板，不能作为真实复制验收。
+- 正式候选artifacts/dsh-deepseek-chat-0.1.19-097b02438f92.tgz，SHA256=097b02438f9227c52f76125966e3c41a93ab7d9cafd147ed5edc47c8d7677e47。build/distribution20 compiled files/diff通过，CLI安装25/25同包，正常quit后open加载。
+- 等用户在可公开测试对话实际点创建并复制/复制验收。尚未授权具体公开测试目标。npm仍0.1.18，不自动npm发布/Git提交推送。中间69b包哈希确认删除，本次虚构浏览器/服务器关闭。
+
 ## 0.1.18 npm 发布与 README 提示（2026-10-13）
 
 用户明确发布授权并完成本次2FA；npm publish exit0。匿名公开索引latest=0.1.18，公开包SHA256=17897ab734dab6781da1d2347bc9bf91be9cdd5b327d4e58de3813ccc3cd1ce7，完全同本机验收17897包。随后用户要求README建议仓库地址获取更新，已补充锁定/缓存/最低发布时间策略，1440分钟是24小时发布年龄而非固定缓存；仓库只能获取已推送代码/lib，指定版本亦不承诺绕过策略。README为发布后的本地修改，将在后续授权打包中包含；未重新发布或Git提交/推送。
