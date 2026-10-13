@@ -5,7 +5,7 @@ import { FishLogo } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { MainPanelId, PanelInfo, UsePanelInfo } from '@deepseek-ai/dsh-client-ui-layout/client'
 import type { DesktopBrowserBridge, DesktopBrowserReservation } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { CHAT_PANEL, ModeController, type ModeAuthorization } from '../src/core/mode.js'
-import { DshChatBrandName, DshChatBrandControl, DshChatChatPanel, DshChatChatNavigation, DshChatChatSettings, DshChatLeadingControls, useDshChat, type DshChatUIBridge, type DshChatViewState, type DshChatViewportRect } from '../src/ui.js'
+import { DshChatBrandName, DshChatChatPanel, DshChatChatNavigation, DshChatChatSettings, DshChatLeadingControls, useDshChat, type DshChatUIBridge, type DshChatViewState, type DshChatViewportRect } from '../src/ui.js'
 import { DshChatWebSurface } from '../src/web-surface.js'
 import { adaptWebsiteNavigation, emptyNavigation, parseWebsiteNavigation, type WebsiteCommand } from '../src/website-navigation.js'
 import { createSidebarBinding } from '../src/sidebar-adapter.js'
@@ -411,7 +411,6 @@ function Preview() {
     </div>
     {chat && sidebarCollapsed && <div className="preview-leading"><DshChatLeadingControls {...slotProps} bridge={bridge}/></div>}
     {settingsOpen && <div className="preview-settings" role="dialog" aria-label="模拟DSH设置"><button onClick={()=>setSettingsOpen(false)}>关闭设置</button><DshChatChatSettings {...slotProps} bridge={bridge} close={()=>setSettingsOpen(false)}/></div>}
-    <DshChatBrandControl {...slotProps} bridge={bridge} />
     <DshChatWebSurface {...slotProps} bridge={bridge} nativeBrowser={nativeBrowser} />
   </div>
 }

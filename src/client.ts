@@ -8,7 +8,8 @@ import type { DesktopBrowserBridge } from '@deepseek-ai/dsh-client-ui-sidebar-br
 import { CHAT_PANEL, ModeController } from './core/mode.js'
 import { authorizationSchema, DSH_CHAT_REMOTE_CONTRIBUTION } from './protocol.js'
 import type { AuthorizationState, DshChatClientMetadata, WebsiteSession } from './protocol.js'
-import { DshChatBrandName, DshChatBrandControl, DshChatChatNavigation, DshChatChatPanel, DshChatLeadingControls, DshChatChatSettings } from './ui.js'
+import { acquireChatStyles } from './styles.js'
+import { DshChatBrandName, DshChatChatNavigation, DshChatChatPanel, DshChatLeadingControls, DshChatChatSettings } from './ui.js'
 import type { DshChatUIBridge, DshChatViewState, DshChatViewportRect } from './ui.js'
 import { DshChatWebSurface } from './web-surface.js'
 import { emptyNavigation, parseWebsiteNavigation, type WebsiteCommand } from './website-navigation.js'
@@ -72,6 +73,7 @@ export function apply(ctx: Context): void {
   const pendingPreferences = new Map<string,string>()
   let viewport: DshChatViewportRect | null = null
   let brandAnchor: DshChatViewportRect | null = null
+  let brandAnchorOwner: HTMLElement | null = null
   let sidebarAdapted: boolean | null = null
   let websiteNavigation = emptyNavigation()
   let showWebsiteNavigation = false
@@ -315,7 +317,10 @@ export function apply(ctx: Context): void {
       if (viewport?.left === next?.left && viewport?.top === next?.top && viewport?.width === next?.width && viewport?.height === next?.height) return
       viewport = next; publish()
     },
-    updateBrandAnchor: next => {
+    updateBrandAnchor: (next, owner) => {
+      // A delayed cleanup from the previous slot must not erase a newer seat.
+      if (owner && next === null && brandAnchorOwner !== owner) return
+      if (owner) brandAnchorOwner = next === null ? null : owner
       if (brandAnchor?.left === next?.left && brandAnchor?.top === next?.top && brandAnchor?.width === next?.width && brandAnchor?.height === next?.height) return
       brandAnchor = next; publish()
     },
@@ -586,11 +591,11 @@ export function apply(ctx: Context): void {
   publish()
   // The enclosing effect's final cleanup restores navigation before registered main keys disappear.
   ctx.effect(() => {
+    const releaseStyles = typeof document === 'undefined' ? () => {} : acquireChatStyles(document)
     ctx.slots.inject('settings.section', () => ctx.slots.register({name:'settings.section',id:'dsh-deepseek-chat.chat-settings',order:80,label:'CHAT设置',inject:()=>({bridge})}, DshChatChatSettings))
     ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: CHAT_PANEL, inject: () => ({ bridge }) }, DshChatChatPanel))
     ctx.slots.inject('sidebar.brand.name', () => ctx.slots.register({ name: 'sidebar.brand.name', priority: -100, inject: () => ({ bridge }) }, DshChatBrandName))
     ctx.slots.inject('shell.overlay', () => [
-      ctx.slots.register({ name: 'shell.overlay', id: 'dsh-deepseek-chat.brand-control', order: 100, inject: () => ({ bridge }) }, DshChatBrandControl),
       ctx.slots.register({ name: 'shell.overlay', id: 'dsh-deepseek-chat.website', order: 90, inject: () => ({ bridge, nativeBrowser }) }, DshChatWebSurface),
     ])
     const stopMode = mode.subscribe(publish)
@@ -600,7 +605,7 @@ export function apply(ctx: Context): void {
     void refreshAuthorization()
     return () => {
       clearTimeout(logoutTimer)
-      mode.dispose(); sidebar?.dispose(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
+      mode.dispose(); sidebar?.dispose(); releaseStyles(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
       globalThis.removeEventListener('focus', refreshOnFocus)
     }
   }, 'dsh-deepseek-chat reversible website UI')

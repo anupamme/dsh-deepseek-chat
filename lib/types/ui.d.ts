@@ -46,7 +46,7 @@ export interface DshChatUIBridge {
     toggleSidebar(): void;
     attachViewport(element: HTMLElement | null): void;
     updateViewport(rect: DshChatViewportRect | null): void;
-    updateBrandAnchor(rect: DshChatViewportRect | null): void;
+    updateBrandAnchor(rect: DshChatViewportRect | null, owner?: HTMLElement): void;
     attachSidebar(element: HTMLElement): void;
     reloadWebsite(): void;
     refreshWebsiteNavigation(): void;
@@ -75,15 +75,17 @@ export interface DshChatBridgeProps {
     readonly bridge: DshChatUIBridge;
 }
 export declare function useDshChat(bridge: DshChatUIBridge): DshChatViewState;
-export declare function DshChatStyles(): import("react/jsx-runtime").JSX.Element;
+export declare function DshChatStyles(): null;
 export declare function DshChatModeSelector({ bridge, state, compact }: DshChatBridgeProps & {
     readonly state: DshChatViewState;
     readonly compact?: boolean;
 }): import("react/jsx-runtime").JSX.Element;
-/** Decorative brand content only: this slot has an aria-hidden/New Session owner. */
+/** The brand seat owns identity and its portalled controls as one lifetime. */
 export declare function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
 /** The interactive surface is outside the brand slot's hidden/button ancestry. */
-export declare function DshChatBrandControl({ bridge }: PropsRuntime<'shell.overlay'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element | null;
+export declare function DshChatBrandControl({ bridge, rect: ownedRect }: DshChatBridgeProps & {
+    readonly rect?: DshChatViewportRect | null;
+}): import("react/jsx-runtime").JSX.Element | null;
 /** Only the middle browsing region changes; the shipped shell and Settings stay mounted. */
 export declare function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRuntime<'sidebar.workspaces'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
 /** Measures only this plugin's own element; website content lives in the retained overlay. */

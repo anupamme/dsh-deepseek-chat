@@ -1,10 +1,11 @@
+import { createPortal } from 'react-dom'
 import { useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { BrandWordmark, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
-import { chatStyles } from './styles.js'
+import { acquireChatStyles, ensureChatStyles } from './styles.js'
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js'
 import type { WebsiteSession } from './protocol.js'
 
@@ -56,7 +57,7 @@ export interface DshChatUIBridge {
   toggleSidebar(): void
   attachViewport(element: HTMLElement | null): void
   updateViewport(rect: DshChatViewportRect | null): void
-  updateBrandAnchor(rect: DshChatViewportRect | null): void
+  updateBrandAnchor(rect: DshChatViewportRect | null, owner?: HTMLElement): void
   attachSidebar(element: HTMLElement): void
   reloadWebsite(): void
   refreshWebsiteNavigation(): void
@@ -82,7 +83,8 @@ export function useDshChat(bridge: DshChatUIBridge): DshChatViewState {
 }
 
 export function DshChatStyles() {
-  return <style>{chatStyles}</style>
+  useLayoutEffect(() => acquireChatStyles(document), [])
+  return null
 }
 
 function PanelIcon() {
@@ -115,42 +117,58 @@ export function DshChatModeSelector({ bridge, state, compact = false }: DshChatB
   </div>
 }
 
-/** Decorative brand content only: this slot has an aria-hidden/New Session owner. */
+/** The brand seat owns identity and its portalled controls as one lifetime. */
 export function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> & DshChatBridgeProps) {
   const name = useRef<HTMLSpanElement>(null)
   const anchor = useRef<HTMLSpanElement>(null)
+  const [localAnchor, setLocalAnchor] = useState<DshChatViewportRect | null>(null)
   useLayoutEffect(() => {
     const element = anchor.current
     const group = name.current
     if (!element || !group) return
-    bridge.attachSidebar(group)
-    let visible = false
+    // Slot changes may replace the sidebar ancestry without replacing our seat.
+    // Reconcile the binding and measure current geometry rather than waiting for
+    // an IntersectionObserver notification tied to the old layout.
     const measure = () => {
+      if (!group.isConnected || !element.isConnected) return
+      ensureChatStyles(document)
+      bridge.attachSidebar(group)
       const rect = element.getBoundingClientRect()
-      bridge.updateBrandAnchor(visible && rect.width > 0 && rect.height > 0
-        ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null)
+      // Mode switching must remain usable if the optional sidebar adapter
+      // temporarily cannot identify a control during a host/locale update.
+      const visible = rect.width > 0 && rect.height > 0
+        && rect.right > 0 && rect.left < window.innerWidth
+        && rect.bottom > 0 && rect.top < window.innerHeight
+        && getComputedStyle(group).visibility !== 'hidden'
+      const next = visible ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height } : null
+      setLocalAnchor(previous => previous?.left === next?.left && previous?.top === next?.top
+        && previous?.width === next?.width && previous?.height === next?.height ? previous : next)
+      bridge.updateBrandAnchor(next, group)
     }
     const resize = new ResizeObserver(measure)
     resize.observe(group); resize.observe(element)
-    const intersection = new IntersectionObserver(entries => {
-      visible = entries.some(entry => entry.target === element && entry.isIntersecting && entry.intersectionRatio >= 0.99)
-      measure()
-    }, { threshold: [0, 0.99, 1] })
-    intersection.observe(element)
+    // Also recover a replaced ancestor when dimensions
+    // did not change. This owns no website reloads or account requests.
+    const reconcile = window.setInterval(measure, 250)
+    measure()
+    window.addEventListener('focus', measure)
+    document.addEventListener('visibilitychange', measure)
     window.addEventListener('resize', measure)
     window.addEventListener('scroll', measure, true)
     return () => {
-      resize.disconnect(); intersection.disconnect()
+      resize.disconnect(); window.clearInterval(reconcile)
+      window.removeEventListener('focus', measure)
+      document.removeEventListener('visibilitychange', measure)
       window.removeEventListener('resize', measure)
       window.removeEventListener('scroll', measure, true)
-      bridge.updateBrandAnchor(null)
+      bridge.updateBrandAnchor(null, group)
     }
   }, [bridge])
-  return <span ref={name} className="dsh-chat-brand-name">
+  return <><span ref={name} className="dsh-chat-brand-name">
     <DshChatStyles />
     <DshChatWordmark />
     <span ref={anchor} className="dsh-chat-brand-anchor" />
-  </span>
+  </span>{createPortal(<DshChatBrandControl bridge={bridge} rect={localAnchor}/>, document.body)}</>
 }
 
 function DshChatAuthorizationNotice({ bridge, state }: DshChatBridgeProps & { readonly state: DshChatViewState }) {
@@ -162,9 +180,9 @@ function DshChatAuthorizationNotice({ bridge, state }: DshChatBridgeProps & { re
 }
 
 /** The interactive surface is outside the brand slot's hidden/button ancestry. */
-export function DshChatBrandControl({ bridge }: PropsRuntime<'shell.overlay'> & DshChatBridgeProps) {
+export function DshChatBrandControl({ bridge, rect: ownedRect }: DshChatBridgeProps & { readonly rect?: DshChatViewportRect | null }) {
   const state = useDshChat(bridge)
-  const rect = state.brandAnchor
+  const rect = ownedRect === undefined ? state.brandAnchor : ownedRect
   if (rect === null) return null
   return <div className="dsh-chat-brand-control" aria-label="dsh-deepseek-chat 模式选择" style={{
     left: rect.left, top: rect.top, width: rect.width, height: rect.height,

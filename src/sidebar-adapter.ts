@@ -4,20 +4,20 @@ export interface SidebarAdapterState {
   readonly canCreate: boolean
 }
 
-const newSessionLabels = new Set(['新建会话', '新会话', 'New Session'])
-const pluginLabels = new Set(['插件', 'Plugins'])
-
 /** Client-owned lifetime survives the brand seat unmounting on sidebar collapse. */
 export function createSidebarBinding(read: () => SidebarAdapterState, create: () => void, report: (ready: boolean) => void) {
   let adapter: ReturnType<typeof attachSidebarAdapter> = null
+  let owner: HTMLElement | null = null
   return {
     attach(name: HTMLElement) {
+      if (owner === name && adapter?.valid()) { adapter.sync(); return }
       adapter?.dispose()
+      owner = name
       adapter = attachSidebarAdapter(name, read, create)
       report(adapter !== null)
     },
     sync() { adapter?.sync() },
-    dispose() { adapter?.dispose(); adapter = null },
+    dispose() { adapter?.dispose(); adapter = null; owner = null },
   }
 }
 
@@ -27,7 +27,7 @@ export function attachSidebarAdapter(
   name: HTMLElement,
   read: () => SidebarAdapterState,
   create: () => void,
-): { sync(): void; dispose(): void } | null {
+): { sync(): void; valid(): boolean; dispose(): void } | null {
   // The renderer's addressable SlotOutlet is display:contents, but remains a DOM ancestor.
   const outlet = name.parentElement
   const nameSeat = outlet?.getAttribute('data-slot') === 'sidebar.brand.name'
@@ -39,9 +39,12 @@ export function attachSidebarAdapter(
   if (!nameSeat || !identity || !brand || !row || !root
     || identity.getAttribute('aria-hidden') !== 'true'
     || !row.hasAttribute('data-window-drag') || identity.children.length !== 2) return null
-  const newButton = Array.from(root.children).find(element => element.tagName === 'BUTTON'
-    && newSessionLabels.has(element.getAttribute('aria-label') ?? '')) as HTMLButtonElement | undefined
-  if (!newButton) return null
+  // In the shipped shell the new-session control is the sole direct button
+  // immediately after the brand row. Labels can change during locale reloads.
+  const next = row.nextElementSibling
+  const buttons = Array.from(root.children).filter(element => element.tagName === 'BUTTON')
+  if (!next || next.tagName !== 'BUTTON' || buttons.length !== 1 || buttons[0] !== next) return null
+  const newButton = next as HTMLButtonElement
 
   const originalAttributes = new Map<Element, Map<string, string | null>>()
   const mark = (element: Element, key: string, value: string) => {
@@ -67,15 +70,14 @@ export function attachSidebarAdapter(
   const sync = () => {
     if (disposed) return
     const state = read()
+    mark(identity, 'data-dsh-chat-brand-fill', 'identity')
+    mark(nameSeat, 'data-dsh-chat-brand-fill', 'name')
     mark(root, 'data-dsh-chat-sidebar-mode', state.chat ? 'chat' : 'harness')
     newButton.disabled = state.chat ? !state.canCreate : originallyDisabled
     for (const nav of Array.from(root.children).filter(element => element.tagName === 'NAV')) {
-      const buttons = Array.from(nav.children).filter(element => element.tagName === 'BUTTON')
-      for (const button of buttons) {
-        if (pluginLabels.has(button.getAttribute('aria-label') ?? '')) mark(button, 'data-dsh-chat-plugin-row', 'true')
-      }
-      mark(nav, 'data-dsh-chat-only-plugins', buttons.length > 0
-        && buttons.every(button => pluginLabels.has(button.getAttribute('aria-label') ?? '')) ? 'true' : 'false')
+      // rc.2 owns all global panel entries in this direct-child nav. Hide the
+      // region, including entries registered later, without deleting React nodes.
+      mark(nav, 'data-dsh-chat-panel-region', 'true')
     }
   }
   const observer = new MutationObserver(sync)
@@ -83,6 +85,9 @@ export function attachSidebarAdapter(
   sync()
   return {
     sync,
+    valid: () => !disposed && name.isConnected && nameSeat.parentElement === identity
+      && identity.parentElement === brand && brand.parentElement === row
+      && row.parentElement === root && newButton.parentElement === root,
     dispose() {
       if (disposed) return
       disposed = true; observer.disconnect()

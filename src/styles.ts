@@ -15,8 +15,7 @@ export const chatStyles = String.raw`
 .dsh-chat-mode-compact .dsh-chat-modes{flex-direction:column;width:30px;gap:3px}.dsh-chat-mode-compact .dsh-chat-modes button{width:24px;padding:4px 2px}
 [data-dsh-chat-brand-fill="identity"]{flex:1;width:100%}
 [data-dsh-chat-brand-fill="name"]{flex:1}
-[data-dsh-chat-sidebar-mode="chat"] [data-dsh-chat-plugin-row="true"],
-[data-dsh-chat-sidebar-mode="chat"] [data-dsh-chat-only-plugins="true"]{display:none}
+[data-dsh-chat-sidebar-mode="chat"] > [data-dsh-chat-panel-region="true"]{display:none}
 [data-dsh-chat-sidebar-mode="chat"] [data-dsh-chat-new-session="true"]:disabled{opacity:.45;cursor:default}
 .dsh-chat-brand-name{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%;flex:1;width:100%}
 .dsh-chat-brand-wordmark{display:block;flex:0 1 102px;min-width:0;width:102px;height:24px;overflow:hidden}
@@ -64,3 +63,43 @@ export const chatStyles = String.raw`
 .dsh-chat-settings-account{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:12px;min-width:0}.dsh-chat-settings-account>div{flex:1 1 0%;min-width:0;max-width:100%}.dsh-chat-settings-account strong{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.dsh-chat-settings-account button{flex-shrink:0;white-space:nowrap;padding:8px 14px;border:1px solid #ff5f64;border-radius:8px;background:transparent;color:#ff5f64;cursor:pointer;font:inherit}.dsh-chat-settings-account button:disabled{opacity:.4;cursor:default}
 .dsh-chat-settings-error{color:#ff8585;line-height:1.5;font-size:12px}
 `
+
+
+/** One stylesheet per document, owned by the plugin lifetime rather than a row. */
+const styleLeases = new WeakMap<Document, { release(): void; retain(): void; ensure(): void }>()
+export function acquireChatStyles(doc: Document): () => void {
+  let lease = styleLeases.get(doc)
+  if (!lease) {
+    const style = doc.createElement('style')
+    style.setAttribute('data-dsh-deepseek-chat-styles', 'true')
+    let users = 0
+    const ensure = () => {
+      if (style.textContent !== chatStyles) style.textContent = chatStyles
+      if (style.media) style.media = ''
+      if (style.hasAttribute('disabled')) style.removeAttribute('disabled')
+      if (!style.isConnected) doc.head.appendChild(style)
+      if (style.sheet?.disabled) style.sheet.disabled = false
+    }
+    const observer = new MutationObserver(ensure)
+    ensure()
+    observer.observe(doc.head, { childList: true, subtree: true, characterData: true,
+      attributes: true, attributeFilter: ['disabled', 'media'] })
+    const current = {
+      ensure,
+      retain() { users++; ensure() },
+      release() {
+        if (--users > 0) return
+        observer.disconnect(); style.remove()
+        if (styleLeases.get(doc) === current) styleLeases.delete(doc)
+      },
+    }
+    lease = current
+    styleLeases.set(doc, current)
+  }
+  lease.retain()
+  let released = false
+  return () => { if (!released) { released = true; lease!.release() } }
+}
+
+/** CSSOM disabling does not emit a DOM mutation; the brand measurement also checks it. */
+export function ensureChatStyles(doc: Document): void { styleLeases.get(doc)?.ensure() }

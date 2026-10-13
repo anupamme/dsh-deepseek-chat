@@ -13,5 +13,6 @@ export declare function createSidebarBinding(read: () => SidebarAdapterState, cr
  * Unknown layouts are left alone; no global search or hashed CSS selectors. */
 export declare function attachSidebarAdapter(name: HTMLElement, read: () => SidebarAdapterState, create: () => void): {
     sync(): void;
+    valid(): boolean;
     dispose(): void;
 } | null;
