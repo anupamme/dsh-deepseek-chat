@@ -1,3 +1,7 @@
+## 0.1.20 显示名称已发布（2026-10-14）
+
+用户授权更新版本并发布，完成 npm 登录及单次 2FA。显示名称通过导出的 locale/en.json 与 locale/zh-CN.json 的 meta.title 设置为 DeepSeek Chat；npm 包名、Cordis 标识与 Git 仓库仍为 dsh-deepseek-chat。构建和分发检查通过，公开 latest=0.1.20；下载包 SHA256=bfd40fca4fd3ea8d3b57b1489e12409efaee29180b3eab3dff99bb2bb93ab25c，与本地发布包完全一致，语言文件已核实。未提交或推送 Git。
+
 ## 0.1.19 已发布 npm（2026-10-13）
 
 用户明确授权发布并完成当次 npm 验证。README 末尾新增分享复制已知问题及手动快捷键复制方法。本次包包含侧栏内部切换按钮布局和官网原生侧栏收起修复，复制实验保持撤回。构建/分发检查通过；npm 发布成功，匿名 latest=0.1.19，公开下载包 SHA256=b0f2d5fb887f291e90870576f7a31b01699d0684da43426003c7877b12678724，与发布包一致。未 Git 提交/推送。

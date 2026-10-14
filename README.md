@@ -1,10 +1,10 @@
-# dsh-deepseek-chat
+# DeepSeek Chat
 
 在 **DeepSeek Harness（DSH）桌面版**里，用 `CHAT | HARNESS` 一键切换网页聊天与原工作区。
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.1.19** · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
+当前版本 **0.1.20** · 适配 **DSH 0.2.0-rc.2 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -85,16 +85,16 @@ dsh plugin --profile desktop add dsh-deepseek-chat
 已有安装可能继续使用之前锁定的版本。升级到当前版本时，在 DSH 的插件安装输入框中明确输入：
 
 ```text
-dsh-deepseek-chat@0.1.19
+dsh-deepseek-chat@0.1.20
 ```
 
 指定版本可以明确安装目标，但仍可能受到发布时间策略限制。使用命令行指定要升级的版本：
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.1.19
+dsh plugin --profile desktop add dsh-deepseek-chat@0.1.20
 ```
 
-**完整退出并重新打开 DSH**，在插件管理页检查已安装版本为 **0.1.19**。进入 CHAT 后，“对话”标题右侧应显示刷新图标，未登录时登录按钮应有蓝色背景。
+**完整退出并重新打开 DSH**，在插件管理页检查已安装版本为 **0.1.20**。进入 CHAT 后，“对话”标题右侧应显示刷新图标，未登录时登录按钮应有蓝色背景。
 
 使用其他 profile 时替换 `desktop`。通过 DSH 官方插件管理器或 CLI 更新，让依赖记录和锁文件一起更新；直接覆盖安装目录中的文件不能保证下次启动仍使用新版。
 
@@ -104,7 +104,7 @@ dsh plugin --profile desktop add dsh-deepseek-chat@0.1.19
 将构建生成的 `.tgz` 文件交给 DSH 官方插件管理器安装，或使用 CLI：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.19.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.20.tgz
 ```
 
 将路径替换成你的实际安装包；使用其他 profile 时替换 `desktop`。**安装或更新后，完整退出并重新打开 DSH**，让新插件生效。
@@ -153,7 +153,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.1.19.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.1.20.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 
