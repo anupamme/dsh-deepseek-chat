@@ -1,3 +1,7 @@
+## 0.1.21 组件标识已发布（2026-10-14）
+
+用户授权更新版本并发布，完成新的单次 npm 2FA（旧会话已失效）。组件条目 id=deepseek-chat，模块 name/npm 包名/Git 仓库仍为 dsh-deepseek-chat，显示标题为 DeepSeek Chat。构建/分发检查通过；公开 latest=0.1.21，下载包 SHA256=0bf0d532d6a367b0096391b8ebc861d96344e67c8fd7fef561261ea9166c11a0，与本地发布包完全一致，组件标识与语言文件已核实。未 Git 提交或推送。
+
 ## 0.1.20 显示名称已发布（2026-10-14）
 
 用户授权更新版本并发布，完成 npm 登录及单次 2FA。显示名称通过导出的 locale/en.json 与 locale/zh-CN.json 的 meta.title 设置为 DeepSeek Chat；npm 包名、Cordis 标识与 Git 仓库仍为 dsh-deepseek-chat。构建和分发检查通过，公开 latest=0.1.20；下载包 SHA256=bfd40fca4fd3ea8d3b57b1489e12409efaee29180b3eab3dff99bb2bb93ab25c，与本地发布包完全一致，语言文件已核实。未提交或推送 Git。
