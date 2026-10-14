@@ -6,6 +6,7 @@ import type {} from '@deepseek-ai/dsh-api-gateway/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { DesktopBrowserBridge } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { CHAT_PANEL, ModeController } from './core/mode.js'
+import { HOST_ENTRY_ID, DEFAULT_WEBSITE_LANGUAGE } from './identity.js'
 import { authorizationSchema, DSH_CHAT_REMOTE_CONTRIBUTION } from './protocol.js'
 import type { AuthorizationState, DshChatClientMetadata, WebsiteSession } from './protocol.js'
 import { acquireChatStyles } from './styles.js'
@@ -18,7 +19,6 @@ import { createSidebarBinding } from './sidebar-adapter.js'
 export const name = 'dsh-deepseek-chat'
 export const inject = ['slots', 'layout', 'remote']
 const AUTHORIZATION_TIMEOUT_MS = 35_000
-const DEFAULT_WEBSITE_LANGUAGE = 'zh-CN'
 
 function desktopBrowser(): DesktopBrowserBridge | undefined {
   const desktop = (globalThis as typeof globalThis & {
@@ -570,7 +570,7 @@ export function apply(ctx: Context): void {
   }
   ctx.inject(['configForms'], child => {
     child.effect(() => {
-      const form=child.configForms.get<{language:string}>('dsh-deepseek-chat')
+      const form=child.configForms.get<{language:string}>(HOST_ENTRY_ID)
       preferenceForm=form
       const read=()=>{
         const snapshot=form.getSnapshot()

@@ -2,9 +2,10 @@ import schema from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-settings'
 import type { Context } from '@deepseek-ai/cordis'
 import { DshChatController } from './server.js'
+import { DEFAULT_WEBSITE_LANGUAGE } from './identity.js'
 
 export const Config = schema.object({
-  language: schema.union(['', 'system', 'zh-CN', 'en']).default('zh-CN').volatile(),
+  language: schema.union(['', 'system', 'zh-CN', 'en']).default(DEFAULT_WEBSITE_LANGUAGE).volatile(),
 })
 
 export const name = 'dsh-deepseek-chat'

@@ -1,3 +1,11 @@
+## 0.1.22 已发布 npm（2026-10-14）
+
+用户明确授权发布语言配置命名空间修复，完成新的单次 2FA。公开 latest=0.1.22，下载包 SHA256=9551e973460bc29974ce1c1216989bb77fc60a17b060731a8e660133ee4f30c2，与本地发布包完全一致；公开包中的配置读取按 HOST_ENTRY_ID=deepseek-chat，且 Cordis 条目标识匹配。构建/分发及此前真实 DSH 完整重启中文恢复通过。未 Git 提交/推送。
+
+## 0.1.22 语言配置命名空间修复（2026-10-14，本地已安装）
+
+0.1.21 改 Cordis entry id 后，Client 仍以旧 npm 包名取 configForms，导致 unavailable 且默认中文恢复不执行。新增共享 identity.ts，Client 按 HOST_ENTRY_ID=deepseek-chat 读配置；Host 与 Client 共用 DEFAULT_WEBSITE_LANGUAGE=zh-CN。分发检查新增 patch id 与配置引用一致性约束。其余 npm/RPC/凭据身份保持原值。定向运行实际 Client 控制器（虚构服务）验证中文默认、恢复期间不写回官网旧语言、确认编辑持久化及新实例恢复通过。构建/分发通过；本地包9551e973460b已安装28/28一致，两次真实 DSH 启动设置均显示简体中文且无 preferenceError，第二次为完整 quit/open。未清除用户数据或网页登录。旧条目语言覆盖不自动搬移，当前新条目默认中文，后续选项保存到新条目。0.1.22 未发布 npm、未 Git 提交/推送。
+
 ## 0.1.21 组件标识已发布（2026-10-14）
 
 用户授权更新版本并发布，完成新的单次 npm 2FA（旧会话已失效）。组件条目 id=deepseek-chat，模块 name/npm 包名/Git 仓库仍为 dsh-deepseek-chat，显示标题为 DeepSeek Chat。构建/分发检查通过；公开 latest=0.1.21，下载包 SHA256=0bf0d532d6a367b0096391b8ebc861d96344e67c8fd7fef561261ea9166c11a0，与本地发布包完全一致，组件标识与语言文件已核实。未 Git 提交或推送。
