@@ -1,3 +1,4 @@
+import { configureWebsiteShareCopy } from './website-share-copy.js'
 import { applyWebsiteTypography } from './website-typography.js'
 import { collapseWebsiteSidebar } from './website-sidebar-collapse.js'
 import { performWebsiteConversationAction } from './website-conversation-actions.js'
@@ -471,13 +472,14 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
 }
 
 export function websiteCommandScript(command: WebsiteCommand, contentFontSize = 14, colorScheme: 'light' | 'dark' = 'dark'): string {
+  const shareCopy = `(${configureWebsiteShareCopy.toString()})(document,${command.type !== 'restore' && !(command.type === 'snapshot' && command.showOriginal)});`
   const typography = `(${applyWebsiteTypography.toString()})(document,${command.type === 'restore' || (command.type === 'snapshot' && command.showOriginal) ? 'null' : JSON.stringify(Number.isFinite(contentFontSize) ? contentFontSize : 14)});`
   const theme = command.type === 'restore' || (command.type === 'snapshot' && command.showOriginal)
     ? "document.documentElement.removeAttribute('data-dsh-chat-host-theme');"
     : `document.documentElement.setAttribute('data-dsh-chat-host-theme',${JSON.stringify(colorScheme === 'light' ? 'light' : 'dark')});`
   if (command.type==='refresh') throw new Error('Website refresh must be handled by the guest owner')
-  if (command.type === 'conversation-action') return `(async () => { ${typography} ${theme} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; const adapt = ${adaptWebsiteNavigation.toString()}; const command = ${JSON.stringify(command)}; const before = adapt(document,location,{type:'snapshot',showOriginal:false}); if (before.authenticated !== true || !before.conversations.some(item=>item.href===command.href)) return before; const error = await (${performWebsiteConversationAction.toString()})(document,command); if(error) document.documentElement.setAttribute('data-dsh-chat-conversation-error',error); else document.documentElement.removeAttribute('data-dsh-chat-conversation-error'); return adapt(document,location,{type:'snapshot',showOriginal:false}); })()`
-  return `(() => { ${typography} ${theme} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
+  if (command.type === 'conversation-action') return `(async () => { ${shareCopy} ${typography} ${theme} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; const adapt = ${adaptWebsiteNavigation.toString()}; const command = ${JSON.stringify(command)}; const before = adapt(document,location,{type:'snapshot',showOriginal:false}); if (before.authenticated !== true || !before.conversations.some(item=>item.href===command.href)) return before; const error = await (${performWebsiteConversationAction.toString()})(document,command); if(error) document.documentElement.setAttribute('data-dsh-chat-conversation-error',error); else document.documentElement.removeAttribute('data-dsh-chat-conversation-error'); return adapt(document,location,{type:'snapshot',showOriginal:false}); })()`
+  return `(() => { ${shareCopy} ${typography} ${theme} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
 }
 
 /** Treat the guest response as untrusted; keep only bounded, origin-scoped list data. */

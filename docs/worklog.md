@@ -692,3 +692,20 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 ### README措辞续调（2026-10-17）
 
 用户进一步去掉“备选”附注并要求统称适配平台。中英文标题已移除该附注，顶部统一DSH桌面版，限制段不再堆版本号，具体版本交由插件管理器兼容检查；manifest实际范围保持不变，未扩张支持声明。仅文档，版本0.2.3，不构建/测试/发布/Git操作。
+
+## 2026-10-18 / 分享与消息复制对照研究
+
+用户重新打开复制问题，指出消息复制能用。fetch与基线dc234eb一致，开工干净。先fresh旧公开资源，发现消息helper有API失败后的textarea/execCommand后备，分享无后备；随后正常匿名浏览器首页HTTP200获得当前main.a0ce88b684.js（hash0e8404fe...），确认并换用当前原函数重新验证，排除旧缓存。DSH guest PermissionCheck/Request全拒绝代码仍在，当前插件无自有复制API。
+
+Playwright独立虚构HTTPS页以同一虚构URL比较真实Clipboard/execCommand调用：原生权限denied时分享NotAllowedError/warning，消息同错误后执行copy返回true。第一次CDP未指定browserContextId权限未生效（granted），已丢弃；更正先断言denied。模态框外临时框未获焦点但返回true，框内获焦点；仅证明成功返回不充分，不套用于未经检查的官网焦点结构。未读取系统剪贴板或正文/真实链接，未新建公开分享/登录，不声称真实复制已修好。仅新增调查/交接/来源记录，0.2.3不变，不构建安装发布或Git操作；建议真实弹窗验证后再补限定后备，见share-copy-investigation。
+
+## 0.2.4 分享链接后备复制候选（2026-10-18）
+
+- 用户授权为分享链接增加失败后的传统复制兜底。新增 website-share-copy.ts，在现有 guest 命令注入点幂等安装 writeText 包装：先执行原生调用，拒绝后仅为精确 https://chat.deepseek.com/share/<token> 尝试传统 copy。正文和代码块保持原行为，链接不跨 guest、不记录内容、不更改权限或生成接口。
+- 通过当前焦点/可见模态边界确定临时 textarea 容器；确认焦点和完整选区才调用 execCommand，返回 false/抛错继续拒绝原 Promise，由官网显示失败。恢复之前的焦点/选区；restore/showOriginal 恢复原 API 属性，清理后待处理调用不会兜底。不追加原生键盘或宿主剪贴板桥接。
+- package/README 版本同步 0.2.4，兼容依赖保持不变。生产构建通过；未新增或运行测试，未在真实 DSH 弹窗验收，不能把 execCommand 的布尔返回等同于粘贴结果。
+- 本轮未安装、重启、发布 npm 或提交推送 Git。下一步用已有分享链接实际点击并粘贴验收，同时分别确认创建并复制、正文复制和切回 HARNESS。
+
+## 0.2.4 npm 已接受发布，公开索引待同步（2026-10-18）
+
+用户完成登录和当次2FA；npm publish exit0、返回 + dsh-deepseek-chat@0.2.4，提示后台处理中。首轮匿名整包元数据 latest仍0.2.3且无0.2.4，暂不能声称公开下载核验完成。发布包SHA256 1ad2735fb84a616a893bdc68505fdcdfad460ac6acf382d6bd994a1428bfbaaf，保存在 artifacts/dsh-deepseek-chat-0.2.4-1ad2735fb84a.tgz。本机用户已确认分享复制恢复；Windows未验收。未Git提交或推送。

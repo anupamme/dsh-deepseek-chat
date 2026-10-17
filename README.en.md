@@ -10,7 +10,7 @@
 
 **CHAT** embeds the real [DeepSeek Chat website](https://chat.deepseek.com/), including its chat interface and account history. **HARNESS** returns you to the original DSH workspace.
 
-Current version: **0.2.3** · Built for **DSH Desktop** · Simplified Chinese is the default language; English and Follow system are also available.
+Current version: **0.2.4** · Built for **DSH Desktop** · Simplified Chinese is the default language; English and Follow system are also available.
 
 ## Preview
 
@@ -52,13 +52,13 @@ Open the native DSH **Settings → CHAT Settings** page to check website account
 Enter the package name and version below in the DSH plugin installer to install the current latest release:
 
 ```text
-dsh-deepseek-chat@0.2.3
+dsh-deepseek-chat@0.2.4
 ```
 
 Or use the CLI:
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.2.3
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.4
 ```
 
 Use the same method for a first installation or an existing plugin. If DSH’s release age policy temporarily blocks a new version, retry later or use the GitHub option below.
@@ -84,12 +84,12 @@ This installs the version already pushed to the repository, which includes prebu
 Install a `.tgz` package using the DSH plugin manager, or run:
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.3.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.4.tgz
 ```
 
 Replace the path with your actual package location.
 
-**Fully quit and reopen DSH after installation, then confirm that the plugin manager shows version 0.2.3.** Replace `desktop` with the appropriate name if you use another profile.
+**Fully quit and reopen DSH after installation, then confirm that the plugin manager shows version 0.2.4.** Replace `desktop` with the appropriate name if you use another profile.
 
 See the [official DSH plugin installation documentation](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish) for more information.
 
@@ -133,7 +133,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-This produces `artifacts/dsh-deepseek-chat-0.2.3.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
+This produces `artifacts/dsh-deepseek-chat-0.2.4.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
 
 After source changes, run `pnpm release:prepare` and commit the source together with the complete `lib/` directory. `pnpm check:distribution` checks the compiled files against the source, version and installation entry. Stale or missing output fails the check. People installing the plugin do not need these development commands.
 
@@ -143,6 +143,8 @@ To uninstall:
 dsh plugin --profile desktop remove dsh-deepseek-chat
 ```
 
-## Known issue: copying share links
+## Copying share links
 
 CHAT can create share links, but **Create and copy** or **Copy** may report a copy failure. DSH Desktop’s embedded browser denies webpage clipboard permission requests and currently exposes no setting to enable them. Select the complete link and press `⌘C` on macOS or `Ctrl+C` on Windows to copy it manually.
+
+Version 0.2.4 adds a legacy copy fallback specifically for DeepSeek share URLs. The user confirmed copying works in the local macOS DSH client. Manual selection and ⌘C / Ctrl+C remain available if copying fails.

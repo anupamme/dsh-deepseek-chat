@@ -10,7 +10,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.2.3** · 适配 **DSH 桌面版** · 默认语言为简体中文。
+当前版本 **0.2.4** · 适配 **DSH 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -52,13 +52,13 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 在 DSH 的插件安装输入框中输入下方名称和版本号，安装当前最新发布版本：
 
 ```text
-dsh-deepseek-chat@0.2.3
+dsh-deepseek-chat@0.2.4
 ```
 
 也可以使用命令行：
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.2.3
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.4
 ```
 
 首次安装和更新已有插件均使用这一方式。若新版本被 DSH 的发布时间策略暂时拦截，可稍后重试，或使用下方 GitHub 安装方式。
@@ -84,12 +84,12 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 将 `.tgz` 安装包交给 DSH 插件管理器安装，或使用命令行：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.3.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.4.tgz
 ```
 
 将路径替换为实际安装包位置。
 
-**安装完成后，完整退出并重新打开 DSH，在插件管理页确认版本为 0.2.3。** 使用其他 profile 时，将命令中的 `desktop` 替换为对应名称。
+**安装完成后，完整退出并重新打开 DSH，在插件管理页确认版本为 0.2.4。** 使用其他 profile 时，将命令中的 `desktop` 替换为对应名称。
 
 更多说明参见 [DSH 官方插件安装文档](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)。
 
@@ -133,7 +133,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.2.3.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.2.4.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 
@@ -143,6 +143,6 @@ pnpm package:plugin
 dsh plugin --profile desktop remove dsh-deepseek-chat
 ```
 
-## 已知问题：分享链接复制
+## 分享链接复制
 
-CHAT 模式可以正常创建分享链接，但点击“创建并复制”或“复制”可能提示复制失败。DSH 桌面版内嵌浏览器会拒绝网页的剪贴板权限请求，目前没有提供开启此权限的配置项。遇到此问题，请选中完整链接，在 macOS 按 `⌘C`、Windows 按 `Ctrl+C` 手动复制。
+CHAT 模式可以正常创建分享链接，但点击“创建并复制”或“复制”可能提示复制失败。DSH 桌面版内嵌浏览器会拒绝网页的剪贴板权限请求，目前没有提供开启此权限的配置项。0.2.4 已为 DeepSeek 分享链接增加传统复制后备方式，本机 macOS DSH 中已由用户确认复制恢复正常。如果仍然失败，请选中完整链接，在 macOS 按 `⌘C`、Windows 按 `Ctrl+C` 手动复制。

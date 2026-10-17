@@ -227,3 +227,7 @@ Info.plist与app.asar内dsh/package.json均为0.2.1-rc.1，runtime/versions.json
 ## 2026-10-17 / 宿主主题投影契约
 
 官方DSH0.2.1-rc.2的ui-layout/lib/client.js ThemePresenter.apply(snapshot)将snapshot.active.colorScheme写入document.documentElement.style.colorScheme，并按dark切换body的data-ds-dark-theme属性；ui-theme ThemeRuntime.buildSnapshot把system偏好和prefers-color-scheme解析为active.colorScheme，再发theme/change。插件只读取这些限定公开DOM字段，不借用主题内部store，不调用猜测服务。官网侧继续现有公开Settings/General/Theme行按钮及可见选中状态，读取结果后确认目标主题；没有新增官网网络API或storage访问。
+
+## 2026-10-18 / 当前官网两套复制实现
+
+正常匿名首页浏览HTTP200，script src确认main.a0ce88b684.js；fresh公共脚本中copyBotResponse调用aY（writeText失败后execCommand后备），copyShareLinkError对应m仅writeText及warning。DSH0.2.1-rc.2 guest权限拒绝代码仍在。已以当前原函数/相同虚构URL/独立浏览器原生denied对照，未把返回true当作OS文本已核对。资源hash、位置、复现范围及拟修方案见[分享复制调查](share-copy-investigation.md)。
