@@ -53,12 +53,13 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   const owned = [marker, presentedMarker, missingSidebarMarker, fallbackMarker, fallbackErrorMarker, profileMarker, profileProofMarker, profileAvatarMarker, navigationWidthMarker, expandingMarker, compactToggleMarker, 'data-dsh-chat-native-collapse-attempt', 'data-dsh-chat-action-menu', 'data-dsh-chat-conversation-error', 'data-dsh-chat-layout', 'data-dsh-chat-content', 'data-dsh-chat-web-chrome', 'data-dsh-chat-settings-dialog', 'data-dsh-chat-settings-host', 'data-dsh-chat-settings-tabs', 'data-dsh-chat-settings-pane', 'data-dsh-chat-settings-layout', 'data-dsh-chat-settings-chrome', 'data-dsh-chat-settings-appearance', 'data-dsh-chat-header-row', 'data-dsh-chat-header-title', 'data-dsh-chat-header-share', 'data-dsh-chat-header-title-host', 'data-dsh-chat-header-editor', 'data-dsh-chat-header-native-depth']
   const empty = (status: WebsiteNavigation['status']): WebsiteNavigation => ({ status, ...(status === 'sign-in' ? { authenticated: false } : {}), conversations: [], selectedHref: null, canCreate: false, error: null })
   const clearSettings = (preserveConfirmedPreferences = false) => {
-    const confirmed = ['data-dsh-chat-language', 'data-dsh-chat-theme', 'data-dsh-chat-dark-complete', 'data-dsh-chat-settings-restored']
-    for (const attr of [...doc.documentElement.attributes]) if (/^data-dsh-chat-(settings-|language$|theme$|dark-complete$)/.test(attr.name)
+    const confirmed = ['data-dsh-chat-language', 'data-dsh-chat-theme', 'data-dsh-chat-theme-complete', 'data-dsh-chat-settings-theme-target', 'data-dsh-chat-settings-restored']
+    for (const attr of [...doc.documentElement.attributes]) if (/^data-dsh-chat-(settings-|language$|theme$|theme-complete$|dark-complete$)/.test(attr.name)
       && !(preserveConfirmedPreferences && confirmed.includes(attr.name))) doc.documentElement.removeAttribute(attr.name)
   }
   const restore = (preserveConfirmedPreferences = false, preserveCompactAttempt = false) => {
     clearSettings(preserveConfirmedPreferences)
+    if (!preserveConfirmedPreferences) doc.documentElement.removeAttribute('data-dsh-chat-host-theme')
     doc.getElementById(styleId)?.remove()
     doc.getElementById('dsh-chat-header-style')?.remove()
     doc.getElementById('dsh-chat-website-typography')?.remove()
@@ -122,7 +123,7 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   // Gate only the document's first adapted paint. Later appearance checks must
   // leave the presented website and its environment/security notices visible.
   if (!isOriginalSnapshot && !recovering && !doc.documentElement.hasAttribute(presentedMarker)
-    && !doc.documentElement.hasAttribute('data-dsh-chat-dark-complete')) {
+    && doc.documentElement.getAttribute('data-dsh-chat-theme-complete') !== (doc.documentElement.getAttribute('data-dsh-chat-host-theme') === 'light' ? 'light' : 'dark')) {
     doc.documentElement.setAttribute('data-dsh-chat-preparing','')
     if (!doc.getElementById(preparingStyleId)) {
       const style=doc.createElement('style'); style.id=preparingStyleId
@@ -460,8 +461,8 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   const selected = conversations.find(item => item.href === safeHref(page.pathname))
   if (!(command.type === 'snapshot' && command.showOriginal)) adaptWebsiteHeader(doc, content, selected?.title ?? null, command.type === 'snapshot' ? command.headerInset ?? (Number.parseInt(settingsRoot.style.getPropertyValue('--dsh-chat-title-inset')) || 24) : Number.parseInt(settingsRoot.style.getPropertyValue('--dsh-chat-title-inset')) || 24)
   // A failed appearance sync must reveal the legitimate website and its own
-  // environment/security notices. Keep the error retryable; do not claim dark mode.
-  const ready = authenticated !== true || settingsRoot.hasAttribute('data-dsh-chat-dark-complete') || Boolean(settings?.error) || (command.type==='snapshot' && command.showOriginal)
+  // environment/security notices. Keep the error retryable; do not claim an unverified theme.
+  const ready = authenticated !== true || settingsRoot.getAttribute('data-dsh-chat-theme-complete') === (settingsRoot.getAttribute('data-dsh-chat-host-theme') === 'light' ? 'light' : 'dark') || Boolean(settings?.error) || (command.type==='snapshot' && command.showOriginal)
   if (ready) {
     settingsRoot.removeAttribute('data-dsh-chat-preparing')
     if (!(command.type === 'snapshot' && command.showOriginal)) settingsRoot.setAttribute(presentedMarker, '')
@@ -469,11 +470,14 @@ export function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'orig
   return { status: ready ? 'ready' : 'loading', ...(authenticated === undefined ? {} : { authenticated }), conversations, selectedHref: safeHref(page.pathname), canCreate: newChat !== null, error: doc.documentElement.getAttribute('data-dsh-chat-conversation-error'), accountName, settings }
 }
 
-export function websiteCommandScript(command: WebsiteCommand, contentFontSize = 14): string {
+export function websiteCommandScript(command: WebsiteCommand, contentFontSize = 14, colorScheme: 'light' | 'dark' = 'dark'): string {
   const typography = `(${applyWebsiteTypography.toString()})(document,${command.type === 'restore' || (command.type === 'snapshot' && command.showOriginal) ? 'null' : JSON.stringify(Number.isFinite(contentFontSize) ? contentFontSize : 14)});`
+  const theme = command.type === 'restore' || (command.type === 'snapshot' && command.showOriginal)
+    ? "document.documentElement.removeAttribute('data-dsh-chat-host-theme');"
+    : `document.documentElement.setAttribute('data-dsh-chat-host-theme',${JSON.stringify(colorScheme === 'light' ? 'light' : 'dark')});`
   if (command.type==='refresh') throw new Error('Website refresh must be handled by the guest owner')
-  if (command.type === 'conversation-action') return `(async () => { ${typography} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; const adapt = ${adaptWebsiteNavigation.toString()}; const command = ${JSON.stringify(command)}; const before = adapt(document,location,{type:'snapshot',showOriginal:false}); if (before.authenticated !== true || !before.conversations.some(item=>item.href===command.href)) return before; const error = await (${performWebsiteConversationAction.toString()})(document,command); if(error) document.documentElement.setAttribute('data-dsh-chat-conversation-error',error); else document.documentElement.removeAttribute('data-dsh-chat-conversation-error'); return adapt(document,location,{type:'snapshot',showOriginal:false}); })()`
-  return `(() => { ${typography} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
+  if (command.type === 'conversation-action') return `(async () => { ${typography} ${theme} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; const adapt = ${adaptWebsiteNavigation.toString()}; const command = ${JSON.stringify(command)}; const before = adapt(document,location,{type:'snapshot',showOriginal:false}); if (before.authenticated !== true || !before.conversations.some(item=>item.href===command.href)) return before; const error = await (${performWebsiteConversationAction.toString()})(document,command); if(error) document.documentElement.setAttribute('data-dsh-chat-conversation-error',error); else document.documentElement.removeAttribute('data-dsh-chat-conversation-error'); return adapt(document,location,{type:'snapshot',showOriginal:false}); })()`
+  return `(() => { ${typography} ${theme} const collapseWebsiteSidebar = ${collapseWebsiteSidebar.toString()}; const adaptWebsiteSettings = ${adaptWebsiteSettings.toString()}; const adaptWebsiteHeader = ${adaptWebsiteHeader.toString()}; const dismissWebsiteEnvironmentNotice = ${dismissWebsiteEnvironmentNotice.toString()}; return (${adaptWebsiteNavigation.toString()})(document,location,${JSON.stringify(command)}); })()`
 }
 
 /** Treat the guest response as untrusted; keep only bounded, origin-scoped list data. */

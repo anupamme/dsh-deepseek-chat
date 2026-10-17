@@ -1,4 +1,4 @@
-// DSH 0.2.0-rc.2 (639ed015397290b3745d163aafe02ffee4aa3f84) and 0.2.1-rc.1 SDK.
+// DSH 0.2.0-rc.2 (639ed015397290b3745d163aafe02ffee4aa3f84) and 0.2.1-rc.1/rc.2 SDKs.
 // The newer shipped Client bundles retain these shared-module keys:
 // packages/client/web/src/platform.ts and packages/client/tsdown.client.ts.
 // Use exact module-table keys; externalizing the whole namespace can emit

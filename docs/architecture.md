@@ -124,7 +124,7 @@ e031有限实机：官方CLI安装后23/23文件与tgz一致；正常quit确认�
 - 品牌owner的aria-hidden/外层New Session仍存在，交互层在该祖先外，提供按键与屏幕阅读器语义。rc.2品牌行24px且会裁剪，锚点为112×24px；完全可见才发布矩形，折叠/裁剪时隐藏，重新可见时恢复。底部和右下角旧入口已移除；正常授权无常驻刷新，故障时在顶部说明并重试。Mac实测通过，Web/Windows外层按钮及其他平台仍需实测。
 - 两种模式共用原生SidebarRoot；仅CHAT期间通过slots.inject注册 `sidebar.workspaces`，退出后dispose恢复工作区；owner仅wide/expandSidebar。顶部窗口/品牌/新会话视觉、底部真实settings及背景透明/模糊由原组件持续管理，不创建另一套侧栏。
 - W017删除整个网页工具栏。CHAT期间按官方shell.leading契约注册展开/官网新建图标，与rc.2原生HeaderLeadingControls使用同一公开图标、28px尺寸、8px间距和Tooltip；HARNESS/卸载dispose恢复内置项。Mac官方AppFrame仅在全折叠时挂载该Slot。guest矩形扣除官方--dsh-frame-top-clearance，避免overlay遮住原生窗口控制；不硬改核心z-index或窗口按钮。
-- 官方settings.section注册持久“CHAT设置”，owner仅close；原设置导航/弹窗继续由DSH维护。新增ui-settings开发类型和manifest依赖，不复制私有组件，也不增加运行时共享模块。设置显示真实官网可见账号、系统语言，CHAT固定暗色，无外观选择。
+- 官方settings.section注册持久“CHAT设置”，owner仅close；原设置导航/弹窗继续由DSH维护。新增ui-settings开发类型和manifest依赖，不复制私有组件，也不增加运行时共享模块。设置显示真实官网可见账号、系统语言，CHAT明暗跟随HARNESS当前实际主题，无独立外观选择（2026-10-17替代固定暗色）。
 - 原菜单/快捷键仍调用uiWorkspace.startSession，没有公开模式替换回调；W016有限例外仅处理顶部鼠标/键盘激活click及非Mac品牌按钮，列表＋曾可新建，W028将其改为手动刷新，顶部新会话保留。监听主面板离开CHAT后清理覆盖，不改写原导航选择；不能把顶部按钮结果当作菜单/快捷键Session保真。
 - 所有注册与 stream 都由 Cordis enclosing effect 管理，末尾清理先恢复 panel，再卸载贡献和 guest。完整 Desktop 卸载恢复还需真实验收。
 
@@ -286,3 +286,11 @@ Git提交产物带来源码与生成文件可能不一致的维护风险，必�
 ## DSH 0.2.1-rc.1 兼容声明（2026-10-17）
 
 旧manifest的三个DSH host peer精确等于0.2.0-rc.2，新宿主0.2.1-rc.1在导入前即拒绝。新版官方app-boot首先检查engines.dsh，缺省时检查DSH peers。插件对已核对的两个版本显式使用0.2.0-rc.2 || 0.2.1-rc.1，engines与peer保持同一范围；Cordis/Schemastery保留4.0/3.18兼容patch范围，开发期固定本机4.0.5/3.18.5及DSH0.2.1-rc.1。实际客户端仍通过宿主共享模块加载，不内联Cordis/React。新版类型编译通过，宿主sidebar品牌/slot与browser acquire/release/onOpenRequested契约静态一致。跨版本实机状态以handoff为准。
+
+## 0.2.1-rc.2 适配（插件0.2.2，2026-10-17）
+
+显式宿主范围追加0.2.1-rc.2，engines和DSH peers保持一致；开发SDK也升到rc.2。已对照实际安装产物：布局、设置、渲染器和网页容器Client及credentials Host相同；sidebar Client仅构建版本文字变化。因此本轮无需改业务逻辑或Windows portal事件边界，生产构建Host/Client字节保持一致。版本门禁规则也相同，不启用兼容豁免。安装/交互证据见handoff顶部。
+
+## CHAT跟随宿主主题（0.2.3，2026-10-17）
+
+web-surface读取官方ThemePresenter在html.style.colorScheme发布的解析后明暗，兼容body[data-ds-dark-theme]后备；只观察这两个元素的对应属性并比较枚举，变更时复用已有串行导航队列与短期快轮询，不重载guest。每条自有guest命令传入light/dark，并将期望值保留在插件自有DOM标记，内部文档观察器也读取同一值。settings adapter复用公开Theme行的对应按钮、严格读回选中值后写入带目标的theme-complete；废弃单一dark-complete。快速切换撤回旧主题目标的阶段/截止时间，语言和退出不被覆盖；新的主题请求仍有12秒截止时间。首次主题完成参与首屏准备，已呈现文档的主题变化不再隐藏整页。restore/原网页模式清理自有主题标记，fallback保留已确认状态防循环；卸载断开宿主观察器。没有修改网站storage、React私有状态、剪贴板或账号Config。登录页缺少公开设置入口时不改变官网主题逻辑。

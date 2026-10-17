@@ -4,6 +4,20 @@ import type { WebsiteCommand } from './website-navigation.js'
 export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null, command: WebsiteCommand) {
   const root = doc.documentElement
   const attr = (name: string) => `data-dsh-chat-settings-${name}`
+  const desiredTheme = root.getAttribute('data-dsh-chat-host-theme') === 'light' ? 'light' : 'dark'
+  const complete = 'data-dsh-chat-theme-complete'
+  // Migrate the old fixed-dark marker; each completion now names the verified scheme.
+  root.removeAttribute('data-dsh-chat-dark-complete')
+  if (root.getAttribute(attr('theme-target')) !== desiredTheme) {
+    root.setAttribute(attr('theme-target'), desiredTheme)
+    root.removeAttribute(complete); root.removeAttribute(attr('restored'))
+    if (root.getAttribute(attr('request'))?.startsWith('theme:')) {
+      root.removeAttribute(attr('request')); root.removeAttribute(attr('phase')); root.removeAttribute(attr('deadline'))
+    }
+    if (root.getAttribute(attr('error-goal'))?.startsWith('theme:')) {
+      root.removeAttribute(attr('error')); root.removeAttribute(attr('error-goal'))
+    }
+  }
   // Remove the discarded embedded-settings presentation on an existing guest.
   root.removeAttribute(attr('view'))
   doc.getElementById('dsh-chat-settings-view-style')?.remove()
@@ -19,7 +33,7 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
   }
   const general = /^(General|通用设置|常规|通用)$/i
   const isModal = (el: HTMLElement) => !el.closest('[hidden],[aria-hidden="true"]')
-    && /Settings|系统设置/.test(el.textContent ?? '') && !!exact(el, general)
+    && /Settings|系统设置|设置/i.test(el.textContent ?? '') && !!exact(el, general)
     && !el.querySelector('textarea,[contenteditable="true"]')
   const dialog = [...doc.querySelectorAll<HTMLElement>('[role="dialog"],.ds-modal-content')].find(isModal)
   const closeDialog = () => dialog && [...dialog.querySelectorAll<HTMLElement>('button,[role="button"],.ds-icon-button')].find(el => !el.textContent?.trim() && el.querySelector('svg'))?.click()
@@ -28,7 +42,7 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
     ;(trigger as HTMLElement | undefined)?.click()
   }
   const request = (goal: string) => {
-    root.setAttribute(attr('request'), goal); root.removeAttribute(attr('phase')); root.removeAttribute(attr('error'))
+    root.setAttribute(attr('request'), goal); root.removeAttribute(attr('phase')); root.removeAttribute(attr('error')); root.removeAttribute(attr('error-goal'))
     root.setAttribute(attr('deadline'), String(Date.now() + 12000))
   }
   const loggingOut=root.getAttribute(attr('request'))==='logout'
@@ -37,7 +51,7 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
   if (command.type === 'setting' && !loggingOut) request(`${command.key}:${command.value}`)
   if (command.type === 'preferences' && !loggingOut) {
     root.removeAttribute(attr('restored'))
-    root.removeAttribute('data-dsh-chat-dark-complete')
+    root.removeAttribute(complete)
     if (command.language) root.setAttribute(attr('restore-language'), command.language)
   }
   if (command.type === 'logout') {root.removeAttribute(attr('restore-language'));root.removeAttribute(attr('restored'));request('logout')}
@@ -58,26 +72,27 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
     ?? (languageRow ? [...languageRow.children].find(el => el.querySelector('svg')) as HTMLElement | undefined : undefined)
   const language = control?.textContent?.trim().slice(0, 80) || null
   const themeRow = rowFor(/^(Theme|Appearance|主题|外观)$/i)
-  const themeButtons = themeRow ? [...themeRow.querySelectorAll<HTMLElement>('button,[role="button"],.ds-button')].filter(el => /^(Light|Dark|System|浅色|深色|跟随系统|系统)$/i.test(el.textContent?.trim() ?? '')) : []
+  const themeButtons = themeRow ? [...themeRow.querySelectorAll<HTMLElement>('button,[role="button"],.ds-button')].filter(el => /^(Light|Dark|System|浅色|浅色模式|深色|深色模式|跟随系统|系统)$/i.test(el.textContent?.trim() ?? '')) : []
   const selectedTheme = themeButtons.find(el => el.getAttribute('aria-pressed') === 'true' || el.getAttribute('aria-selected') === 'true' || el.getAttribute('data-state') === 'active')
     ?? (themeButtons.length === 3 ? themeButtons.find(el => themeButtons.filter(other => getComputedStyle(other).backgroundColor === getComputedStyle(el).backgroundColor).length === 1) : undefined)
   const theme = selectedTheme?.textContent?.trim().slice(0, 80) || null
   if (language) root.setAttribute('data-dsh-chat-language', language)
   if (theme) root.setAttribute('data-dsh-chat-theme', theme)
+  const desiredThemeLabel = desiredTheme === 'light' ? /^(Light|浅色|浅色模式)$/i : /^(Dark|深色|深色模式)$/i
+  if (theme && !desiredThemeLabel.test(theme)) root.removeAttribute(complete)
   if (!root.hasAttribute(attr('request')) && !root.hasAttribute(attr('error')) && command.type !== 'settings-close') {
-    if (!root.hasAttribute('data-dsh-chat-dark-complete')) request('theme:dark')
+    if (root.getAttribute(complete) !== desiredTheme) request(`theme:${desiredTheme}`)
     else if (root.hasAttribute(attr('restore-language'))) request(`language:${root.getAttribute(attr('restore-language'))}`)
   }
   const goal = root.getAttribute(attr('request')), phase = root.getAttribute(attr('phase'))
   const finish = (error?: string) => {
     root.removeAttribute(attr('request'));root.removeAttribute(attr('phase'));root.removeAttribute(attr('deadline'))
-    if (error) root.setAttribute(attr('error'), error)
-    if (goal === 'theme:dark' && !error) root.setAttribute('data-dsh-chat-dark-complete', '')
+    if (error) { root.setAttribute(attr('error'), error); root.setAttribute(attr('error-goal'), goal ?? '') }
+    if (goal?.startsWith('theme:') && !error) root.setAttribute(complete, goal.slice(6))
     if (goal?.startsWith('language:')) {
       root.removeAttribute(attr('restore-language'))
-      // Language writes must recheck the fixed dark preference, including guests
-      // that retained a stale completion marker from an earlier adapter.
-      root.removeAttribute('data-dsh-chat-dark-complete')
+      // Language changes can remount the appearance controls; recheck the current host scheme.
+      root.removeAttribute(complete)
     }
     if (goal !== 'logout') closeDialog()
   }
@@ -101,11 +116,11 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
       if (language) finish()
     } else {
       const split = goal.indexOf(':'), key = goal.slice(0, split), value = goal.slice(split + 1)
-      const values: Record<string, RegExp> = {'zh-CN':/^(简体中文|中文|Chinese|中文（简体）|Chinese \(Simplified\))$/i,en:/^(English|英语)$/i,dark:/^(Dark|深色|深色模式)$/i,system:/^(System|跟随系统|系统|Follow system)$/i}
+      const values: Record<string, RegExp> = {'zh-CN':/^(简体中文|中文|Chinese|中文（简体）|Chinese \(Simplified\))$/i,en:/^(English|英语)$/i,light:/^(Light|浅色|浅色模式)$/i,dark:/^(Dark|深色|深色模式)$/i,system:/^(System|跟随系统|系统|Follow system)$/i}
       const regex = values[value], current = key === 'language' ? language : theme
       if (regex && current && regex.test(current)) finish()
       // After one option click, only observe the visible value or fixed timeout.
-      else if (key === 'theme' && phase !== 'verify') {const option = regex && exact(dialog, regex);if (option) {root.setAttribute(attr('phase'), 'verify');option.click()}}
+      else if (key === 'theme' && phase !== 'verify') {const option = themeButtons.find(el => regex?.test(el.textContent?.trim() ?? ''));if (option) {root.setAttribute(attr('phase'), 'verify');option.click()}}
       else if (regex && control && phase !== 'verify') {
         // Preserve the previously verified global public-option lookup: the site's
         // language options can be portalled outside its settings modal.
@@ -120,6 +135,6 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
       }
     }
   }
-  if (root.hasAttribute('data-dsh-chat-dark-complete') && !root.hasAttribute(attr('restore-language'))) root.setAttribute(attr('restored'),'')
+  if (root.getAttribute(complete) === desiredTheme && !root.hasAttribute(attr('restore-language'))) root.setAttribute(attr('restored'),'')
   return {language:root.getAttribute('data-dsh-chat-language'),theme:root.getAttribute('data-dsh-chat-theme'),error:root.getAttribute(attr('error')),pending:root.hasAttribute(attr('request')),restored:root.hasAttribute(attr('restored'))}
 }

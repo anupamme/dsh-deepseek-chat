@@ -1,3 +1,23 @@
+## CHAT 明暗跟随 HARNESS（2026-10-17，浅深色本机验收通过）
+
+- 用户确认0.2.2按钮显示/切换正常，并要求CHAT对话页面随HARNESS同步明暗。这替代历史固定暗色要求，不增加单独主题设置。保留上一轮未提交rc.2适配；基线9a74590，本轮0.2.2→0.2.3只增一次。
+- 原因：website-settings强制theme:dark，暗色完成标记还参与首屏呈现；web-surface未接入宿主已解析color-scheme。
+- 官方依据：当前layout ThemePresenter将snapshot.active.colorScheme投影为html.style.colorScheme、body[data-ds-dark-theme]，system上游已解析。本轮只读取这些公开DOM状态，沿用自有guest已有官网公开主题UI写入/读回，不改网站storage/私有状态/API，不重载/读写草稿或发送。
+- 实现：限定观察html.style.colorScheme/body[data-ds-dark-theme]，通过现有队列把当前light/dark传到自有guest；复用公开Theme行内按钮并读回完成标记。取消旧主题目标的阶段/截止时间，语言/退出优先序保持，有界12秒超时；恢复原网页和卸载时清理。首次准备门禁跟随目标完成，已呈现页面不整页隐藏，不增独立主题配置。
+- 构建/分发：build、check-distribution、npm pack --ignore-scripts、diff --check通过；22编译文件匹配输入。0.2.2→0.2.3已增一次。包artifacts/dsh-deepseek-chat-0.2.3-122f48f7ef4a.tgz，SHA256 122f48f7ef4a3eed37d5850277b2e83019bfe46a6079d070474e54ec437d281c。
+- 正常退出DSH、官方CLI安装exit0，已安装0.2.3、30/30文件逐字节一致，正常重开。用户明确确认“浅色、深色均同步正常”，本机浅深色同步验收通过。
+- 限制：未新增/运行测试，未切换系统外观、读写正文/草稿、操作登录/发送；未登录/布局未知时缺少公开设置入口，维持原官网/fallback。快速切换、系统变化、语言往返、重启与Windows仍待对应实机验收。当前规则/README中英已同步，未提交推送或发布npm；上轮rc.2适配保留。
+
+## DSH 0.2.1-rc.2 适配（2026-10-17，已构建安装）
+
+- 用户要求适配再次更新的DSH；基线main/origin/main 9a74590，fetch一致、开工干净。本轮插件0.2.1→0.2.2，只增一次；负责人Codex/macOS。
+- 本机DSH0.2.1-rc.2（侧栏构建332895e），Cordis4.0.5/Schemastery3.18.5、Node24.21.0/pnpm11.28.5。对照rc.1官方安装产物：layout/settings/renderer/sidebar-browser的Client及credentials Host字节相同；sidebar Client仅localBuildVersion文字变化；app-boot兼容规则仍engines.dsh优先。现有manifest没包含rc.2，导入前会被拒绝。
+- 范围：添加rc.2到engines/DSH peers，SDK升级rc.2，保留以前明确版本及全部业务逻辑；同步文档/lib，构建、打包并安装到本机。无可用live Cordis Inspect，仅公开安装产物/SDK静态核查；不新增或运行测试，不发布npm/Git。
+- 已完成：engines.dsh和三个DSH peer追加0.2.1-rc.2，全部DSH开发SDK升级rc.2，保留Cordis/Schemastery范围。plugin版本已0.2.1→0.2.2；README中英、依赖锁和lib同步。src未修改，Host/Client JS与上一版逐字节相同。
+- node scripts/build.mjs、node scripts/check-distribution.mjs、npm pack --ignore-scripts及git diff --check通过，22编译文件匹配源输入。包artifacts/dsh-deepseek-chat-0.2.2-a1b57aa7958a.tgz，SHA256 a1b57aa7958a3677a356a6666b5b93d9b6ddc947d2cbc0a080dc18466e7b724b；安装包不提交。
+- 正常退出DSH，官方CLI plugin --profile desktop add本地包exit0（pnpm11.28.5），已安装0.2.2，30/30文件逐字节一致；正常重开供用户验收，已询问切换按钮显示/切换，用户已确认“切换按钮显示和切换正常”，本机模式切换验收通过。安装仍有原有MCP旧版本兼容告警，非本插件，未修改或豁免。
+- 未新增/运行测试、未做Windows或真实官网登录/发送操作；未提交推送Git、未发布npm。下一步记录用户本机确认，然后由用户提交全部适配文件（含lib），其他设备才可通过GitHub获得更新。
+
 ## GitHub 安装排查（2026-10-17，仓库安装已恢复）
 
 - 用户已提交/推送05dc308，HEAD/origin/main/公开ls-remote一致；开工干净，远端当前0.2.1，lib预编译文件已提交。无代码缺失或陈旧产物证据。

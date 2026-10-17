@@ -219,3 +219,11 @@ Mac真实DSH的AX/截图确认顶部按钮可达、鼠标及Shift-Tab/Enter可�
 ## 2026-10-17 / DSH 0.2.1-rc.1 本机契约依据
 
 Info.plist与app.asar内dsh/package.json均为0.2.1-rc.1，runtime/versions.json为Node24.21.0/pnpm11.28.5；Cordis4.0.5、Schemastery3.18.5。官方安装产物dsh-app-boot/lib/index.js的evaluatePluginCompatibility/unmetRequirements明确engines.dsh优先，否则逐个DSH peer检查（includePrerelease=true），不是插件网页加载失败。新版公开SDK所有直接DSH devDependencies已升级并生产编译。sidebar品牌平台分支、slots注册、layout、configForms与browser bridge按发布包公开接口核查；不能把类型编译等同于真实网页操作通过。官方开发入口仍见本文Package and install a plugin链接；本轮无可用live Cordis Inspect。
+
+## 2026-10-17 / DSH 0.2.1-rc.2 官方安装产物
+
+本机Info.plist与app.asar/dsh/package.json为0.2.1-rc.2，sidebar构建332895e；Cordis4.0.5/Schemastery3.18.5，Node24.21.0/pnpm11.28.5。与之前0.2.1-rc.1安装产物逐文件对比：ui-layout、ui-settings、ui-renderer、ui-sidebar-browser的lib/client.js相同；credentials/lib/index.js相同；sidebar/lib/client.js只localBuildVersion由rc.1-ed75efe改为rc.2-332895e。app-boot的engines.dsh优先和includePrerelease规则仍在。本次SDK0.2.1-rc.2生产编译通过；上述是限定接口证据，不代表所有跨平台/网页功能已实测。
+
+## 2026-10-17 / 宿主主题投影契约
+
+官方DSH0.2.1-rc.2的ui-layout/lib/client.js ThemePresenter.apply(snapshot)将snapshot.active.colorScheme写入document.documentElement.style.colorScheme，并按dark切换body的data-ds-dark-theme属性；ui-theme ThemeRuntime.buildSnapshot把system偏好和prefers-color-scheme解析为active.colorScheme，再发theme/change。插件只读取这些限定公开DOM字段，不借用主题内部store，不调用猜测服务。官网侧继续现有公开Settings/General/Theme行按钮及可见选中状态，读取结果后确认目标主题；没有新增官网网络API或storage访问。

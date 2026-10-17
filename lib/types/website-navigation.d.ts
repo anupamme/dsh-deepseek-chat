@@ -62,6 +62,6 @@ export type WebsiteCommand = {
 export declare const emptyNavigation: () => WebsiteNavigation;
 /** This function is serialized into our isolated guest. Keep all helpers inside it. */
 export declare function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'origin' | 'pathname'>, command: WebsiteCommand): WebsiteNavigation;
-export declare function websiteCommandScript(command: WebsiteCommand, contentFontSize?: number): string;
+export declare function websiteCommandScript(command: WebsiteCommand, contentFontSize?: number, colorScheme?: 'light' | 'dark'): string;
 /** Treat the guest response as untrusted; keep only bounded, origin-scoped list data. */
 export declare function parseWebsiteNavigation(value: unknown): WebsiteNavigation;

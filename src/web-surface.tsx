@@ -176,11 +176,16 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         })])
       } finally { clearTimeout(timer) }
     }
+    // ThemePresenter writes the resolved scheme, including System, to this public DOM field.
+    const hostTheme = (): 'light' | 'dark' => {
+      const scheme = document.documentElement.style.colorScheme
+      return scheme === 'dark' || (scheme !== 'light' && document.body.hasAttribute('data-ds-dark-theme')) ? 'dark' : 'light'
+    }
     const execute = (command: WebsiteCommand) => {
       // Read only the public host font token; keep live changes in DSH settings in sync.
       const value = getComputedStyle(document.body).getPropertyValue('--dsh-content-font-size')
       const size = Number.parseFloat(value)
-      return executeScript(websiteCommandScript(command, Number.isFinite(size) ? size : 14))
+      return executeScript(websiteCommandScript(command, Number.isFinite(size) ? size : 14, hostTheme()))
     }
     const active = () => {
       const snapshot=bridge.getSnapshot()
@@ -290,6 +295,17 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
       lastPolled=Date.now();reading = true
       queued = queued.then(() => adapt(snapshotCommand())).finally(() => { reading = false })
     }
+    let lastHostTheme = hostTheme()
+    const themeObserver = new MutationObserver(() => {
+      const next = hostTheme()
+      if (next === lastHostTheme) return
+      lastHostTheme = next
+      fastPollingUntil = Date.now() + 8000
+      if (active() && approvedOrigin()) syncNavigation()
+    })
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] })
+    themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-ds-dark-theme'] })
+    events.signal.addEventListener('abort', () => themeObserver.disconnect(), { once: true })
     const stopCommands = bridge.bindWebsiteNavigation(generation, command => {
       if(command.type!=='snapshot') fastPollingUntil=Date.now()+8000
       if (command.type==='refresh') {

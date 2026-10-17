@@ -666,3 +666,17 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 ## 2026-10-17 / GitHub 安装排查
 
 用户推送05dc308后Mac UI长期安装中，Windows提供git不是内部/外部命令的Git解析错误。确认远端0.2.1与本地一致，lib齐全。Windows根因为Git命令对安装进程不可用，通用SSH提示无关；未远程修改Windows配置。Mac完整.git地址独立空store安装23.8秒、不带.git地址复用store安装8.4秒均成功，不能归因于URL后缀或包损坏；官方CLI在真实desktop安装13.7秒成功，27个分发文件与仓库一致，持久来源GitHub，正常重启。原UI未记录具体错误，不把临时卡顿定性为网络或宿主bug。补中英README的Git/PATH前提；仅文档、版本仍0.2.1，未运行仓库测试、发布或Git提交推送。
+
+## 2026-10-17 / rc.2兼容 / 插件0.2.2
+
+基线9a74590/fetch一致、开工干净；用户更新到DSH0.2.1-rc.2，旧显式范围不包含它。对照rc.1/rc.2安装产物，ui-layout/settings/renderer/sidebar-browser Client和credentials Host相同，sidebar仅构建版本字符串差异；保留业务实现，只追加明确兼容版本并更新SDK。0.2.1→0.2.2本轮只增一次，Host/Client构建后字节与之前相同。build/distribution/diff检查通过，22编译文件匹配源输入；包a1b57aa7958a，官方CLI安装成功，30/30文件一致，正常重开后已向用户询问模式切换情况，尚未确认。原有MCP兼容告警不在本轮修改范围。未新增/运行测试、发布npm或Git提交推送；其他设备须等用户提交包含lib的适配成果。详见handoff。
+
+## 2026-10-17 / CHAT跟随宿主明暗 / 0.2.3
+
+用户确认0.2.2切换正常后要求CHAT页面随HARNESS明暗。根因是旧W017固定暗色策略和单一dark-complete门禁，不是宿主主题失效。核对官方ThemePresenter发布的root.style.colorScheme及body[data-ds-dark-theme]，只观察对应属性/比较light-dark枚举，通过现有串行guest命令和快轮询同步；system由宿主先解析。官网Settings adapter泛化目标主题、目标化完成标记与过期阶段取消；只选Theme行对应按钮、读回结果，中文设置标题/浅深色文案兼容，语言及退出沿用原队列；旧marker迁移与restore/observer卸载清理完成。不改网站私有状态/API、storage或草稿，不重载guest。AGENTS当前固定暗色规则由最新要求替代，旧历史保留。
+
+保留上一轮rc.2未提交成果；本轮0.2.2→0.2.3只增一次。生产构建/22文件分发检查/pack/diff通过；122f48f7ef4a包官方CLI安装成功，30/30文件一致，正常重开，已向用户询问实际浅/深色效果，暂待确认。没有新增/运行测试或实际主题交互验收，也未操作登录/发送、系统外观或Windows。登录页无公开Theme入口和未知结构沿用官网fallback，不能称作全页面强制换肤。未发布npm、提交推送。
+
+### 0.2.3 本机浅深色验收补充（2026-10-17）
+
+用户在已安装0.2.3的当前DSH中手动切换后明确回复“浅色、深色均同步正常”。据此确认本机这两项实际页面效果；不扩大为系统自动变化、快速往返、重启或Windows均通过。仅补文档，版本仍0.2.3，不重构建/安装，不发布npm或Git提交推送。
