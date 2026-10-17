@@ -176,7 +176,12 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         })])
       } finally { clearTimeout(timer) }
     }
-    const execute = (command: WebsiteCommand) => executeScript(websiteCommandScript(command))
+    const execute = (command: WebsiteCommand) => {
+      // Read only the public host font token; keep live changes in DSH settings in sync.
+      const value = getComputedStyle(document.body).getPropertyValue('--dsh-content-font-size')
+      const size = Number.parseFloat(value)
+      return executeScript(websiteCommandScript(command, Number.isFinite(size) ? size : 14))
+    }
     const active = () => {
       const snapshot=bridge.getSnapshot()
       return !events.signal.aborted && snapshot.authorizationGeneration===generation && snapshot.authorizationStatus==='authorized'
