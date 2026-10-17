@@ -47,83 +47,51 @@ Open the native DSH **Settings → CHAT Settings** page to check website account
 
 ## Installation
 
-**To obtain the latest code already pushed to the repository, paste the repository URL into the DSH plugin installer.**
+### Install by package name (recommended)
 
-Installing by the npm name `dsh-deepseek-chat` can be affected by an existing lockfile, package metadata caching or pnpm’s minimum release age policy. A newly published version may not be selected immediately. For example, `minimumReleaseAge: 1440` means that a version must be at least **24 hours old** to satisfy that policy; it is not a fixed 24-hour cache. The actual behavior depends on the pnpm version and configuration used by DSH. See the [pnpm documentation](https://github.com/pnpm/pnpm.io/blob/main/versioned_docs/version-10.x/settings.md#minimumreleaseage).
-
-A repository installation uses **source and compiled files already pushed to GitHub**. It does not include unpublished local changes. Existing installations still require a manual update and a full DSH restart.
-
-### Install from the repository
-
-Paste this URL into the DSH plugin installation field:
-
-```text
-https://github.com/xingxingbk-git/dsh-deepseek-chat
-```
-
-The repository includes source and prebuilt `lib` files. Installation loads the prebuilt distribution; no build scripts or changes to `allowBuilds` are required.
-
-Alternatively, use the CLI:
-
-```bash
-dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-chat
-```
-
-The old npm name `dsh-chat` belongs to another project. Use `dsh-deepseek-chat` or the full repository URL.
-
-### GitHub installation prerequisite
-
-Repository installation requires Git on the system and on the `PATH` available to DSH. On Windows, if `ERR_PNPM_GIT_RESOLVE_FAILED` says the `git` command is not recognized, install [Git for Windows](https://git-scm.com/install/windows) with command-line PATH support. Confirm `git --version` in a new terminal, fully quit and reopen DSH, then install the repository URL again. This fails before fetching the plugin; the generic SSH suggestion does not fix a missing Git command.
-
-Downloads can temporarily show no new progress. If installation does not finish, inspect the installation log to distinguish Git, network download and version compatibility errors.
-
-### Install by package name
-
-Enter this in the DSH plugin installation field:
-
-```text
-dsh-deepseek-chat
-```
-
-Or use:
-
-```bash
-dsh plugin --profile desktop add dsh-deepseek-chat
-```
-
-DSH installs the npm package. You do not need to run a separate `npx` command.
-
-### Update an existing installation
-
-An existing installation may retain its locked version. To request the current version explicitly, enter:
+Enter the package name and version below in the DSH plugin installer to install the current latest release:
 
 ```text
 dsh-deepseek-chat@0.2.3
 ```
 
-An exact version identifies the target but may still be subject to the release age policy. The equivalent CLI command is:
+Or use the CLI:
 
 ```bash
 dsh plugin --profile desktop add dsh-deepseek-chat@0.2.3
 ```
 
-**Fully quit and reopen DSH**, then check that the plugin manager shows **0.2.3**. In CHAT, the Chats header should have a refresh icon, and the signed-out page should have a blue sign-in button.
+Use the same method for a first installation or an existing plugin. If DSH’s release age policy temporarily blocks a new version, retry later or use the GitHub option below.
 
-Replace `desktop` when using another profile. Update through the official DSH plugin manager or CLI so the dependency record and lockfile are updated together. Directly replacing files in the installation directory does not guarantee that the next launch will load the new version.
+### Install from GitHub (alternative)
 
-### Install a local package
+Paste this URL into the DSH plugin installer:
 
-Install a built `.tgz` with the official DSH plugin manager, or run:
+```text
+https://github.com/xingxingbk-git/dsh-deepseek-chat
+```
+
+Or use the CLI:
+
+```bash
+dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-chat
+```
+
+This installs the version already pushed to the repository, which includes prebuilt files. No manual build is needed. Git must be installed and `git --version` must work. On Windows, install [Git for Windows](https://git-scm.com/install/windows), then reopen DSH.
+
+### Install a local package (alternative)
+
+Install a `.tgz` package using the DSH plugin manager, or run:
 
 ```bash
 dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.3.tgz
 ```
 
-Replace the path with your actual package file and `desktop` with your profile if necessary. **Fully quit and reopen DSH after installation or an update.**
+Replace the path with your actual package location.
 
-If you previously installed this repository’s `dsh-chat` plugin, disable and remove it before installing `dsh-deepseek-chat` so two versions do not control the interface at once. The newer plugin can attempt to migrate its own earlier saved website grant; if the old record cannot be located, sign in normally again.
+**Fully quit and reopen DSH after installation, then confirm that the plugin manager shows version 0.2.3.** Replace `desktop` with the appropriate name if you use another profile.
 
-See the [official DSH plugin installation documentation](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish).
+See the [official DSH plugin installation documentation](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish) for more information.
 
 ## Getting started
 

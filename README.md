@@ -47,13 +47,23 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 
 ## 安装
 
-**希望尽快获取仓库中最新版本时，建议复制下方仓库地址，在 DSH 插件安装输入框中安装。**
+### 按名称安装（推荐）
 
-按 npm 名称 `dsh-deepseek-chat` 安装，可能受到已锁定版本、包元数据缓存或 pnpm 的最低发布时间策略影响，刚发布的新版本不一定立即被选中。例如，`minimumReleaseAge: 1440` 表示版本发布满 **24 小时**后才符合该策略；这不是固定的“24 小时缓存”，具体取决于 DSH 使用的 pnpm 版本和配置。参见 [pnpm 官方说明](https://github.com/pnpm/pnpm.io/blob/main/versioned_docs/version-10.x/settings.md#minimumreleaseage)。
+在 DSH 的插件安装输入框中输入下方名称和版本号，安装当前最新发布版本：
 
-仓库地址安装获取的是**已推送到 GitHub 的源码及编译产物**；作者尚未推送的本地修改不会包含在内。已有安装也需要手动更新，并完整退出后重新打开 DSH。
+```text
+dsh-deepseek-chat@0.2.3
+```
 
-### 使用仓库地址安装（希望尽快获取更新时推荐）
+也可以使用命令行：
+
+```bash
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.3
+```
+
+首次安装和更新已有插件均使用这一方式。若新版本被 DSH 的发布时间策略暂时拦截，可稍后重试，或使用下方 GitHub 安装方式。
+
+### GitHub 地址安装（备选）
 
 在 DSH 的插件安装输入框中粘贴：
 
@@ -61,71 +71,27 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 https://github.com/xingxingbk-git/dsh-deepseek-chat
 ```
 
-仓库同时提供源码和编译好的 `lib`，安装直接加载编译产物，无需运行构建脚本或修改 `allowBuilds`。
-
-使用命令行也可以安装：
+也可以使用命令行：
 
 ```bash
 dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-chat
 ```
 
-旧名称 `dsh-chat` 在 npm 上属于其他项目，请使用新的插件名称或完整仓库地址。
+此方式安装已推送到仓库的版本，仓库包含构建文件，无需手动构建。需要系统已安装 Git，且 `git --version` 能正常运行；Windows 可先安装 [Git for Windows](https://git-scm.com/install/windows)，再重开 DSH。
 
+### 本地安装包（备选）
 
-### GitHub 安装前提
-
-通过仓库地址安装需要系统已安装 Git，且 DSH 能从 `PATH` 找到它。Windows 若提示 `ERR_PNPM_GIT_RESOLVE_FAILED`，并说明 `git` 不是内部或外部命令，请先安装 [Git for Windows](https://git-scm.com/install/windows)，确保加入命令行 PATH；在新开的终端执行 `git --version` 成功后，完整退出并重新打开 DSH，再安装仓库地址。这类错误发生在获取仓库前，不是插件版本不兼容；pnpm 附带的通用 SSH 建议不适用于 Git 命令不存在的情况。
-
-安装下载期间可能暂时没有进度更新；长时间不结束时，请查看 DSH 提供的安装日志，区分 Git、网络下载和版本兼容错误。
-
-### 按名称安装
-
-在 DSH 的插件安装输入框中输入：
-
-```text
-dsh-deepseek-chat
-```
-
-也可以使用命令行：
-
-```bash
-dsh plugin --profile desktop add dsh-deepseek-chat
-```
-
-这是 npm 上的插件包，由 DSH 安装；无需运行独立的 npx 命令。
-
-### 升级已有安装
-
-已有安装可能继续使用之前锁定的版本。升级到当前版本时，在 DSH 的插件安装输入框中明确输入：
-
-```text
-dsh-deepseek-chat@0.2.3
-```
-
-指定版本可以明确安装目标，但仍可能受到发布时间策略限制。使用命令行指定要升级的版本：
-
-```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.2.3
-```
-
-**完整退出并重新打开 DSH**，在插件管理页检查已安装版本为 **0.2.3**。进入 CHAT 后，“对话”标题右侧应显示刷新图标，未登录时登录按钮应有蓝色背景。
-
-使用其他 profile 时替换 `desktop`。通过 DSH 官方插件管理器或 CLI 更新，让依赖记录和锁文件一起更新；直接覆盖安装目录中的文件不能保证下次启动仍使用新版。
-
-
-### 本地安装包
-
-将构建生成的 `.tgz` 文件交给 DSH 官方插件管理器安装，或使用 CLI：
+将 `.tgz` 安装包交给 DSH 插件管理器安装，或使用命令行：
 
 ```bash
 dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.3.tgz
 ```
 
-将路径替换成你的实际安装包；使用其他 profile 时替换 `desktop`。**安装或更新后，完整退出并重新打开 DSH**，让新插件生效。
+将路径替换为实际安装包位置。
 
-如果之前从本仓库安装过 `dsh-chat`，先禁用并移除旧插件，再安装 `dsh-deepseek-chat`，避免两个版本同时接管界面。新版可尝试迁移本插件原有登录记忆；无法定位旧记录时，需要正常登录一次。
+**安装完成后，完整退出并重新打开 DSH，在插件管理页确认版本为 0.2.3。** 使用其他 profile 时，将命令中的 `desktop` 替换为对应名称。
 
-安装规则参见 [DSH 官方插件安装文档](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)。
+更多说明参见 [DSH 官方插件安装文档](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)。
 
 ## 开始使用
 
