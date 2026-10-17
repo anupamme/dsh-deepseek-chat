@@ -1,6 +1,12 @@
-# DeepSeek Chat
+![DeepSeek Chat：CHAT 与 HARNESS 一键切换](docs/images/readme-cover.png)
 
-在 **DeepSeek Harness（DSH）桌面版**里，用 `CHAT | HARNESS` 一键切换网页聊天与原工作区。
+<h1 align="center">DeepSeek Chat</h1>
+
+<p align="center"><strong>在 DeepSeek Harness 中，一键切换网页聊天与原工作区。</strong></p>
+
+<p align="center"><strong>简体中文</strong> · <a href="README.en.md">English</a></p>
+
+---
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
@@ -17,6 +23,7 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 - 点击历史对话继续聊天；顶部“新会话”用于新建官网对话。
 - 点击“对话”右侧的刷新图标，重新加载官网当前页面并更新列表。在其他网页端新建对话后，可用它同步，无需退出 DSH。
 - 搜索筛选已加载的对话标题，聊天正文和输入框由官网提供。
+- 正文、输入文字和占位提示跟随 HARNESS 正文字号，默认 14px；在 DSH 中调整正文字号时，CHAT 同步更新。
 - 对话标题位于左上角，点击标题使用官网原有的名称编辑功能。
 
 ### 随时切回 HARNESS
