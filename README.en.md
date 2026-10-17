@@ -10,7 +10,7 @@
 
 **CHAT** embeds the real [DeepSeek Chat website](https://chat.deepseek.com/), including its chat interface and account history. **HARNESS** returns you to the original DSH workspace.
 
-Current version: **0.2.3** · Built for **DSH 0.2.0-rc.2 / 0.2.1-rc.1 / 0.2.1-rc.2 Desktop** · Simplified Chinese is the default language; English and Follow system are also available.
+Current version: **0.2.3** · Built for **DSH Desktop** · Simplified Chinese is the default language; English and Follow system are also available.
 
 ## Preview
 
@@ -63,7 +63,7 @@ dsh plugin --profile desktop add dsh-deepseek-chat@0.2.3
 
 Use the same method for a first installation or an existing plugin. If DSH’s release age policy temporarily blocks a new version, retry later or use the GitHub option below.
 
-### Install from GitHub (alternative)
+### Install from GitHub
 
 Paste this URL into the DSH plugin installer:
 
@@ -79,7 +79,7 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 
 This installs the version already pushed to the repository, which includes prebuilt files. No manual build is needed. Git must be installed and `git --version` must work. On Windows, install [Git for Windows](https://git-scm.com/install/windows), then reopen DSH.
 
-### Install a local package (alternative)
+### Install a local package
 
 Install a `.tgz` package using the DSH plugin manager, or run:
 
@@ -107,7 +107,7 @@ Refreshing the list reloads the current website page and retains the conversatio
 
 ## Limitations
 
-- **Compatibility:** currently adapted for DSH 0.2.0-rc.2 / 0.2.1-rc.1 / 0.2.1-rc.2 Desktop. Other versions and platforms require further validation. CHAT is not supported in DSH Web.
+- **Compatibility:** designed for DSH Desktop. Refer to the compatibility check in the DSH plugin manager for your version. CHAT is not supported in DSH Web.
 - **Website navigation:** the sidebar mirrors navigation already loaded by the website. It depends on the website’s page structure and is not an official history API. When the structure cannot be recognized, the native website navigation is restored while detection retries; the sidebar and CHAT Settings synchronize after recovery.
 - **New Chat shortcuts:** the top New Chat button supports mouse and Enter activation. Original Harness shortcuts and menu commands still perform Harness actions and may create a Harness session and leave CHAT.
 - **Remembered sign-in:** the website session is separate from Safari/Chrome and from the DSH platform account. Expiry, revocation or website changes may require signing in again. Long-term behavior, full uninstall and broader platform coverage still require further validation.

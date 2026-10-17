@@ -10,7 +10,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.2.3** · 适配 **DSH 0.2.0-rc.2 / 0.2.1-rc.1 / 0.2.1-rc.2 桌面版** · 默认语言为简体中文。
+当前版本 **0.2.3** · 适配 **DSH 桌面版** · 默认语言为简体中文。
 
 ## 功能预览
 
@@ -63,7 +63,7 @@ dsh plugin --profile desktop add dsh-deepseek-chat@0.2.3
 
 首次安装和更新已有插件均使用这一方式。若新版本被 DSH 的发布时间策略暂时拦截，可稍后重试，或使用下方 GitHub 安装方式。
 
-### GitHub 地址安装（备选）
+### GitHub 地址安装
 
 在 DSH 的插件安装输入框中粘贴：
 
@@ -79,7 +79,7 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 
 此方式安装已推送到仓库的版本，仓库包含构建文件，无需手动构建。需要系统已安装 Git，且 `git --version` 能正常运行；Windows 可先安装 [Git for Windows](https://git-scm.com/install/windows)，再重开 DSH。
 
-### 本地安装包（备选）
+### 本地安装包
 
 将 `.tgz` 安装包交给 DSH 插件管理器安装，或使用命令行：
 
@@ -107,7 +107,7 @@ dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.3.tgz
 
 ## 使用限制
 
-- **兼容范围：**已针对 DSH 0.2.0-rc.2 / 0.2.1-rc.1 / 0.2.1-rc.2 桌面版适配，其他版本和平台待验证；DSH Web版暂不支持本插件的 CHAT 模式。
+- **兼容范围：**面向 DSH 桌面版，具体版本兼容性以 DSH 插件管理器的检查结果为准；暂不支持 DSH Web版的 CHAT 模式。
 - **官网导航：**左侧列表依赖官网页面结构，只镜像已加载的导航，不是官方历史 API。结构不匹配时恢复官网原导航并自动重新识别；恢复后同步左侧列表和 CHAT设置。
 - **新建快捷键：**本版适配顶部“新会话”的鼠标/Enter 点击；原 Harness 快捷键和菜单仍执行 Harness 行为，可能创建 Harness 会话并退出 CHAT。
 - **登录记忆：**不共享 Safari/Chrome 登录，独立于 DSH 平台账号。授权过期、撤销或官网实现变化时需要重新登录；新版独立登录、退出重登、完整卸载和其他平台仍需扩大实机验证。
