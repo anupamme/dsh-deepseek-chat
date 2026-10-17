@@ -1,3 +1,7 @@
+## README 移除已解决的分享复制说明（2026-10-18）
+
+用户确认复制已修复，要求删除 README 末尾手动复制说明；已同步删除中英文对应整个段落，仅文档修改，不递增版本、不重新构建或发布 npm。
+
 ## 0.2.4 npm 已接受发布，公开索引待同步（2026-10-18）
 
 用户完成登录和当次2FA；npm publish exit0、返回 + dsh-deepseek-chat@0.2.4，提示后台处理中。首轮匿名整包元数据 latest仍0.2.3且无0.2.4，暂不能声称公开下载核验完成。发布包SHA256 1ad2735fb84a616a893bdc68505fdcdfad460ac6acf382d6bd994a1428bfbaaf，保存在 artifacts/dsh-deepseek-chat-0.2.4-1ad2735fb84a.tgz。本机用户已确认分享复制恢复；Windows未验收。未Git提交或推送。

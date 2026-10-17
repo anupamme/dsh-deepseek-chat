@@ -142,7 +142,3 @@ pnpm package:plugin
 ```bash
 dsh plugin --profile desktop remove dsh-deepseek-chat
 ```
-
-## 分享链接复制
-
-CHAT 模式可以正常创建分享链接，但点击“创建并复制”或“复制”可能提示复制失败。DSH 桌面版内嵌浏览器会拒绝网页的剪贴板权限请求，目前没有提供开启此权限的配置项。0.2.4 已为 DeepSeek 分享链接增加传统复制后备方式，本机 macOS DSH 中已由用户确认复制恢复正常。如果仍然失败，请选中完整链接，在 macOS 按 `⌘C`、Windows 按 `Ctrl+C` 手动复制。

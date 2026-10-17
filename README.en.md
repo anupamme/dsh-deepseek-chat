@@ -142,9 +142,3 @@ To uninstall:
 ```bash
 dsh plugin --profile desktop remove dsh-deepseek-chat
 ```
-
-## Copying share links
-
-CHAT can create share links, but **Create and copy** or **Copy** may report a copy failure. DSH Desktop’s embedded browser denies webpage clipboard permission requests and currently exposes no setting to enable them. Select the complete link and press `⌘C` on macOS or `Ctrl+C` on Windows to copy it manually.
-
-Version 0.2.4 adds a legacy copy fallback specifically for DeepSeek share URLs. The user confirmed copying works in the local macOS DSH client. Manual selection and ⌘C / Ctrl+C remain available if copying fails.
