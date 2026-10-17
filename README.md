@@ -71,6 +71,12 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 旧名称 `dsh-chat` 在 npm 上属于其他项目，请使用新的插件名称或完整仓库地址。
 
 
+### GitHub 安装前提
+
+通过仓库地址安装需要系统已安装 Git，且 DSH 能从 `PATH` 找到它。Windows 若提示 `ERR_PNPM_GIT_RESOLVE_FAILED`，并说明 `git` 不是内部或外部命令，请先安装 [Git for Windows](https://git-scm.com/install/windows)，确保加入命令行 PATH；在新开的终端执行 `git --version` 成功后，完整退出并重新打开 DSH，再安装仓库地址。这类错误发生在获取仓库前，不是插件版本不兼容；pnpm 附带的通用 SSH 建议不适用于 Git 命令不存在的情况。
+
+安装下载期间可能暂时没有进度更新；长时间不结束时，请查看 DSH 提供的安装日志，区分 Git、网络下载和版本兼容错误。
+
 ### 按名称安装
 
 在 DSH 的插件安装输入框中输入：

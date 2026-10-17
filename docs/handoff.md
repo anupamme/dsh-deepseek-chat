@@ -1,3 +1,11 @@
+## GitHub 安装排查（2026-10-17，仓库安装已恢复）
+
+- 用户已提交/推送05dc308，HEAD/origin/main/公开ls-remote一致；开工干净，远端当前0.2.1，lib预编译文件已提交。无代码缺失或陈旧产物证据。
+- Windows用户原始错误：ERR_PNPM_GIT_RESOLVE_FAILED、git ls-remote失败、git不是内部/外部命令。含义是安装进程找不到Git（未安装或PATH不可见）；没有到插件加载/兼容门禁。给出官方Git for Windows、git --version及完整重启DSH步骤，不修改SSH或系统代理。
+- Mac原UI日志只有resolved1，无最终错误，具体挂起原因未查明。DSH自带pnpm11.28.5、独立临时consumer/空store以公开完整.git地址安装0.2.1成功，23.8秒；不带.git地址用相同store另一个consumer也成功，8.4秒。不是“加.git才能安装”的问题；未运行仓库测试。
+- 随后官方CLI plugin --profile desktop add公开.git地址13.7秒成功；实际0.2.1，27个lib/patch/icon/locale文件与仓库逐字节一致，持久依赖github:xingxingbk-git/dsh-deepseek-chat。正常退出重开DSH清除旧UI状态。其它旧MCP插件兼容告警保留，不是本插件失败；未改其它插件。
+- 本轮只补README中英Git安装前提和排查说明，不改插件版本（仍0.2.1）、业务源码或编译产物；未发布npm或提交推送。Windows仍需用户安装/修正Git PATH后实机重试，Mac重新打开后的体验待用户确认。
+
 ## 插件版本线调整（2026-10-17）
 
 - 用户指定从0.2.1起使用0.2系列，后续修复递增第三段。当前0.1.25候选改为0.2.1；不是再新增一轮业务修复，下一次修复为0.2.2。

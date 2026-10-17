@@ -70,6 +70,12 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 
 The old npm name `dsh-chat` belongs to another project. Use `dsh-deepseek-chat` or the full repository URL.
 
+### GitHub installation prerequisite
+
+Repository installation requires Git on the system and on the `PATH` available to DSH. On Windows, if `ERR_PNPM_GIT_RESOLVE_FAILED` says the `git` command is not recognized, install [Git for Windows](https://git-scm.com/install/windows) with command-line PATH support. Confirm `git --version` in a new terminal, fully quit and reopen DSH, then install the repository URL again. This fails before fetching the plugin; the generic SSH suggestion does not fix a missing Git command.
+
+Downloads can temporarily show no new progress. If installation does not finish, inspect the installation log to distinguish Git, network download and version compatibility errors.
+
 ### Install by package name
 
 Enter this in the DSH plugin installation field:
