@@ -10,7 +10,7 @@
 
 **CHAT** embeds the real [DeepSeek Chat website](https://chat.deepseek.com/), including its chat interface and account history. **HARNESS** returns you to the original DSH workspace.
 
-Current version: **0.1.24** · Built for **DSH 0.2.0-rc.2 Desktop** · Simplified Chinese is the default language; English and Follow system are also available.
+Current version: **0.2.1** · Built for **DSH 0.2.0-rc.2 / 0.2.1-rc.1 Desktop** · Simplified Chinese is the default language; English and Follow system are also available.
 
 ## Preview
 
@@ -91,16 +91,16 @@ DSH installs the npm package. You do not need to run a separate `npx` command.
 An existing installation may retain its locked version. To request the current version explicitly, enter:
 
 ```text
-dsh-deepseek-chat@0.1.24
+dsh-deepseek-chat@0.2.1
 ```
 
 An exact version identifies the target but may still be subject to the release age policy. The equivalent CLI command is:
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.1.24
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.1
 ```
 
-**Fully quit and reopen DSH**, then check that the plugin manager shows **0.1.24**. In CHAT, the Chats header should have a refresh icon, and the signed-out page should have a blue sign-in button.
+**Fully quit and reopen DSH**, then check that the plugin manager shows **0.2.1**. In CHAT, the Chats header should have a refresh icon, and the signed-out page should have a blue sign-in button.
 
 Replace `desktop` when using another profile. Update through the official DSH plugin manager or CLI so the dependency record and lockfile are updated together. Directly replacing files in the installation directory does not guarantee that the next launch will load the new version.
 
@@ -109,7 +109,7 @@ Replace `desktop` when using another profile. Update through the official DSH pl
 Install a built `.tgz` with the official DSH plugin manager, or run:
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.1.24.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.1.tgz
 ```
 
 Replace the path with your actual package file and `desktop` with your profile if necessary. **Fully quit and reopen DSH after installation or an update.**
@@ -132,7 +132,7 @@ Refreshing the list reloads the current website page and retains the conversatio
 
 ## Limitations
 
-- **Compatibility:** currently adapted for DSH 0.2.0-rc.2 Desktop. Other versions and platforms require further validation. CHAT is not supported in DSH Web.
+- **Compatibility:** currently adapted for DSH 0.2.0-rc.2 / 0.2.1-rc.1 Desktop. Other versions and platforms require further validation. CHAT is not supported in DSH Web.
 - **Website navigation:** the sidebar mirrors navigation already loaded by the website. It depends on the website’s page structure and is not an official history API. When the structure cannot be recognized, the native website navigation is restored while detection retries; the sidebar and CHAT Settings synchronize after recovery.
 - **New Chat shortcuts:** the top New Chat button supports mouse and Enter activation. Original Harness shortcuts and menu commands still perform Harness actions and may create a Harness session and leave CHAT.
 - **Remembered sign-in:** the website session is separate from Safari/Chrome and from the DSH platform account. Expiry, revocation or website changes may require signing in again. Long-term behavior, full uninstall and broader platform coverage still require further validation.
@@ -158,7 +158,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-This produces `artifacts/dsh-deepseek-chat-0.1.24.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
+This produces `artifacts/dsh-deepseek-chat-0.2.1.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
 
 After source changes, run `pnpm release:prepare` and commit the source together with the complete `lib/` directory. `pnpm check:distribution` checks the compiled files against the source, version and installation entry. Stale or missing output fails the check. People installing the plugin do not need these development commands.
 

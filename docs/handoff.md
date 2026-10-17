@@ -1,3 +1,21 @@
+## 插件版本线调整（2026-10-17）
+
+- 用户指定从0.2.1起使用0.2系列，后续修复递增第三段。当前0.1.25候选改为0.2.1；不是再新增一轮业务修复，下一次修复为0.2.2。
+- 同步package.json、README中英当前版本和安装示例、AGENTS长期版本规则及lib构建清单；此前修复/验收历史保留0.1.25的实际证据。保留工作区上一轮兼容适配成果，不改DSH依赖版本或业务代码。
+- 构建/分发检查和npm pack --ignore-scripts完成，包内版本0.2.1；Host/Client JS与0.1.25逐字节相同。包为artifacts/dsh-deepseek-chat-0.2.1-374e5706f916.tgz，SHA256 374e5706f916b05b3abaaaec919f1763ddb99bac246ba9e5774afbcd15555557。未新增或运行测试。本轮不自动安装到本机、不发布npm、不提交或推送Git；当前本机已验收安装仍为0.1.25，功能与本候选相同。
+
+## 新版 DSH 适配（2026-10-17，本机验收完成）
+
+- 用户要求修复更新 DSH 后的不兼容。负责人 Codex/macOS，基线 main/origin/main 7354c79，fetch 一致、开工干净；本轮 0.1.24 → 0.1.25 已递增一次，不再重复增号。
+- 本机 DSH 0.2.1-rc.1，Node 24.21.0/pnpm11.28.5；宿主 Cordis4.0.5、Schemastery3.18.5。插件三个 DSH peer 精确锁死0.2.0-rc.2；新版安装及启动会以 engines.dsh（若有）或 DSH peers 判定兼容。
+- 源依据：本机 app.asar 自带 dsh-app-boot/lib/index.js 的 evaluatePluginCompatibility/unmetRequirements，sidebar/browser/renderer/layout/settings 的公开 Client 代码。无可用 Cordis Inspect 工具，因此仅静态核查，不假称 live Inspect。
+- 目标：声明经过核对的两条宿主版本，升级开发依赖到本机0.2.1-rc.1，检查构建与公开扩展点，保留已修复 Windows portal 边界、配置entry ID和登录记忆。拟修改 package/lock、必要源码、分发约束及文档/lib；不绕过宿主兼容检查，不改变凭据或其它插件。
+- 已完成：DSH SDK固定0.2.1-rc.1并生产编译；Cordis4.0.5/Schemastery3.18.5，开发期include1.0.10/group1.0.5补齐新SDK的peer，后一次依赖安装无这些警告。engines.dsh和三个DSH peer都声明0.2.0-rc.2 || 0.2.1-rc.1，Cordis/Schemastery使用兼容patch范围；没有放开到未知DSH版本。src中的业务逻辑、身份常量、Windows portal事件边界未修改。
+- 构建/分发：node scripts/build.mjs、node scripts/check-distribution.mjs及git diff --check通过，22个编译文件匹配源输入；npm pack --ignore-scripts生成30文件安装包。SHA256 5cdea4bda82678f1fad1ed1dc157b5f7901b81259678c37153c97623a1ebdf97，保存在artifacts/dsh-deepseek-chat-0.1.25-5cdea4bda826.tgz（不提交）。
+- 本机：正常退出DSH，通过内置CLI plugin --profile desktop add安装exit0，30/30安装文件逐字节一致，持久依赖和bundle含0.1.25；正常重开后用户明确确认“能看到，切换正常”。无障碍脚本未读到控件，未将其当作成功证据；实机结果来自用户。
+- 限制：CLI --profile desktop --dump-config被官方“managed exclusively by Electron”限制拒绝，未绕过，不能记为profile启动失败。CLI同时提示原有dsh-mcp-client@0.2.0-rc.2与新版不兼容，仅该其它插件，未改动或豁免它。没有本轮发送、退出登录/恢复、自动化开关、Windows实机等扩展验收。未新增/运行测试，未发布npm、Git提交或推送。
+- 下一步：用户自行提交推送（含package/lock/lib和文档）；如需npm发布，须用户另发本轮发布指令。
+
 ## Windows 切换事件审查与修复（2026-10-17）
 
 - 负责人：Codex/macOS；基线 main/origin/main `068f91b`，fetch 后一致、开工干净。用户提供 Windows 运行诊断，要求审查切换后秒回 HARNESS/打开空白会话。

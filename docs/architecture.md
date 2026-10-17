@@ -282,3 +282,7 @@ Git提交产物带来源码与生成文件可能不一致的维护风险，必�
 ## Windows 品牌 portal 事件边界（2026-10-17，0.1.24）
 
 切换控件的 DOM host 保留在品牌行内、品牌节点之后，继续使用 flex 跟随侧栏布局。该 portal 仍是品牌 Slot 的 React 后代，Windows 品牌 React button 的新会话 onClick 会接收到其合成事件。因此控件根部以 React onClick.stopPropagation 隔离子控件点击；不使用 preventDefault 或 capture 阻止子按钮处理，不修改 ModeController 对真实面板导航的离开语义。DOM 品牌捕获监听保留，只负责 CHAT 点 logo 的官网新建。独立 Chromium 已复现修复前错误并验证修复后行为，Windows 原生客户端仍待验收。
+
+## DSH 0.2.1-rc.1 兼容声明（2026-10-17）
+
+旧manifest的三个DSH host peer精确等于0.2.0-rc.2，新宿主0.2.1-rc.1在导入前即拒绝。新版官方app-boot首先检查engines.dsh，缺省时检查DSH peers。插件对已核对的两个版本显式使用0.2.0-rc.2 || 0.2.1-rc.1，engines与peer保持同一范围；Cordis/Schemastery保留4.0/3.18兼容patch范围，开发期固定本机4.0.5/3.18.5及DSH0.2.1-rc.1。实际客户端仍通过宿主共享模块加载，不内联Cordis/React。新版类型编译通过，宿主sidebar品牌/slot与browser acquire/release/onOpenRequested契约静态一致。跨版本实机状态以handoff为准。

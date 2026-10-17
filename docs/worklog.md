@@ -652,3 +652,13 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 ## 2026-10-17 / Windows portal 点击链 / 0.1.24
 
 基线068f91b与fetch后的origin/main一致，开工干净。用户提供的Windows诊断与实际依赖源码吻合；独立Chromium使用真实插件品牌组件、React父button、ModeController和sidebar adapter重现单击CHAT触发nativeStarts=1并回到HARNESS。portal虽在DOM上是兄弟，在React树仍属品牌button后代；现有DOM品牌capture不在该点击路径。只在DshChatBrandControl根部停止React click冒泡，修正误导性注释，未改observePanel、会话或CSS定位。修复后同脚本chat/nativeStarts=0；双向鼠标、Enter/Space、10轮往返、logo/顶部新会话、重试、macOS span、重挂载和窗口调整13项结果通过。实际Windows尚待用户验收，不宣称原生通过。0.1.23→0.1.24仅递增一次，中英文README和lib同步；build/distribution通过22文件；未新增仓库测试、运行旧全套测试或自动安装/发布/Git提交推送。临时脚本路径与下一步见handoff顶部。
+
+## 2026-10-17 / DSH 新版兼容 / 0.1.25
+
+用户升级到0.2.1-rc.1后旧插件被兼容门禁拒绝，旧三个DSH peer全锁死0.2.0-rc.2。基线7354c79与fetch后远端一致，工作区干净。对照本机官方app.asar中app-boot engines.dsh优先/peer回退规则、sidebar平台品牌分支、slots/layout/settings/browser公开接口及新版SDK类型，未发现需改变现有业务接口的差异。manifest engines/DSH peers显式接纳已核对两个版本，Cordis/Schemastery兼容patch范围；SDK升至0.2.1-rc.1及4.0.5/3.18.5，补齐开发期include/group以清除陈旧锁文件造成的peer冲突，不增加运行期内联共享框架。Windows portal隔离、Host entry ID、语言和账号路径保持原样。
+
+0.1.24→0.1.25仅增一次；源码SDK编译、22编译文件分发检查、diff whitespace通过；新5cdea4bda826包官方CLI安装成功，30/30文件一致，正常重开。AX只读检查未找到控件，不算通过；用户随后明确确认“能看到，切换正常”，据此完成本机验收。dump-config被桌面profile官方独占规则拒绝，未绕过；CLI原有MCP旧版不兼容警告记录为其它插件，未顺手修改/豁免。pnpm最初无TTY重建被拒，改为CI install正常同步；普通update没清掉旧autopeer，后用确定版本的dev peer补齐成功。未新增/运行测试，未发布npm或Git提交推送；产物hash、限制与下一步见handoff。
+
+## 2026-10-17 / 插件0.2版本线
+
+用户明确将当前尚未发布的0.1.25候选改为0.2.1，之后按第三段递增（下一次0.2.2）。仅同步manifest、当前README中英示例、构建产物与AGENTS版本规则；保留上轮兼容修复和历史记录的原始版本。此命令不授权npm发布、Git操作或重新安装本机。
