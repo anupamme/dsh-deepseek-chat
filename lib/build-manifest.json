@@ -1,11 +1,11 @@
 {
   "format": 1,
   "name": "dsh-deepseek-chat",
-  "version": "0.1.23",
+  "version": "0.1.24",
   "inputs": {
     "assets/icon.svg": "8ea4f1d75f655c24e7f42fd5ed76763872d2c2c9d0661e14d64bcbc4dc5f84c8",
     "cordis.patch.yml": "d68da47a95a1800cbc29de786bf910d7327564715c13935760e485ee7408bb51",
-    "package.json": "7dab6b11ae9cc3fd8c85d69d3487d7f91428b35ee3c88e4af10458efdf39162a",
+    "package.json": "795170375ea27a661db59d55feb090f4fedc786d5883f7885105ff86908f9a59",
     "pnpm-lock.yaml": "c4f600b0d599b85f6181d295cd5f9f06f1eb0435eeeb2e7cf1a376b3c6a4ca15",
     "scripts/build.mjs": "715879e3c25382c35b06db2065b3b13815d1185aa4b9267b68a6257cacee30ec",
     "scripts/check-artifact.mjs": "6fec38fb74e41dfeacef7147280c69854087d0665747d7d65137cc98f9dc673b",
@@ -21,7 +21,7 @@
     "src/server.ts": "295c52235fa399967a594b76b1f4c869adccc978ee3c0f3f8f3a12894b81ef9b",
     "src/sidebar-adapter.ts": "83c2ce69a160cfeb8e4af6498d2233c150e8c1decdf4805288d56a9829835ad4",
     "src/styles.ts": "2ce32a9f1e9e263210875ee38c13f65ff3318a425c6ef6787d163b50d8670cbf",
-    "src/ui.tsx": "d4e9271b018ee68bd184237b9fc1c3ce10726cbc2afb15188fe8d52fec418d84",
+    "src/ui.tsx": "70604a73f5aedd6ea178cc179c86663baee8db86086f6dc5883ae14033363725",
     "src/web-surface.tsx": "718841eababafa03c1827935602f670e6fd334d96eaa909aac4928f2dc6c20d3",
     "src/website-conversation-actions.ts": "558196cb6ad5c34b8cbffe1ebef4a77a8a0312cfc4bf275fa13c4d9aeaf02f0e",
     "src/website-header.ts": "ac4972a28a5f0968de4d5f98d54fbac853f901c7eda00c0849984a2e66f291f3",
@@ -35,7 +35,7 @@
     "tsconfig.json": "1ad0b3b39537564a180dc7f4084ceb3098b567f509320c77d71bc37aaf4f1879"
   },
   "artifacts": {
-    "lib/client.js": "9a39fcb5c6dfa28dad3056634769b59f3a23a63cc53504275307671c3ff356e1",
+    "lib/client.js": "dc18a2905234f706a57f5da7f534194c8af0e6c5be8b0822814bab45c8154f4e",
     "lib/index.js": "4ffd8c1fd667c9b8a4f7b60f434ce12749f1551a6ac344a6b6d609523d5ceb3d",
     "lib/types/authorization.d.ts": "130649eed3635e75c3f50c13de93c52440a27f1b88136ab2297552570c013d49",
     "lib/types/client.d.ts": "a79702d5d86c75e81f1e954b3e9f4a562a6b3082d68d798d6a1b37bd41b908a7",
@@ -46,7 +46,7 @@
     "lib/types/server.d.ts": "62b23f8f9fe9bb16a20274929876c1a34b3ab1e94179567e2e3a56cd67638288",
     "lib/types/sidebar-adapter.d.ts": "5730bbeb661d8731620dc22397c8a8928209124b8d92d8b8549b6a84824e0518",
     "lib/types/styles.d.ts": "c7434168512577eb1255158835dd6ea044413edd586844b21daf711ea2eeffec",
-    "lib/types/ui.d.ts": "79be011d99dc65f60118b0a026271a7a0f1087aad80ddcd40b4fe48d86cae30c",
+    "lib/types/ui.d.ts": "b682bacd9fe373d5ffd341a014630d4a713fe5204c742188b2f0df8e5f16c49b",
     "lib/types/web-surface.d.ts": "71686d72b4a5d6c619ee4ec916bbf7b853a87a7cc4d506fbfd0359191434984f",
     "lib/types/website-conversation-actions.d.ts": "3bfea5b960e2e78ba6a03c060ff606a3b07293028843c481f8d8f3a41d733c19",
     "lib/types/website-header.d.ts": "6379a35e7d35af3fb969802ee2cae969a104dbad937f7b9e371463a0bd7dea9d",

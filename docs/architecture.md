@@ -278,3 +278,7 @@ Git提交产物带来源码与生成文件可能不一致的维护风险，必�
 当前包Host/Client SHA256与此前已验cd07完全相同；本轮只新增分发检查与本地安装证据，未重跑真实界面/登录，不将既有UI结果说成本轮新实测。正常打包及本地Git通过也不代表公网GitHub下载已验证。
 
 远端01e仍为旧源码prepare；本轮同0.1.8、未自动stage/commit/push，用户提交/推送后还需核对公开对应提交是否包含相同预构建文件。URL可直装的完成声明必须以更新后的真实远端和安装证据为准，本地fixture只证明本地候选。
+
+## Windows 品牌 portal 事件边界（2026-10-17，0.1.24）
+
+切换控件的 DOM host 保留在品牌行内、品牌节点之后，继续使用 flex 跟随侧栏布局。该 portal 仍是品牌 Slot 的 React 后代，Windows 品牌 React button 的新会话 onClick 会接收到其合成事件。因此控件根部以 React onClick.stopPropagation 隔离子控件点击；不使用 preventDefault 或 capture 阻止子按钮处理，不修改 ModeController 对真实面板导航的离开语义。DOM 品牌捕获监听保留，只负责 CHAT 点 logo 的官网新建。独立 Chromium 已复现修复前错误并验证修复后行为，Windows 原生客户端仍待验收。

@@ -648,3 +648,7 @@ W019最终打包收尾：19文件包1d5ab1718f12（完整哈希见handoff），�
 用户新图标已提交在assets/icon.svg，0.1.15不可覆盖，用户授权整体升级及重构建发布。package/README当前版本和lib已更新0.1.16，生产构建与分发检查通过，6f390861b6ad包包含相同新图标。发布遇PUT E404，whoami/access E401确认npm登录失效，官方web login已打开等待用户；尚未公开发布，不自动Git或本机安装。详见handoff顶部。
 
 0.1.16续步：重新官方web login完成，单次2FA后publish退出0。匿名公开latest=0.1.16，下载包SHA256 6f390861b6adf734c56a63d6339fdb12e16991ea4e7215a8cbf7bb4dad57bc22，与正式包一致；包内新图标与用户源文件逐字节一致。未Git提交/推送，未更新本机DSH。
+
+## 2026-10-17 / Windows portal 点击链 / 0.1.24
+
+基线068f91b与fetch后的origin/main一致，开工干净。用户提供的Windows诊断与实际依赖源码吻合；独立Chromium使用真实插件品牌组件、React父button、ModeController和sidebar adapter重现单击CHAT触发nativeStarts=1并回到HARNESS。portal虽在DOM上是兄弟，在React树仍属品牌button后代；现有DOM品牌capture不在该点击路径。只在DshChatBrandControl根部停止React click冒泡，修正误导性注释，未改observePanel、会话或CSS定位。修复后同脚本chat/nativeStarts=0；双向鼠标、Enter/Space、10轮往返、logo/顶部新会话、重试、macOS span、重挂载和窗口调整13项结果通过。实际Windows尚待用户验收，不宣称原生通过。0.1.23→0.1.24仅递增一次，中英文README和lib同步；build/distribution通过22文件；未新增仓库测试、运行旧全套测试或自动安装/发布/Git提交推送。临时脚本路径与下一步见handoff顶部。

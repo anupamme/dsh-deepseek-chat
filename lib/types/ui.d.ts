@@ -83,7 +83,7 @@ export declare function DshChatModeSelector({ bridge, state, compact }: DshChatB
 }): import("react/jsx-runtime").JSX.Element;
 /** Keep interactive controls in the sidebar row, outside its decorative/new-chat brand. */
 export declare function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> & DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
-/** The interactive surface is outside the brand slot's hidden/button ancestry. */
+/** DOM siblings remain React descendants of the Windows New Session brand. */
 export declare function DshChatBrandControl({ bridge }: DshChatBridgeProps): import("react/jsx-runtime").JSX.Element;
 /** rc.2 replays its retained request counter on WorkspaceBrowser remount.
  * Adapt only the view hook; never mutate the host request store or actions. */

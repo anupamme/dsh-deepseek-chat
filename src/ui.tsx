@@ -140,7 +140,8 @@ export function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> 
         host.remove()
         return
       }
-      // A sibling of the brand is accessible and cannot trigger its New Session action.
+      // Keep the DOM outside the hidden brand/button; React portal events still
+      // follow the brand ancestry and are isolated by DshChatBrandControl.
       if (host.parentElement !== row || brand.nextElementSibling !== host) brand.after(host)
     }
     reconcile()
@@ -170,10 +171,11 @@ function DshChatAuthorizationNotice({ bridge, state }: DshChatBridgeProps & { re
   </div>
 }
 
-/** The interactive surface is outside the brand slot's hidden/button ancestry. */
+/** DOM siblings remain React descendants of the Windows New Session brand. */
 export function DshChatBrandControl({ bridge }: DshChatBridgeProps) {
   const state = useDshChat(bridge)
-  return <div className="dsh-chat-brand-control" aria-label="dsh-deepseek-chat 模式选择">
+  return <div className="dsh-chat-brand-control" aria-label="dsh-deepseek-chat 模式选择"
+    onClick={event => event.stopPropagation()}>
     <DshChatStyles />
     <DshChatModeSelector bridge={bridge} state={state} />
     <DshChatAuthorizationNotice bridge={bridge} state={state} />

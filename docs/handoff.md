@@ -1,3 +1,13 @@
+## Windows 切换事件审查与修复（2026-10-17）
+
+- 负责人：Codex/macOS；基线 main/origin/main `068f91b`，fetch 后一致、开工干净。用户提供 Windows 运行诊断，要求审查切换后秒回 HARNESS/打开空白会话。
+- 目标与验收：切换控件（包括重试）不得触发 Windows 品牌的新会话；双向鼠标/键盘切换、CHAT logo/顶部新会话原有转交行为保留；macOS 及 sidebar 内 flex 布局不回退。
+- 实际源码复现：DSH 非 Darwin 品牌为 React button，插件 portal 的 DOM host 是兄弟，但 React 祖先仍含该 button。独立 Chromium 使用实际 DshChatBrandName、ModeController、sidebar adapter：修复前单击 CHAT 得到 mode=harness/nativeStarts=1/websiteStarts=0，且 portalOutsideBrand=true。
+- 已修改：src/ui.tsx 控件根部 onClick.stopPropagation，纠正 DOM/React 祖先注释；observePanel 与新建会话适配未变。0.1.23 → 0.1.24 已增一次，README 中英版本同步，lib 已重建。
+- 浏览器结果：修复前后同一脚本分别得到 harness/nativeStarts=1 与 chat/nativeStarts=0。13 项结果覆盖双向鼠标、Enter/Space、10 次往返、CHAT logo/顶部新会话转交、重试隔离、HARNESS logo 原生新建、macOS span、Windows 重挂载和调整窗口后切换，均通过。使用项目实际 React 组件/ModeController/sidebar adapter，图标等展示组件为 stub，未访问官网或真实会话；不能等同于 Windows 原生运行验收。
+- 命令：node /private/tmp/dsh-windows-portal-build.mjs；python3 /private/tmp/dsh-windows-portal-run.py；python3 /private/tmp/dsh-windows-portal-check.py；node scripts/build.mjs；node scripts/check-distribution.mjs。构建/分发通过，22 个编译文件与源输入一致。临时浏览器脚本仅本机，未新增仓库测试或运行旧全套测试。
+- 下一步：用户 Windows 安装 0.1.24，检查 CHAT 不回跳、往返不误开空白会话、CHAT logo 仍新建官网对话，再验收真实侧栏折叠/伸缩与自动化插件开关。此次未安装到当前 Mac DSH，未发布 npm、提交或推送 Git。
+
 ## 0.1.23 已发布 npm（2026-10-17）
 
 用户明确授权并完成 npm 登录及当次 2FA，CHAT 正文和输入框字号跟随 HARNESS 的版本已发布。公开 latest=0.1.23，下载包 SHA256=4b2feb016cbf89a97d0c4a5a8ae1fca96cccf2a5d8a4f5ce6d17fca15fcbf9be，与本地发布包完全一致；公开 Client 的内容字号 token、正文样式及 composer textarea/mirror 同步已核实。此前官网CSS+虚构浏览器检查及本机安装通过。未 Git 提交/推送。
