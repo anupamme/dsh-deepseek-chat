@@ -709,3 +709,28 @@ Playwright独立虚构HTTPS页以同一虚构URL比较真实Clipboard/execComman
 ## 0.2.4 npm 已接受发布，公开索引待同步（2026-10-18）
 
 用户完成登录和当次2FA；npm publish exit0、返回 + dsh-deepseek-chat@0.2.4，提示后台处理中。首轮匿名整包元数据 latest仍0.2.3且无0.2.4，暂不能声称公开下载核验完成。发布包SHA256 1ad2735fb84a616a893bdc68505fdcdfad460ac6acf382d6bd994a1428bfbaaf，保存在 artifacts/dsh-deepseek-chat-0.2.4-1ad2735fb84a.tgz。本机用户已确认分享复制恢复；Windows未验收。未Git提交或推送。
+
+## 0.2.5 分享按钮定位修复（2026-10-21，本地候选）
+
+- 基线main/origin/main 69794fc，fetch一致、开工干净；用户已撤回前一轮整套原生顶部实验并恢复0.2.4。当前重新批准的是分享按钮及其定位容器这两处CSS，0.2.4→0.2.5只加一次，不复用已撤回候选。
+- website-header.ts：rowSelector新增position:relative，shareSelector的position:fixed改为absolute；top10px/right12px和尺寸沿用。由原生对话顶部行的宽度承接参考列表变化，不新增测宽、observer、定时器、DOM搬动或事件处理。
+- 业务源码仅这一文件两行；侧栏、标题/编辑、分享复制、主题、登录逻辑维持基线，测试文件未改。README中英仅同步当前版本，需求/架构/路线同步本轮边界。实际参考面板开关、缩放及分享点击待用户实机验收；构建/安装结果后续补记。
+- 使用用户原有desktop配置，不另建DSH环境；不自动Git提交推送或npm发布。
+
+### 0.2.5 构建与本机安装续记
+
+- 生产build（含TypeScript）、check-distribution通过：23编译文件与源输入一致，lazy-CJS/共享模块契约正常；git diff --check通过。未新增或运行测试，tests/scripts与HEAD无差异，业务源码仅website-header.ts两行CSS变化。
+- 安装包artifacts/dsh-deepseek-chat-0.2.5-9b8a8380e590.tgz，150939bytes，SHA256 9b8a8380e590cfc715854c633efb3507e9abdca3d6ff5f9d67a1d400f9a0c455；31个文件。此包是本轮最小修复，与先前已撤回的0.2.5整套原生顶部实验无关。
+- 目标DSH 0.2.1-rc.2。正常quit并确认原主/Host退出后，官方CLI在原desktop配置安装exit0（0.2.4→0.2.5）；已安装版本0.2.5，31/31文件与包逐字节一致，随后正常open。原有MCP旧版本告警保留，未修改其豁免或其它插件；未新建DSH环境。
+- 真实参考列表开关、不同窗口宽度下的位置及分享点击尚待用户验收，不以构建或安装一致代替视觉通过。标题/侧栏/复制/主题/登录相关源码未变。未Git提交推送、未npm发布。
+
+## 0.2.5 用户验收通过，准备发布 npm（2026-10-21）
+
+用户明确确认“OK，修复完成”，并授权发布本轮npm。沿用本机已安装并验收的9b8a8380e590包（0.2.5、31文件），不重新构建、不加号；发布前分发清单通过，包/源码/已安装31/31一致，npm尚无0.2.5。原发布登录whoami返回401，用户完成本次官方网页登录后终端exit0，whoami确认xingxingbk。接着发布同一原包，公开结果待独立核验；不Git提交推送。
+
+## 0.2.5 已发布 npm（2026-10-21）
+
+- 用户已确认本轮分享按钮修复完成并明确授权发布；完成本次npm网页登录及单独2FA后，同一已验收9b8a8380e590包publish退出0，返回+dsh-deepseek-chat@0.2.5。沿用0.2.5，不额外增号或重新构建。
+- npm曾提示后台处理中；随后独立、不带登录凭据请求公共registry确认versions包含0.2.5、dist-tags.latest=0.2.5。公开下载包SHA256=9b8a8380e590cfc715854c633efb3507e9abdca3d6ff5f9d67a1d400f9a0c455，与本地验收包完全一致；package版本0.2.5、31文件。
+- 发布业务范围仍仅website-header.ts两处CSS定位修改；此前整套原生顶部实验已撤回，不在发布包中。用户本机已确认修复，未扩大为Windows或其它未逐项验收场景的结论。npm/package/本机插件版本一致。
+- 本轮未重装DSH、未新增或运行测试、未Git stage/commit/push。源码/lib及发布记录仍是本地未提交修改，由用户自行提交推送；npm公开不等同GitHub源码已更新。
