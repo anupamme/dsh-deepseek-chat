@@ -1,4 +1,5 @@
-/** Visible website navigation/account/preferences only; no credentials, storage or request APIs. */
+import type { ChatLanguage } from './website-settings.js';
+/** Visible website navigation/account/settings only; no credentials, storage or request APIs. */
 export interface WebsiteConversation {
     readonly href: string;
     readonly title: string;
@@ -6,7 +7,7 @@ export interface WebsiteConversation {
 }
 export interface WebsiteNavigation {
     readonly status: 'loading' | 'ready' | 'sign-in' | 'unsupported';
-    /** Public profile presence only; independent of layout/preferences readiness. */
+    /** Public profile presence only; independent of layout/settings readiness. */
     readonly authenticated?: boolean;
     readonly conversations: readonly WebsiteConversation[];
     readonly selectedHref: string | null;
@@ -18,7 +19,6 @@ export interface WebsiteNavigation {
         theme: string | null;
         error: string | null;
         pending?: boolean;
-        restored?: boolean;
     };
 }
 export type WebsiteCommand = {
@@ -34,16 +34,7 @@ export type WebsiteCommand = {
     readonly action: 'rename' | 'pin' | 'unpin' | 'share' | 'delete';
     readonly title?: string;
 } | {
-    readonly type: 'settings-read';
-} | {
-    readonly type: 'settings-close';
-} | {
-    readonly type: 'setting';
-    readonly key: 'language' | 'theme';
-    readonly value: string;
-} | {
-    readonly type: 'preferences';
-    readonly language: string;
+    readonly type: 'settings-retry';
 } | {
     readonly type: 'logout';
 }
@@ -62,6 +53,6 @@ export type WebsiteCommand = {
 export declare const emptyNavigation: () => WebsiteNavigation;
 /** This function is serialized into our isolated guest. Keep all helpers inside it. */
 export declare function adaptWebsiteNavigation(doc: Document, page: Pick<Location, 'origin' | 'pathname'>, command: WebsiteCommand): WebsiteNavigation;
-export declare function websiteCommandScript(command: WebsiteCommand, contentFontSize?: number, colorScheme?: 'light' | 'dark'): string;
+export declare function websiteCommandScript(command: WebsiteCommand, contentFontSize?: number, colorScheme?: 'light' | 'dark', language?: ChatLanguage | null): string;
 /** Treat the guest response as untrusted; keep only bounded, origin-scoped list data. */
 export declare function parseWebsiteNavigation(value: unknown): WebsiteNavigation;

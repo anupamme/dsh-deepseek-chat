@@ -10,7 +10,7 @@
 
 **CHAT** embeds the real [DeepSeek Chat website](https://chat.deepseek.com/), including its chat interface and account history. **HARNESS** returns you to the original DSH workspace.
 
-Current version: **0.2.5** · Built for **DSH Desktop** · Simplified Chinese is the default language; English and Follow system are also available.
+Current version: **0.2.6** · Built for **DSH Desktop** · The CHAT website’s language, appearance and text size follow DSH.
 
 ## Preview
 
@@ -33,16 +33,15 @@ Current version: **0.2.5** · Built for **DSH Desktop** · Simplified Chinese is
 
 The switch sits beside the DeepSeek brand at the top of the left sidebar. The white segment marks the active mode. Returning to HARNESS restores the panel that was open before CHAT; switching back to CHAT returns to the retained website page. When the sidebar is collapsed, reopen it using the original sidebar toggle.
 
-### Language settings and remembered website sign-in
+### Website account and remembered sign-in
 
-![CHAT settings: account status, remembered sign-in and language selection](docs/images/chat-settings.png)
+Open the native DSH **Settings → Chat settings** page to view your website account and saved login, or sign out.
 
-Open the native DSH **Settings → CHAT Settings** page to check website account status, sign out or change language.
-
-- Simplified Chinese is the default. You can choose English or Follow system; confirmed choices are saved.
+- Choose your language in **DSH Settings → General**: Chinese selects Simplified Chinese on the website, and English selects English. Plugin menus, messages and Chat settings also switch between Chinese and English. There is no independent language preference or forced Chinese default.
+- Appearance and content text size also follow DSH automatically.
 - CHAT uses a separate website sign-in. Signing out of the DSH account or CHAT does not disable the mode switch.
 - Settings and the conversation page share the same website session. Account status and the conversation list update after sign-in, while the plugin saves the sign-in grant in the background.
-- After signing in normally inside the plugin, **Website sign-in remembered** indicates that the grant has been saved. UI wording follows the selected language.
+- After signing in normally inside the plugin, **Website login saved** indicates that the grant has been saved. The website interface follows the DSH language.
 - Reopening the same DSH profile restores the grant for the website to validate. An expired grant requires a new sign-in.
 
 ## Installation
@@ -52,13 +51,13 @@ Open the native DSH **Settings → CHAT Settings** page to check website account
 Enter the package name and version below in the DSH plugin installer to install the current latest release:
 
 ```text
-dsh-deepseek-chat@0.2.5
+dsh-deepseek-chat@0.2.6
 ```
 
 Or use the CLI:
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.2.5
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.6
 ```
 
 Use the same method for a first installation or an existing plugin. If DSH’s release age policy temporarily blocks a new version, retry later or use the GitHub option below.
@@ -84,20 +83,20 @@ This installs the version already pushed to the repository, which includes prebu
 Install a `.tgz` package using the DSH plugin manager, or run:
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.5.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.6.tgz
 ```
 
 Replace the path with your actual package location.
 
-**Fully quit and reopen DSH after installation, then confirm that the plugin manager shows version 0.2.5.** Replace `desktop` with the appropriate name if you use another profile.
+**Fully quit and reopen DSH after installation, then confirm that the plugin manager shows version 0.2.6.** Replace `desktop` with the appropriate name if you use another profile.
 
 See the [official DSH plugin installation documentation](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish) for more information.
 
 ## Getting started
 
-1. Select **CHAT**. If signed out, choose **Sign in to DeepSeek**. The same entry is available in **Settings → CHAT Settings**.
-2. Complete sign-in on the real website in the CHAT main page. CHAT Settings displays account status and language. Its sign-in button closes Settings and opens CHAT; account details and conversations synchronize afterward without a manual refresh.
-3. Check the remembered sign-in status in **Settings → CHAT Settings**, then choose your language. Signing out clears the plugin’s saved grant and signs out of the website; the mode switch remains available.
+1. Select **CHAT**. If signed out, choose **Sign in to DeepSeek**. The same entry is available in **Settings → Chat settings**.
+2. Complete sign-in on the real website in the CHAT main page. Chat settings displays your account and sign-in status. Its sign-in button closes Settings and opens CHAT; account details and conversations synchronize afterward without a manual refresh.
+3. Check the remembered sign-in status in **Settings → Chat settings**, then adjust language, appearance and text size in DSH General settings. Signing out clears the plugin’s saved grant and signs out of the website; the mode switch remains available.
 
 Website sign-in happens inside the plugin. Automatic authorization from an external browser would require a Chat authorization exchange interface from the website, which has not been confirmed. Signing in elsewhere does not automatically sign in this plugin.
 
@@ -108,7 +107,7 @@ Refreshing the list reloads the current website page and retains the conversatio
 ## Limitations
 
 - **Compatibility:** designed for DSH Desktop. Refer to the compatibility check in the DSH plugin manager for your version. CHAT is not supported in DSH Web.
-- **Website navigation:** the sidebar mirrors navigation already loaded by the website. It depends on the website’s page structure and is not an official history API. When the structure cannot be recognized, the native website navigation is restored while detection retries; the sidebar and CHAT Settings synchronize after recovery.
+- **Website navigation:** the sidebar mirrors navigation already loaded by the website. It depends on the website’s page structure and is not an official history API. When the structure cannot be recognized, the native website navigation is restored while detection retries; the sidebar and Chat settings synchronize after recovery.
 - **New Chat shortcuts:** the top New Chat button supports mouse and Enter activation. Original Harness shortcuts and menu commands still perform Harness actions and may create a Harness session and leave CHAT.
 - **Remembered sign-in:** the website session is separate from Safari/Chrome and from the DSH platform account. Expiry, revocation or website changes may require signing in again. Long-term behavior, full uninstall and broader platform coverage still require further validation.
 - **Page lifetime:** manual mode switching retains the website page. Disabling or uninstalling the plugin, or fully quitting DSH, destroys the container. The plugin does not back up unsent drafts or replace the website’s generation controls.
@@ -116,7 +115,7 @@ Refreshing the list reloads the current website page and retains the conversatio
 
 ## Privacy and data
 
-DeepSeek’s website handles chats and account history. To adapt the interface, the plugin reads visible navigation titles, groups, links, account display names and language settings. Navigation metadata remains in memory during the current authorized lifetime. Language preferences are saved through the official DSH configuration service.
+DeepSeek’s website handles chats and account history. To adapt the interface, the plugin reads visible navigation titles, groups, links, account display names and language settings. Navigation metadata remains in memory during the current authorized lifetime. The plugin reads DSH’s resolved language, theme and content font size. Website language and theme are synchronized through existing public settings controls; the plugin does not save a separate language preference.
 
 Remembered website sign-in processes only the minimum grant data from the plugin’s own `chat.deepseek.com` page and stores it through the official DSH credentials service. The plugin derives a separate record identifier from the profile path supplied by the DSH launcher, keeping profiles separate and associating the grant with its website account. Signing out clears the previous grant and fences off late save operations. Without trusted profile context, normal website sign-in still works, but it cannot be remembered. This depends on the website’s current implementation, is not a stable official OAuth interface and does not promise permanent sign-in.
 
@@ -133,7 +132,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-This produces `artifacts/dsh-deepseek-chat-0.2.5.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
+This produces `artifacts/dsh-deepseek-chat-0.2.6.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
 
 After source changes, run `pnpm release:prepare` and commit the source together with the complete `lib/` directory. `pnpm check:distribution` checks the compiled files against the source, version and installation entry. Stale or missing output fails the check. People installing the plugin do not need these development commands.
 

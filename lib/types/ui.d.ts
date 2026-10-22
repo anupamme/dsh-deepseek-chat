@@ -1,6 +1,7 @@
 import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots';
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js';
+import type { ChatLanguage } from './website-settings.js';
 import type { WebsiteSession } from './protocol.js';
 export type DshChatMode = 'chat' | 'harness';
 export interface DshChatViewportRect {
@@ -24,7 +25,7 @@ export interface DshChatViewState {
     readonly authorizationGeneration: number;
     readonly websiteReloadRevision: number;
     readonly settingsOpen: boolean;
-    readonly preferenceError: string | null;
+    readonly language: ChatLanguage | null;
     readonly websiteAuthenticationStatus: 'loading' | 'signed-out' | 'signing-in' | 'signed-in' | 'signing-out' | 'error';
     readonly websiteAuthenticationRevision: number;
     readonly websiteSessionStatus: 'idle' | 'saved' | 'error';

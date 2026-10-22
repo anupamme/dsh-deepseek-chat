@@ -1,3 +1,61 @@
+## 0.2.6 已发布npm（2026-10-23）
+
+- 用户确认本轮验收合格并明确授权发布；沿用已安装/验收的bbf924ed6e9c包和0.2.6，没有再次加号或重建。范围包括官网与插件语言跟随DSH、清理旧语言偏好、中英文案、精简无头像账号卡、居中未登录提示及纯状态“加载中＋转圈”。
+- npm原登录401，经官方网页登录恢复、whoami=xingxingbk；用户完成本次单独2FA后，同一包publish退出0，返回+dsh-deepseek-chat@0.2.6。首次公开索引仍旧版本，按npm processing提示等待后重新匿名核对，未把受理直接当作可公开安装。
+- 现已独立确认官方完整索引及install-v1索引latest均0.2.6、版本存在；公开下载32文件，整个tgz字节与已验收bbf9包完全一致，SHA256=bbf924ed6e9c3b9ca6e0c40a8ec08bb1e195ff0f49163875e2a9627a20848857。可按dsh-deepseek-chat@0.2.6名称安装。
+- 发布前分发核对24 compiled files/4 shared modules、git diff --check及包内32/32同项目均通过；本轮未新增/运行测试或另建DSH环境，原desktop已是同一验收包，未改变用户账号资料。
+- 源码、整个lib、locale和文档仍保留本地可审查修改，未stage/commit/push或创建Git tag/PR。npm发布不等于Git仓库已同步，后续Git操作由用户决定。以后修改属于新一轮修复，按现有规则从0.2.6递增补丁版本；不可再覆盖已发布0.2.6。
+
+## 0.2.6 账号卡纯加载状态实现记录（2026-10-23，已由用户验收并发布）
+
+- 用户重启首次打开设置看到旧同步标题/说明，原因是上一轮仅删除signed-out/signing-in分支而保留loading共用说明。现彻底删除statusTitle/statusDescription、对应DOM/CSS和重新识别说明，任何状态均不再渲染该组内容。
+- 用户进一步明确“加载中”是状态展示。最终为非交互div（role=status、aria-busy），文本后放官方IconLoadingOutlineRegular并复用既有旋转/减少动画；无按钮外观、边框、点击或焦点。加载时不提供重新加载动作，退出中同类纯状态；原登录按钮、账号、登录记忆及真实错误区/重试保留。未改变状态来源、认证或guest流程。
+- 继续同一0.2.6，不加号；中英文现各122条，废弃说明词条已删除。node scripts/build.mjs、check-distribution（24 compiled files、4 shared modules）及git diff --check成功；静态确认旧说明变量/类在src/lib均不存在，无新增/运行测试或live UI检查。
+- 最终包artifacts/dsh-deepseek-chat-0.2.6-bbf924ed6e9c.tgz，32文件，SHA256=bbf924ed6e9c3b9ca6e0c40a8ec08bb1e195ff0f49163875e2a9627a20848857。包内32/32同项目；正常quit原DSH并确认结束，官方CLI原desktop安装exit0，32/32安装文件同包、持久依赖指向bbf9候选。normal open后已确认DSH主进程存在。
+- 原旧MCP兼容警告未修改/豁免。当前Codex/macOS，main/HEAD 40b7dae，实际根目录DeepSeek Chat，保留原未提交工作；无新DSH/home/profile、无账号清理、无Git/npm操作。用户可查看首次打开的真实效果；未把构建与安装核对当作视觉验收通过。
+
+## 0.2.6 未登录文案精简（历史ff36候选，加载分支已由上方统一方案替代）
+
+- 按用户最终要求，侧栏提示为“CHAT 尚未登录，请在右侧登录”，在原提示区域水平居中；英文同步缩短。仅sign-in提示增加text-align:center，其余导航和错误不改变对齐。
+- Chat设置的signed-out/signing-in分支仅呈现原登录/继续登录按钮，移除重复登录标题和说明及4条废弃翻译；中英文现各127条。真实加载、退出、错误提示保留，登录动作、认证状态、官网适配和账号范围不改。已有中英同步、无头像账号卡保持。
+- 继续同一0.2.6，不加号。node scripts/build.mjs与check-distribution通过（24 compiled files、4 shared modules），git diff --check通过；无新增/运行测试，无live UI检查。
+- 最新包artifacts/dsh-deepseek-chat-0.2.6-ff369a238d2e.tgz，32文件，SHA256=ff369a238d2e19ab4bd1af1ea9bcc2fac443b5a5c8eddd9d3e4cd3c9639bd1cf。包内32/32同项目；正常quit原DSH确认结束后，官方CLI原desktop安装exit0，32/32安装文件同包，持久依赖引用新哈希。normal open已执行并确认DSH主进程存在。
+- 原旧MCP插件兼容警告未修改/豁免；不另建DSH环境、不清理账号，不Git/npm发布。源码、lib和文档保留本地；真实未登录文案/对齐与设置简化由用户查看，尚未宣称视觉验收通过。
+
+## 0.2.6 插件翻译与无头像账号卡（历史候选c47d，已由上方精简版替代）
+
+- 用户最新决定恢复插件自身中英文翻译，并允许账号卡采用无头像方案；替代下方仅同步官网的候选。官网语言跟随DSH、清理旧偏好、Chat设置仅账号内容的要求保留。
+- 已完成：locale/en.json与locale/zh-CN.json各131条固定文案；i18n.ts仅10行查表，JSON声明4行。插件菜单/提示/可访问性标签/Chat设置及已知固定错误在显示时翻译，内部错误原值与退出/超时判断不变；对话、账号昵称、官网原生分组不改写。
+- 同一language状态驱动UI与官网；不增加配置、语言开关、订阅或存储。settings.section按官方SDK契约，仅标签变化时同id重注册“Chat 设置”/“Chat settings”。locale纳入分发源哈希，防止只改文案却使用陈旧lib。
+- 账号卡已移除昵称首字母头像和专用CSS；昵称/状态左对齐、退出动作靠右，保留窄宽换行和长昵称截断，收紧标题及登录记忆分隔间距。不增加官网头像读取或图片数据通道。
+- 版本仍0.2.6（本轮仅从0.2.5递增一次）。实际构建和分发检查成功：24 compiled files、4 shared modules；git diff --check通过。主源码相对HEAD净+16行（包含新增10行查表及4行JSON声明），双语JSON新增266行主要为文案数据；未新增运行时依赖。既有website-settings与website-navigation沿用精简候选，本次补译不改其同步流程；website-header/share-copy/typography/session/server/mode相对HEAD无差异。
+- 新包artifacts/dsh-deepseek-chat-0.2.6-c47d63419f89.tgz，32文件，SHA256=c47d63419f8979d8a0afe06a36d82b9e7716b300e38286358b18928412872fc8。包内32/32文件同项目；正常退出旧DSH后，官方CLI在原desktop安装退出0，32/32安装文件同包，持久依赖引用c47d候选。normal open已重开，DSH 0.2.1-rc.2进程存在。
+- CLI仍提示原有旧MCP插件不兼容；未修改或豁免它。无live Cordis Inspect，不新增/运行测试、不另建DSH/home/profile、不清理账号/用户数据，不将构建/安装一致性写成真实中英切换或视觉验收通过。
+- 当前Codex/macOS，实际项目DeepSeek Chat，main/HEAD 40b7dae，保留所有本轮未提交工作。最近fetch因GitHub HTTPS失败，未合并/覆盖本地。未stage/commit/push、未npm发布；下一步由用户确认中英文菜单/Chat设置、官网实际Language和无头像排版。未验收候选继续使用0.2.6；发布需用户另行指示。
+
+## 0.2.6 仅同步官网候选（2026-10-22，历史，已由上方补译版替代）
+
+- 用户最终选择“仅同步官网，撤掉额外文案翻译”。菜单/提示/错误/日期分组恢复原插件文案；本轮未提交的i18n.ts及声明已删除，语言类型和html.lang读取收敛到现有website-settings.ts。原生设置标签固定“Chat 设置”，仅保留账号、登录记忆和登录/退出/实际错误重试；界面同步整卡及其CSS/文案已撤掉。
+- 官网Language以DSH已解析的中/英文为唯一目标：zh-CN或en；未知不写目标，不选官网Follow system替代。移除默认中文常量、独立Config语言字段、ConfigForms及preferences/setting/read/close/restore-language/restored流程；设置页开关不启动或取消同步。复用公开语言控件、读回确认、最新目标取消、既有有界超时和串行队列，不重建/刷新guest或增加私有API/正文读取。
+- 相对开工HEAD 40b7dae，业务源码+135/-158，净减少23行；无新增模块。原website-header/share-copy/typography/session/server/mode源码无差异，既有登录范围及分享修复保持。版本0.2.5→0.2.6只递增一次，继续此候选不再加号。
+- 实际完成：node scripts/build.mjs成功；check-distribution成功（23 compiled files、4 shared modules）；git diff --check成功。删除字典后首次编译发现设置页两处残余调用，已修正并重建成功。未新增/运行测试，无live Cordis Inspect，不把静态官方源码核查或文件一致性当作真实语言切换验收。
+- 最终包artifacts/dsh-deepseek-chat-0.2.6-805eaacda3f4.tgz，31文件，SHA256=805eaacda3f48cbba6605bd668ad42b63af5e21c4ce085a00c0bb5dfc5491fb3。逐文件同项目分发源；官方CLI在原desktop安装退出0，31/31安装文件一致且无翻译模块，profile依赖引用最终哈希包。正常quit初次检查仍在退出时未启动安装，稍后确认结束才重装；normal open后DSH 0.2.1-rc.2进程存在。
+- 本轮25bad和30b2两个过期候选经哈希/引用核对后已清理，打包临时tgz也已清理；保留最终805e及原已验收0.2.5。没有另建DSH/home/profile或清理账号/用户数据。CLI原有旧MCP插件兼容告警未修改或豁免。
+- 待用户实际确认：DSH通用设置中文→英文→中文时，内嵌官网实际语言选项与界面随之变化、账号/对话保留，Chat设置仅账号内容。官网尚无可用公开设置入口时等待可操作状态，不伪称登录页无条件强改。新界面及语言真实效果未验收。
+- 前一fetch因GitHub HTTPS SSL_ERROR_SYSCALL未成功；没有merge/pull覆盖本地，远端引用未当作新实读结果。源码/lib及上下文文档仍在本地，未stage/commit/push或npm发布。下一步用户验收；收到当轮明确发布指令后才发布0.2.6。
+
+## 0.2.6 首个候选记录（2026-10-22，已被澄清需求替代）
+
+- 基线main/origin/main均40b7dae，开工干净。按用户要求将插件和已登录官网语言跟随DSH；CHAT设置移除独立语言切换。版本0.2.5→0.2.6只递增一次，npm公开仍为上轮0.2.5，本轮未发起发布。
+- 已完成：i18n.ts集中中英文文案；Client仅观察官方locale服务发布的html.lang，同步UI快照并按官方settings.section契约更新同id导航标签。移除ConfigForms偏好恢复/写回和对应陈旧分发断言，保留Host旧language字段及Cordis身份一致性检查。web-surface每条现有命令使用最新语言；website-settings复用公开语言控件，读回才确认，过时目标取消、超时和重试、首次呈现与后续不遮整页处理齐全。旧语言不再覆盖DSH，不读正文/私有状态，不修改登录grant范围。
+- 设置页改为账号卡和只读“界面同步”卡，保留登录/继续登录、退出、记忆状态及错误重试；采用官方Button和已确认dsw主题token，长昵称截断/英文可换行。中英文README与需求、架构、路线、references已同步，撤下含旧语言选择器的设置截图，不伪造新实机图。
+- 官方证据为本机DSH 0.2.1-rc.2 locale分发源码syncDocumentLanguage/getSnapshot/subscribe/locale/change及settings.section类型契约。无可用live Cordis Inspect，不把源码核对称为实时接口调用。0.2.5的website-header/share-copy/typography/session/server/mode源码无差异，保持既有已验收范围。
+- 实际执行：node scripts/build.mjs成功；node scripts/check-distribution.mjs成功（24 compiled files、4 shared modules）；git diff --check成功。未新增/运行单元、浏览器或GUI测试。npm pack --ignore-scripts生成32文件，逐文件同项目分发源。
+- 本地包：artifacts/dsh-deepseek-chat-0.2.6-25bad45452e5.tgz，SHA256=25bad45452e5ea66b7882a944853e48521aed29cb645590d6c90e4d385db3f89。正常quit旧DSH确认结束后，官方CLI plugin --profile desktop add该包退出0；原desktop安装版本0.2.6、32/32文件与包一致。正常open重开，DSH 0.2.1-rc.2进程存在。未创建新的DSH/home/profile，未清理账号或用户数据。
+- CLI仍提示已有无关@deepseek-ai/dsh-mcp-client@0.2.0-rc.2与DSH 0.2.1-rc.2不兼容；本轮未修改它或给予版本豁免。不能把此告警视为本插件安装失败，亦未伪称其它插件兼容。
+- 待用户确认：DSH通用设置中英文往返时，插件菜单/设置和已登录官网跟随；CHAT设置无独立语言选择；账号和对话保持，新排版明暗/窄宽实际效果。未登录官网缺少公开设置入口时，官网登录后才同步语言。真实运行效果尚未验收，不把编译与文件核对当作UI通过。
+- 所有源码、新i18n模块、lib及文档在本地，未stage/commit/push。后续若调整本轮候选仍沿用0.2.6，验收后须用户明确发出当轮npm发布指令；勿重新加号或复活此前已撤回的原生顶部实验。
+
 ## 0.2.5 已发布 npm（2026-10-21）
 
 - 用户已确认本轮分享按钮修复完成并明确授权发布；完成本次npm网页登录及单独2FA后，同一已验收9b8a8380e590包publish退出0，返回+dsh-deepseek-chat@0.2.5。沿用0.2.5，不额外增号或重新构建。

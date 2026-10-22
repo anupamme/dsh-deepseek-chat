@@ -2,11 +2,9 @@ import schema from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-settings'
 import type { Context } from '@deepseek-ai/cordis'
 import { DshChatController } from './server.js'
-import { DEFAULT_WEBSITE_LANGUAGE } from './identity.js'
 
-export const Config = schema.object({
-  language: schema.union(['', 'system', 'zh-CN', 'en']).default(DEFAULT_WEBSITE_LANGUAGE).volatile(),
-})
+// No plugin-owned interface preferences. DSH is the only language source.
+export const Config = schema.object({})
 
 export const name = 'dsh-deepseek-chat'
 

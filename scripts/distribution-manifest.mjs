@@ -32,7 +32,7 @@ async function hashes(root, files) {
 
 async function currentManifest(root) {
   const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
-  const inputs = await hashes(root, [...fixedInputs, ...await filesUnder(root, 'src')])
+  const inputs = await hashes(root, [...fixedInputs, ...await filesUnder(root, 'src'), ...await filesUnder(root, 'locale')])
   const artifacts = await hashes(root, (await filesUnder(root, 'lib')).filter(file => file !== manifestPath))
   return { format: 1, name: manifest.name, version: manifest.version, inputs, artifacts }
 }

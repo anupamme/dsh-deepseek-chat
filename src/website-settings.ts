@@ -1,16 +1,41 @@
 import type { WebsiteCommand } from './website-navigation.js'
 
+export type ChatLanguage = 'zh-CN' | 'en'
+
+/** DSH publishes its resolved locale through document language. No website default. */
+export function readHostLanguage(doc: Document): ChatLanguage | null {
+  const language = doc.documentElement.lang.trim().toLowerCase()
+  if (language === 'zh' || language.startsWith('zh-')) return 'zh-CN'
+  if (language === 'en' || language.startsWith('en-')) return 'en'
+  return null
+}
+
 /** Public profile menu and General controls only; no site APIs or storage. */
 export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null, command: WebsiteCommand) {
   const root = doc.documentElement
   const attr = (name: string) => `data-dsh-chat-settings-${name}`
   const desiredTheme = root.getAttribute('data-dsh-chat-host-theme') === 'light' ? 'light' : 'dark'
   const complete = 'data-dsh-chat-theme-complete'
+  const languageTarget = root.getAttribute('data-dsh-chat-host-language')
+  const desiredLanguage = languageTarget === 'en' || languageTarget === 'zh-CN' ? languageTarget : null
+  const languageComplete = 'data-dsh-chat-language-complete'
+  if (root.getAttribute(attr('language-target')) !== desiredLanguage) {
+    if (desiredLanguage) root.setAttribute(attr('language-target'), desiredLanguage)
+    else root.removeAttribute(attr('language-target'))
+    root.removeAttribute(languageComplete)
+    // A rapid DSH locale change supersedes only the previous language operation.
+    if (root.getAttribute(attr('request'))?.startsWith('language:')) {
+      root.removeAttribute(attr('request')); root.removeAttribute(attr('phase')); root.removeAttribute(attr('deadline'))
+    }
+    if (root.getAttribute(attr('error-goal'))?.startsWith('language:')) {
+      root.removeAttribute(attr('error')); root.removeAttribute(attr('error-goal'))
+    }
+  }
   // Migrate the old fixed-dark marker; each completion now names the verified scheme.
   root.removeAttribute('data-dsh-chat-dark-complete')
   if (root.getAttribute(attr('theme-target')) !== desiredTheme) {
     root.setAttribute(attr('theme-target'), desiredTheme)
-    root.removeAttribute(complete); root.removeAttribute(attr('restored'))
+    root.removeAttribute(complete)
     if (root.getAttribute(attr('request'))?.startsWith('theme:')) {
       root.removeAttribute(attr('request')); root.removeAttribute(attr('phase')); root.removeAttribute(attr('deadline'))
     }
@@ -46,15 +71,10 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
     root.setAttribute(attr('deadline'), String(Date.now() + 12000))
   }
   const loggingOut=root.getAttribute(attr('request'))==='logout'
-  if (command.type === 'settings-close' && !loggingOut) {closeDialog(); root.removeAttribute(attr('request'));root.removeAttribute(attr('phase'));root.removeAttribute(attr('deadline'));root.removeAttribute(attr('error'))}
-  if (command.type === 'settings-read' && !root.hasAttribute(attr('request'))) request('read')
-  if (command.type === 'setting' && !loggingOut) request(`${command.key}:${command.value}`)
-  if (command.type === 'preferences' && !loggingOut) {
-    root.removeAttribute(attr('restored'))
-    root.removeAttribute(complete)
-    if (command.language) root.setAttribute(attr('restore-language'), command.language)
+  if (command.type === 'settings-retry' && !loggingOut && !root.hasAttribute(attr('request'))) {
+    root.removeAttribute(attr('error')); root.removeAttribute(attr('error-goal'))
   }
-  if (command.type === 'logout') {root.removeAttribute(attr('restore-language'));root.removeAttribute(attr('restored'));request('logout')}
+  if (command.type === 'logout') request('logout')
   const rowFor = (re: RegExp) => {
     if (!dialog) return undefined
     const walker = doc.createTreeWalker(dialog, 4); let node: Node | null
@@ -80,9 +100,11 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
   if (theme) root.setAttribute('data-dsh-chat-theme', theme)
   const desiredThemeLabel = desiredTheme === 'light' ? /^(Light|浅色|浅色模式)$/i : /^(Dark|深色|深色模式)$/i
   if (theme && !desiredThemeLabel.test(theme)) root.removeAttribute(complete)
-  if (!root.hasAttribute(attr('request')) && !root.hasAttribute(attr('error')) && command.type !== 'settings-close') {
+  const desiredLanguageLabel = desiredLanguage === 'en' ? /^(English|英语)$/i : /^(简体中文|中文|Chinese|中文（简体）|Chinese \(Simplified\))$/i
+  if (desiredLanguage && language && !desiredLanguageLabel.test(language)) root.removeAttribute(languageComplete)
+  if (!root.hasAttribute(attr('request')) && !root.hasAttribute(attr('error'))) {
     if (root.getAttribute(complete) !== desiredTheme) request(`theme:${desiredTheme}`)
-    else if (root.hasAttribute(attr('restore-language'))) request(`language:${root.getAttribute(attr('restore-language'))}`)
+    else if (desiredLanguage && root.getAttribute(languageComplete) !== desiredLanguage) request(`language:${desiredLanguage}`)
   }
   const goal = root.getAttribute(attr('request')), phase = root.getAttribute(attr('phase'))
   const finish = (error?: string) => {
@@ -90,9 +112,9 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
     if (error) { root.setAttribute(attr('error'), error); root.setAttribute(attr('error-goal'), goal ?? '') }
     if (goal?.startsWith('theme:') && !error) root.setAttribute(complete, goal.slice(6))
     if (goal?.startsWith('language:')) {
-      root.removeAttribute(attr('restore-language'))
+      if (!error && desiredLanguage && goal.slice(9) === desiredLanguage) root.setAttribute(languageComplete, desiredLanguage)
       // Language changes can remount the appearance controls; recheck the current host scheme.
-      root.removeAttribute(complete)
+      if (phase === 'verify') root.removeAttribute(complete)
     }
     if (goal !== 'logout') closeDialog()
   }
@@ -112,11 +134,9 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
       }
     } else if (!languageRow) {
       if (phase !== 'general' && phase !== 'verify') {root.setAttribute(attr('phase'), 'general');exact(dialog, general)?.click()}
-    } else if (goal === 'read') {
-      if (language) finish()
     } else {
       const split = goal.indexOf(':'), key = goal.slice(0, split), value = goal.slice(split + 1)
-      const values: Record<string, RegExp> = {'zh-CN':/^(简体中文|中文|Chinese|中文（简体）|Chinese \(Simplified\))$/i,en:/^(English|英语)$/i,light:/^(Light|浅色|浅色模式)$/i,dark:/^(Dark|深色|深色模式)$/i,system:/^(System|跟随系统|系统|Follow system)$/i}
+      const values: Record<string, RegExp> = {'zh-CN':/^(简体中文|中文|Chinese|中文（简体）|Chinese \(Simplified\))$/i,en:/^(English|英语)$/i,light:/^(Light|浅色|浅色模式)$/i,dark:/^(Dark|深色|深色模式)$/i}
       const regex = values[value], current = key === 'language' ? language : theme
       if (regex && current && regex.test(current)) finish()
       // After one option click, only observe the visible value or fixed timeout.
@@ -135,6 +155,5 @@ export function adaptWebsiteSettings(doc: Document, profile: HTMLElement | null,
       }
     }
   }
-  if (root.getAttribute(complete) === desiredTheme && !root.hasAttribute(attr('restore-language'))) root.setAttribute(attr('restored'),'')
-  return {language:root.getAttribute('data-dsh-chat-language'),theme:root.getAttribute('data-dsh-chat-theme'),error:root.getAttribute(attr('error')),pending:root.hasAttribute(attr('request')),restored:root.hasAttribute(attr('restored'))}
+  return {language:root.getAttribute('data-dsh-chat-language'),theme:root.getAttribute('data-dsh-chat-theme'),error:root.getAttribute(attr('error')),pending:root.hasAttribute(attr('request'))}
 }

@@ -10,7 +10,7 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.2.5** · 适配 **DSH 桌面版** · 默认语言为简体中文。
+当前版本 **0.2.6** · 适配 **DSH 桌面版** · CHAT 网页的语言、外观和字号跟随 DSH。
 
 ## 功能预览
 
@@ -33,13 +33,12 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 
 切换器位于左侧顶部的 DeepSeek 品牌旁。白色圆角表示当前模式；切回 HARNESS 会恢复进入 CHAT 前的主面板，再进入 CHAT 时回到刚才的网页。折叠侧栏后，可通过原展开按钮回到切换器。
 
-### 中文设置与网页登录记忆
+### 官网账号与网页登录记忆
 
-![CHAT 设置：网页登录记忆、登录状态与简体中文选项](docs/images/chat-settings.png)
+在 DSH 原生 **设置 → Chat 设置** 中查看官网账号、登录记忆，或退出登录。
 
-在 DSH 原生 **设置 → CHAT设置** 中查看官网账号状态、退出登录和切换语言。
-
-- 默认简体中文，也可选择 English 或跟随系统；主动选择的语言会保存。
+- 语言在 **DSH 设置 → 通用设置** 中选择：DSH 为中文时，官网语言自动设为简体中文；DSH 为英文时，官网自动设为 English。插件的菜单、提示和 Chat 设置也同步切换中英文，不设独立语言或默认中文规则。
+- 外观和内容字号也自动跟随 DSH，无需在插件内另行调整。
 - CHAT 使用独立的官网登录，DSH 账号退出或 CHAT 退出都不禁用模式切换器。
 - 设置与对话页面使用同一个网页登录；登录后自动更新账号和列表，登录记忆在后台保存。
 - 首次在插件内正常登录官网后，出现 **“已记住网页登录”** 即表示插件已保存本次授权。
@@ -52,13 +51,13 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 在 DSH 的插件安装输入框中输入下方名称和版本号，安装当前最新发布版本：
 
 ```text
-dsh-deepseek-chat@0.2.5
+dsh-deepseek-chat@0.2.6
 ```
 
 也可以使用命令行：
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.2.5
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.6
 ```
 
 首次安装和更新已有插件均使用这一方式。若新版本被 DSH 的发布时间策略暂时拦截，可稍后重试，或使用下方 GitHub 安装方式。
@@ -84,20 +83,20 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 将 `.tgz` 安装包交给 DSH 插件管理器安装，或使用命令行：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.5.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.6.tgz
 ```
 
 将路径替换为实际安装包位置。
 
-**安装完成后，完整退出并重新打开 DSH，在插件管理页确认版本为 0.2.5。** 使用其他 profile 时，将命令中的 `desktop` 替换为对应名称。
+**安装完成后，完整退出并重新打开 DSH，在插件管理页确认版本为 0.2.6。** 使用其他 profile 时，将命令中的 `desktop` 替换为对应名称。
 
 更多说明参见 [DSH 官方插件安装文档](https://deepseek-harness.github.io/deepseek-harness/en/develop/basic/publish)。
 
 ## 开始使用
 
-1. 选择 **CHAT**。未登录时点击 **登录 DeepSeek**；也可在 **设置 → CHAT设置** 点击同一个登录入口。
-2. 登录统一在 CHAT 主页面的真实官网中完成。CHAT 设置只显示账号、登录状态和语言；点击其中的登录按钮会关闭设置并进入 CHAT，登录后自动同步，无需刷新。
-3. 打开 **设置 → CHAT设置**，确认出现“已记住网页登录”，按需选择语言。退出登录会清除本插件的登录记忆并正常退出官网；模式切换器继续可用。
+1. 选择 **CHAT**。未登录时点击 **登录 DeepSeek**；也可在 **设置 → Chat 设置** 点击同一个登录入口。
+2. 登录统一在 CHAT 主页面的真实官网中完成。Chat 设置只显示账号和登录状态；点击其中的登录按钮会关闭设置并进入 CHAT，登录后自动同步，无需刷新。
+3. 打开 **设置 → Chat 设置**，确认出现“已记住网页登录”。语言、外观和文字大小统一在 DSH 通用设置调整。退出登录会清除本插件的登录记忆并正常退出官网；模式切换器继续可用。
 
 当前登录在插件网页中完成。外部浏览器登录后自动授权回跳需要官网提供面向 Chat 的授权交换接口，目前未确认可用；直接在其他浏览器登录不会自动登录本插件。
 
@@ -116,7 +115,7 @@ dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.5.tgz
 
 ## 隐私与数据
 
-聊天和账号历史由 DeepSeek 官网处理。插件为界面适配读取公开的导航标题、分组、链接、昵称与语言设置；导航资料只留在当前授权期间的内存中，语言偏好通过 DSH 官方配置服务保存。
+聊天和账号历史由 DeepSeek 官网处理。插件为界面适配读取公开的导航标题、分组、链接、昵称与语言设置；导航资料只留在当前授权期间的内存中。插件只读 DSH 已解析的语言、主题与内容字号；官网语言和主题通过原有公开设置控件同步，不另存一份插件语言偏好。
 
 网页登录记忆仅处理插件自身 `chat.deepseek.com` 页面的最小授权数据，通过 DSH 官方凭据服务保存。插件根据 DSH 启动器提供的配置路径生成独立记录标识，使不同配置的登录记忆分开，记录对应的官网账号；退出时清除旧授权并隔离迟到保存。缺少可信配置上下文时，仍可正常网页登录，但不能保存登录记忆。这依赖官网当前实现，并非稳定的官方 OAuth 接口；不承诺永久免登录。
 
@@ -133,7 +132,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.2.5.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.2.6.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 

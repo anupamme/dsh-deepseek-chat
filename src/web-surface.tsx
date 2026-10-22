@@ -3,6 +3,7 @@ import { createElement, useCallback, useEffect, useRef, useState } from 'react'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { DesktopBrowserBridge, DesktopBrowserReservation } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { DshChatStyles, useDshChat, type DshChatBridgeProps } from './ui.js'
+import { translate } from './i18n.js'
 import { emptyNavigation, parseWebsiteNavigation, websiteCommandScript, type WebsiteCommand } from './website-navigation.js'
 import { parseWebsiteSession, websiteSessionCaptureScript, websiteSessionRestoreScript } from './website-session.js'
 
@@ -68,6 +69,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
   readonly nativeBrowser?: DesktopBrowserBridge
 }) {
   const state = useDshChat(bridge)
+  const t = (text: string | null | undefined) => translate(state.language, text)
   const [requestedGeneration, setRequestedGeneration] = useState<number | null>(null)
   const [reservation, setReservation] = useState<ReservationState | null>(null)
   const [recoveryRevision, setRecoveryRevision] = useState(0)
@@ -185,7 +187,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
       // Read only the public host font token; keep live changes in DSH settings in sync.
       const value = getComputedStyle(document.body).getPropertyValue('--dsh-content-font-size')
       const size = Number.parseFloat(value)
-      return executeScript(websiteCommandScript(command, Number.isFinite(size) ? size : 14, hostTheme()))
+      return executeScript(websiteCommandScript(command, Number.isFinite(size) ? size : 14, hostTheme(), bridge.getSnapshot().language))
     }
     const active = () => {
       const snapshot=bridge.getSnapshot()
@@ -416,14 +418,14 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
   }, [bridge, nativeBrowser, reservation, state.websiteReloadRevision, state.modeEnabled, state.authorizationStatus])
 
   useEffect(() => {
-    if(state.mode==='chat' && state.viewport) bridge.commandWebsite({type:'snapshot',showOriginal:state.showWebsiteNavigation,headerInset:headerInset(state.viewport)})
-  }, [bridge,state.mode,state.viewport?.left])
+    if((state.mode==='chat' || state.settingsOpen) && state.authorizationStatus==='authorized') bridge.commandWebsite({type:'snapshot',showOriginal:state.showWebsiteNavigation,headerInset:headerInset(state.viewport)})
+  }, [bridge,state.mode,state.settingsOpen,state.viewport?.left,state.language,state.authorizationStatus])
 
   useEffect(() => () => { guestEvents.current?.abort() }, [])
 
   const inSettings = state.settingsOpen
   // Settings is a native status page. Its shared guest stays hidden at desktop
-  // size for account/preferences reads; login always uses the main CHAT panel.
+  // size for account observation and DSH preference sync; login uses the main CHAT panel.
   const rect = inSettings
     ? state.viewport ?? {left:0,top:0,width:globalThis.innerWidth,height:globalThis.innerHeight}
     : state.viewport
@@ -433,7 +435,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     && reservation.storageKey === state.accountStorageKey ? reservation : null
   const clearance = 0
   const logoutError=state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError ?? '')
-  return createPortal(<section id="dsh-chat-website-surface" className="dsh-chat-web-surface" aria-label="DeepSeek 官网网页" aria-hidden={!visible} style={{
+  return createPortal(<section id="dsh-chat-website-surface" className="dsh-chat-web-surface" aria-label={t("DeepSeek 官网网页")} aria-hidden={!visible} style={{
     zIndex: inSettings ? 0 : 14,
     visibility: visible ? 'visible' : 'hidden',
     display: (inSettings || state.mode==='chat') && rect ? 'flex' : 'none',
@@ -446,8 +448,8 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     borderRadius: 0, overflow: 'hidden',
   }}>
     <DshChatStyles />
-    {state.websiteSessionStatus==='saved' && <span className="dsh-chat-sr-only" role="status" aria-label="CHAT 网页登录状态已保存">CHAT 网页登录状态已保存</span>}
-    {state.websiteSessionError && <p className="dsh-chat-session-error" role="alert">{state.websiteSessionError}</p>}
+    {state.websiteSessionStatus==='saved' && <span className="dsh-chat-sr-only" role="status" aria-label={t("CHAT 网页登录状态已保存")}>{t("CHAT 网页登录状态已保存")}</span>}
+    {state.websiteSessionError && <p className="dsh-chat-session-error" role="alert">{t(state.websiteSessionError)}</p>}
     <div className="dsh-chat-web-content">
       {activeReservation !== null && createElement('webview', {
         key: activeReservation.native.lease,
@@ -459,15 +461,15 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         src: `about:blank#${activeReservation.native.lease}`,
         allowpopups: '',
         'data-sidebar-browser-frame': 'webview',
-        'aria-label': 'DeepSeek 官网，登录、聊天和历史由网页提供',
+        'aria-label': t('DeepSeek 官网，登录、聊天和历史由网页提供'),
       })}
       {(nativeBrowser === undefined || state.webError !== null || activeReservation === null || !presentationReady || state.websiteAuthenticationStatus==='signed-out' || state.websiteAuthenticationStatus==='signing-out' || logoutError) && <div className={`dsh-chat-web-status${state.webError !== null ? ' dsh-chat-web-status-error' : ''}`} role={state.webError !== null ? 'alert' : 'status'}>
-        <strong>{nativeBrowser === undefined ? '当前环境无法内嵌网页' : state.webError !== null ? '网页暂时无法使用' : logoutError ? '退出登录未完成' : state.websiteAuthenticationStatus==='signed-out' ? '登录 DeepSeek Chat' : state.websiteAuthenticationStatus==='signing-out' ? '正在退出登录' : '正在打开 DeepSeek 官网'}</strong>
-        <p>{state.webError || (logoutError ? state.websiteSessionError : nativeBrowser === undefined ? '需要提供官方浏览器能力的 DSH 桌面版。' : state.websiteAuthenticationStatus==='signing-out' ? '正在清除登录记忆并退出官网。' : 'CHAT 使用独立的官网登录，登录后自动同步账号和官网对话。')}</p>
-        {logoutError && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button>}
-        {state.websiteAuthenticationStatus==='signed-out' && <button type="button" className="dsh-chat-primary-button" onClick={()=>bridge.beginWebsiteSignIn()}>登录 DeepSeek</button>}
-        {state.authorizationStatus!=='authorized' && nativeBrowser!==undefined && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.refreshAuthorization()}>重试连接</button>}
-        {(state.webError !== null) && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.reloadWebsite()} disabled={nativeBrowser === undefined || !state.modeEnabled}>重试网页</button>}
+        <strong>{t(nativeBrowser === undefined ? '当前环境无法内嵌网页' : state.webError !== null ? '网页暂时无法使用' : logoutError ? '退出登录未完成' : state.websiteAuthenticationStatus==='signed-out' ? '登录 DeepSeek Chat' : state.websiteAuthenticationStatus==='signing-out' ? '正在退出登录' : '正在打开 DeepSeek 官网')}</strong>
+        <p>{t(state.webError || (logoutError ? state.websiteSessionError : nativeBrowser === undefined ? '需要提供官方浏览器能力的 DSH 桌面版。' : state.websiteAuthenticationStatus==='signing-out' ? '正在清除登录记忆并退出官网。' : 'CHAT 使用独立的官网登录，登录后自动同步账号和官网对话。'))}</p>
+        {logoutError && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.logoutWebsite()}>{t("重试退出登录")}</button>}
+        {state.websiteAuthenticationStatus==='signed-out' && <button type="button" className="dsh-chat-primary-button" onClick={()=>bridge.beginWebsiteSignIn()}>{t("登录 DeepSeek")}</button>}
+        {state.authorizationStatus!=='authorized' && nativeBrowser!==undefined && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.refreshAuthorization()}>{t("重试连接")}</button>}
+        {(state.webError !== null) && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.reloadWebsite()} disabled={nativeBrowser === undefined || !state.modeEnabled}>{t("重试网页")}</button>}
       </div>}
     </div>
   </section>, document.body)

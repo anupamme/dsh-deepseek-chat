@@ -1,5 +1,11 @@
 # 官方资料与调研记录
 
+## 0.2.6语言依据（2026-10-22）
+
+本轮账号卡加载反馈另核对本地官方SDK：IconLoadingOutlineRegular提供aria-hidden图标；纯状态div使用标准role=status/aria-busy，与原生Button无关。文字后置图标，旋转复用插件现有CSS，未增加运行时模块或live接口。
+
+本机DSH 0.2.1-rc.2官方app.asar内 @deepseek-ai/dsh-client-locale/lib/client.js 的 syncDocumentLanguage（约1172行）、LocaleRuntime getSnapshot/subscribe 及 publish 的 locale/change（约1449行），证明 html.lang 为官方已解析语言投影。settings.section 原有契约也已核对；其slots.d.ts明确label由注册方本地化，并在语言变化时以同一id重注册；本轮按用户最新决定恢复插件UI翻译，沿用现有语言订阅更新标签。以上为官方分发源码和SDK静态核查，无live Inspect，不表示真实中英切换已经验收。插件读取标准投影，不新增locale依赖或调用未知API。
+
 实际开发以 DeepSeek Harness 官方文档和目标安装版本为准。本文件区分项目创建阶段记录、2026-10-09 静态复核和用户确认的产品决策，不将不同设备/工具的证据混写成同一次 live 验证。
 
 2026-10-11当前W025 / 0.1.9，基线f2c1277已由用户提交。新规则为独立官网授权，取消退出禁用与强制HARNESS；同guest、status/revision同步、可信Host profile目录派生key及旧记录精确迁移见architecture/requirements。仓库改名/origin更新、正常npm正式0.1.9/latest发布、最终候选构建/分发及fresh Git检查已完成。公开DSH pnpm11.7.0裸名空store安装12包、23文件与发布tgz一致及Host/lazy Client通过；本机CLI换为裸名^0.1.9、旧插件不存在且23文件一致。未重启/GUI验收，未运行本轮单元/浏览器/GUI回归，未stage/commit/push。详见[handoff](handoff.md)；以下旧包、旧源码与旧门槛证据仅对应历史版本，不替代官网登录/退出/重登/迁移/重启验收。

@@ -1,5 +1,19 @@
 # 架构与可行性
 
+## 官网及插件语言随DSH与Chat设置（0.2.6，按用户最新决定）
+
+目标是内嵌官网实际Language设置同步：DSH中文→官网简体中文，DSH英文→官网English。DSH 0.2.1-rc.2的 @deepseek-ai/dsh-client-locale LocaleRuntime/getSnapshot/subscribe、locale/change 及 syncDocumentLanguage 将当前实际语言写入公开html.lang（zh→zh-CN），插件只读这一投影并仅监听lang属性，不写DSH或推断系统语言。未识别宿主语言时返回null且不写官网语言目标；DSH选跟随系统时仍只使用其解析后的中/英文。
+
+删除 DEFAULT_WEBSITE_LANGUAGE 和Host独立language schema字段（Config为空对象），移除ConfigForms读写/恢复。Schemastery 3.18.5 object resolver的非strict分支允许旧对象未知字段，不需要修改用户profile，且Client/Host业务不读取旧language。删除preferences、setting、settings-read、settings-close及restore-language/restored流程；设置页生命周期只协调账号所需guest可用性，不触发或取消自动同步。仅保留settings-retry作为实际同步失败后的重试入口。
+
+WebSurface每条既有串行命令读取最新宿主语言，只有en/zh-CN可写host-language标记；无目标时撤回该标记。官网设置适配与主题同步使用同一公开General/Language控件通道，读回准确选项后写language-complete，不使用官网Follow system冒充DSH选择。快速变更只撤销过期语言阶段，不覆盖退出或主题请求；超时12秒及错误重试有界。第一次准备画面等目标确认或明确错误，已呈现网页后续同步不重遮整页。复用同guest，不重载、不新增存储/私有API或读取正文，身份/退出代次屏障保留。官网未提供可用公开设置控件时保留真实状态并在可操作时同步，不伪称无条件登录页强改。
+
+用户最新决定恢复插件文案翻译。语言枚举与标准宿主读取函数仍在website-settings.ts，不增加语言状态/配置。locale/zh-CN.json与locale/en.json集中维护UI文案；i18n.ts只按现有language查表，未知消息保留原文；固定错误只在呈现时翻译，内部中文值和退出/超时判断不变。locale-json.d.ts只声明JSON类型，构建将实际JSON文案打入Client；分发输入哈希包含locale目录，防止文案更新后误用旧lib。设置入口为“Chat 设置”/“Chat settings”，删除界面同步整卡、图标、说明与相关CSS/文案，只保留官网账号、已保存登录、登录/退出及真实错误重试。用户追加选择允许无头像：移除首字母占位及其CSS，账号区域以可换行flex布局呈现昵称/状态和退出按钮，收紧分隔间距；不新增头像读取或跨guest图片数据。原官网标题/分享定位、复制兜底、字体和凭据源码不修改。
+
+账号卡状态统一：彻底删除statusTitle/statusDescription、settings-status说明区及重新识别说明，在任何状态均不生成这组DOM。signed-out/signing-in保留原登录动作，loading用非交互div（role=status、aria-busy）显示“加载中”，文字后放官方IconLoadingOutlineRegular并复用既有旋转与减少动画样式；signing-out同样只显示纯状态。无button/onClick/tabIndex，最小高度36px衔接原控件的占位。不为加载提供reload点击，真实错误仍走已有错误区和重试；不改状态来源、超时、认证或guest流程。侧栏只在sign-in提示追加居中样式，文案和英文词条同步缩短，其余列表/错误不改对齐。无认证状态、网页命令或登录流程变更。
+
+本轮无live Cordis Inspect，使用本机官方分发源码和SDK静态契约（settings.section使用既有固定id，依官方SDK契约随语言变化重注册本地化标签“Chat 设置”/“Chat settings”，只在标签实际变化时更新）；Schema空对象兼容为源码核对。构建/分发、原desktop安装、用户验收及npm公开结果以handoff为准；用户已确认当前候选合格，不将其写成Agent自动化界面检查。不新增/运行测试，不另建DSH，不Git/npm发布。此前含“界面同步”卡和保留语言schema的25bad候选已被本节替代，继续同一0.2.6不重复加号。
+
 ## 分享按钮定位容器（2026-10-21，0.2.5已发布）
 
 基于用户已恢复的0.2.4，仅在website-header.ts中给现有rowSelector添加position:relative，将shareSelector的position:fixed改为absolute。官网原有对话顶部行的实际宽度作为按钮right:12px的参照；参考面板改变对话宽度时由CSS直接重排，不测量面板、移动DOM或新增observer/轮询。原顶部高度、标题/编辑、侧栏、分享事件与复制后备保持仓库基线。此前整套原生顶部实验已撤回；本次不是复活该实验。构建与安装证据、尚未完成的用户视觉验收见handoff。

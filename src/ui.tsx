@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { createElement, useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react'
-import { BrandWordmark, IconSearchOutlineRegular, IconCloseFillRegular, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
+import { BrandWordmark, IconSearchOutlineRegular, IconCloseFillRegular, IconNewChatOutlineRegular, IconPanelLeftOutlineRegular, IconRefreshOutlineRegular, IconLoadingOutlineRegular, IconEllipsisOutlineRegular, IconEditOutlineRegular, IconPinOutlineRegular, IconShareOutlineRegular, IconTrashOutlineRegular, Menu, Modal, Button, Tooltip } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ComponentType } from 'react'
 import type { StoredEntry } from '@deepseek-ai/dsh-client-ui-slots'
 import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
@@ -8,7 +8,9 @@ import type {} from '@deepseek-ai/dsh-client-ui-layout/client'
 import type {} from '@deepseek-ai/dsh-client-ui-sidebar/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import { acquireChatStyles, ensureChatStyles } from './styles.js'
+import { translate } from './i18n.js'
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js'
+import type { ChatLanguage } from './website-settings.js'
 import type { WebsiteSession } from './protocol.js'
 
 export type DshChatMode = 'chat' | 'harness'
@@ -35,7 +37,7 @@ export interface DshChatViewState {
   readonly authorizationGeneration: number
   readonly websiteReloadRevision: number
   readonly settingsOpen: boolean
-  readonly preferenceError: string | null
+  readonly language: ChatLanguage | null
   readonly websiteAuthenticationStatus: 'loading' | 'signed-out' | 'signing-in' | 'signed-in' | 'signing-out' | 'error'
   readonly websiteAuthenticationRevision: number
   readonly websiteSessionStatus: 'idle' | 'saved' | 'error'
@@ -109,13 +111,14 @@ export function DshChatModeSelector({ bridge, state, compact = false }: DshChatB
   readonly compact?: boolean
 }) {
   const description = useId()
+  const t = (text: string | null | undefined) => translate(state.language, text)
   return <div className={compact ? 'dsh-chat-mode-compact' : 'dsh-chat-mode-wrap'}>
     <fieldset className="dsh-chat-modes" disabled={!state.modeEnabled} aria-describedby={description}>
-      <legend className="dsh-chat-sr-only">工作模式</legend>
-      <button type="button" aria-label="CHAT 官网聊天模式" aria-pressed={state.mode === 'chat'} onClick={() => bridge.selectMode('chat')} title={state.availabilityMessage}>{compact ? 'C' : 'CHAT'}</button>
-      <button type="button" aria-label="HARNESS 工作区模式" aria-pressed={state.mode === 'harness'} onClick={() => bridge.selectMode('harness')} title={state.availabilityMessage}>{compact ? 'H' : 'HARNESS'}</button>
+      <legend className="dsh-chat-sr-only">{t("工作模式")}</legend>
+      <button type="button" aria-label={t("CHAT 官网聊天模式")} aria-pressed={state.mode === 'chat'} onClick={() => bridge.selectMode('chat')} title={t(state.availabilityMessage)}>{compact ? 'C' : 'CHAT'}</button>
+      <button type="button" aria-label={t("HARNESS 工作区模式")} aria-pressed={state.mode === 'harness'} onClick={() => bridge.selectMode('harness')} title={t(state.availabilityMessage)}>{compact ? 'H' : 'HARNESS'}</button>
     </fieldset>
-    <span id={description} className="dsh-chat-sr-only">{state.availabilityMessage || '选择 CHAT 或 HARNESS 工作模式。'}</span>
+    <span id={description} className="dsh-chat-sr-only">{t(state.availabilityMessage || '选择 CHAT 或 HARNESS 工作模式。')}</span>
   </div>
 }
 
@@ -164,40 +167,43 @@ export function DshChatBrandName({ bridge }: PropsRuntime<'sidebar.brand.name'> 
 }
 
 function DshChatAuthorizationNotice({ bridge, state }: DshChatBridgeProps & { readonly state: DshChatViewState }) {
+  const t = (text: string | null | undefined) => translate(state.language, text)
   if (!state.error) return null
   return <div className="dsh-chat-authorization-notice" role="status">
-    <p>{state.error}</p>
-    <button type="button" className="dsh-chat-text-button" onClick={() => bridge.refreshAuthorization()}>重试连接</button>
+    <p>{t(state.error)}</p>
+    <button type="button" className="dsh-chat-text-button" onClick={() => bridge.refreshAuthorization()}>{t("重试连接")}</button>
   </div>
 }
 
 /** DOM siblings remain React descendants of the Windows New Session brand. */
 export function DshChatBrandControl({ bridge }: DshChatBridgeProps) {
   const state = useDshChat(bridge)
-  return <div className="dsh-chat-brand-control" aria-label="dsh-deepseek-chat 模式选择"
+  const t = (text: string | null | undefined) => translate(state.language, text)
+  return <div className="dsh-chat-brand-control" aria-label={t("dsh-deepseek-chat 模式选择")}
     onClick={event => event.stopPropagation()}>
     <DshChatStyles />
     <DshChatModeSelector bridge={bridge} state={state} />
     <DshChatAuthorizationNotice bridge={bridge} state={state} />
-    {state.sidebarAdapted === false && <div className="dsh-chat-authorization-notice" role="alert">当前侧栏不兼容：顶部新会话仍使用 HARNESS。CHAT 请展开官网导航后新建对话。</div>}
+    {state.sidebarAdapted === false && <div className="dsh-chat-authorization-notice" role="alert">{t("当前侧栏不兼容：顶部新会话仍使用 HARNESS。CHAT 请展开官网导航后新建对话。")}</div>}
   </div>
 }
 
-function DshChatConversationRow({bridge, item, selected, disabled, onRename}: DshChatBridgeProps & {
-  item: WebsiteNavigation['conversations'][number]; selected: boolean; disabled: boolean; onRename: () => void
+function DshChatConversationRow({bridge, item, selected, disabled, onRename, language}: DshChatBridgeProps & {
+  item: WebsiteNavigation['conversations'][number]; selected: boolean; disabled: boolean; onRename: () => void; language: ChatLanguage | null
 }) {
+  const t = (text: string | null | undefined) => translate(language, text)
   const [open, setOpen] = useState(false)
   const pinned = /^(置顶|Pinned|Pin)$/i.test(item.group)
   useLayoutEffect(() => { if (disabled) setOpen(false) }, [disabled])
   return <div className="dsh-chat-conversation-item" data-selected={selected || undefined} data-menu-open={open || undefined}>
     <button type="button" className="dsh-chat-conversation-row" title={item.title} aria-current={selected ? 'page' : undefined} disabled={disabled} onDoubleClick={onRename} onClick={()=>bridge.commandWebsite({type:'open',href:item.href})}>{item.title}</button>
     <Menu open={open && !disabled} portal closeOnPointerLeave onClose={()=>setOpen(false)} anchor={
-      <button type="button" className="dsh-chat-conversation-more dsh-chat-icon-button" aria-label={`更多操作：${item.title}`} aria-haspopup="menu" aria-expanded={open} disabled={disabled} onClick={()=>setOpen(value=>!value)}><IconEllipsisOutlineRegular size={16}/></button>
+      <button type="button" className="dsh-chat-conversation-more dsh-chat-icon-button" aria-label={t('更多操作：{title}').replace('{title}',item.title)} aria-haspopup="menu" aria-expanded={open} disabled={disabled} onClick={()=>setOpen(value=>!value)}><IconEllipsisOutlineRegular size={16}/></button>
     } items={[
-      {id:'rename',label:'重命名',icon:<IconEditOutlineRegular size={16}/>},
-      {id:pinned ? 'unpin' : 'pin',label:pinned ? '取消置顶' : '置顶',icon:<IconPinOutlineRegular size={16}/>},
-      {id:'share',label:'分享',icon:<IconShareOutlineRegular size={16}/>},
-      {id:'delete',label:'删除',icon:<IconTrashOutlineRegular size={16}/>,danger:true},
+      {id:'rename',label:t('重命名'),icon:<IconEditOutlineRegular size={16}/>},
+      {id:pinned ? 'unpin' : 'pin',label:t(pinned ? '取消置顶' : '置顶'),icon:<IconPinOutlineRegular size={16}/>},
+      {id:'share',label:t('分享'),icon:<IconShareOutlineRegular size={16}/>},
+      {id:'delete',label:t('删除'),icon:<IconTrashOutlineRegular size={16}/>,danger:true},
     ]} onSelect={action=>{
       setOpen(false)
       if(action==='rename') {onRename();return}
@@ -207,9 +213,10 @@ function DshChatConversationRow({bridge, item, selected, disabled, onRename}: Ds
 }
 
 /** Same Modal, buttons, input geometry and IME handling as HARNESS RenameSession. */
-function DshChatRenameConversation({bridge, item, onClose}: DshChatBridgeProps & {
-  item: WebsiteNavigation['conversations'][number]; onClose: () => void
+function DshChatRenameConversation({bridge, item, onClose, language}: DshChatBridgeProps & {
+  item: WebsiteNavigation['conversations'][number]; onClose: () => void; language: ChatLanguage | null
 }) {
+  const t = (text: string | null | undefined) => translate(language, text)
   const [draft,setDraft] = useState(item.title)
   const [renaming,setRenaming] = useState(false)
   const [error,setError] = useState<string | null>(null)
@@ -224,16 +231,16 @@ function DshChatRenameConversation({bridge, item, onClose}: DshChatBridgeProps &
       setRenaming(false);setError(reason instanceof Error ? reason.message : '重命名失败，请重试。')
     })
   }
-  return <Modal open onClose={close} closeLabel="关闭" title="重命名会话" footer={<>
-    <Button variant="outline" disabled={renaming} onClick={close}>取消</Button>
-    <Button variant="primary" disabled={blocked} onClick={confirm}>{renaming ? '正在重命名…' : '重命名'}</Button>
+  return <Modal open onClose={close} closeLabel={t("关闭")} title={t("重命名会话")} footer={<>
+    <Button variant="outline" disabled={renaming} onClick={close}>{t("取消")}</Button>
+    <Button variant="primary" disabled={blocked} onClick={confirm}>{t(renaming ? '正在重命名…' : '重命名')}</Button>
   </>}>
     <DshChatStyles/>
-    <input className="dsh-chat-rename-input" value={draft} aria-label="会话名称" data-modal-autofocus maxLength={300} disabled={renaming}
+    <input className="dsh-chat-rename-input" value={draft} aria-label={t("会话名称")} data-modal-autofocus maxLength={300} disabled={renaming}
       onFocus={event=>event.target.select()} onChange={event=>{setDraft(event.target.value);setError(null)}}
       onCompositionStart={()=>{composing.current=true}} onCompositionEnd={()=>{composing.current=false}}
       onKeyDown={event=>{if(event.key==='Enter' && !composing.current && !event.nativeEvent.isComposing){event.preventDefault();confirm()}}}/>
-    {error && <div className="dsh-chat-rename-error" role="alert">{error}</div>}
+    {error && <div className="dsh-chat-rename-error" role="alert">{t(error)}</div>}
   </Modal>
 }
 
@@ -264,6 +271,7 @@ export function guardHarnessSearchReplay(entry: StoredEntry): (() => void) | nul
 /** Only the middle browsing region changes; the shipped shell and Settings stay mounted. */
 export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRuntime<'sidebar.workspaces'> & DshChatBridgeProps) {
   const state = useDshChat(bridge)
+  const t = (text: string | null | undefined) => translate(state.language, text)
   const [renameTarget,setRenameTarget] = useState<WebsiteNavigation['conversations'][number] | null>(null)
   const [query, setQuery] = useState('')
   const [searching, setSearching] = useState(false)
@@ -292,34 +300,34 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
     const rows = groups.get(item.group) ?? []
     rows.push(item); groups.set(item.group, rows)
   }
-  return <section className={`dsh-chat-navigation${wide ? '' : ' dsh-chat-navigation-rail'}`} aria-label="官网对话导航">
+  return <section className={`dsh-chat-navigation${wide ? '' : ' dsh-chat-navigation-rail'}`} aria-label={t("官网对话导航")}>
     <DshChatStyles />
-    {renameTarget && <DshChatRenameConversation key={renameTarget.href} bridge={bridge} item={renameTarget} onClose={()=>setRenameTarget(null)}/>}
-    {!wide ? <button type="button" className="dsh-chat-icon-button" onClick={expandSidebar} aria-label="展开官网对话列表"><PanelIcon /></button> : <>
+    {renameTarget && <DshChatRenameConversation key={renameTarget.href} bridge={bridge} language={state.language} item={renameTarget} onClose={()=>setRenameTarget(null)}/>}
+    {!wide ? <button type="button" className="dsh-chat-icon-button" onClick={expandSidebar} aria-label={t("展开官网对话列表")}><PanelIcon /></button> : <>
       <header className="dsh-chat-navigation-header" data-searching={searching || undefined}>
-        <span className="dsh-chat-search-label">对话</span>
+        <span className="dsh-chat-search-label">{t("对话")}</span>
         <div className="dsh-chat-search-slot">
           <div ref={searchRoot} className="dsh-chat-search" onClick={()=>setSearching(true)}>
-            <Tooltip label="搜索官网对话" delayMs={500} disabled={searching}><button ref={searchButton} type="button" className="dsh-chat-search-button" aria-label="搜索官网对话" aria-expanded={searching} onClick={()=>setSearching(true)}><IconSearchOutlineRegular size={searching ? 11 : 14}/></button></Tooltip>
-            <input ref={searchInput} className="dsh-chat-search-input" type="text" aria-label="搜索已加载的官网对话标题" placeholder="搜索会话名称" maxLength={300} value={query} tabIndex={searching ? 0 : -1} onChange={event=>setQuery(event.target.value)} onKeyDown={event=>{if(event.key==='Escape' && !event.nativeEvent.isComposing){event.preventDefault();event.stopPropagation();closeSearch();searchButton.current?.focus({preventScroll:true})}}}/>
-            {searching && <button type="button" className="dsh-chat-search-clear" aria-label="关闭官网对话搜索" onClick={event=>{event.stopPropagation();closeSearch()}}><IconCloseFillRegular/></button>}
+            <Tooltip label={t("搜索官网对话")} delayMs={500} disabled={searching}><button ref={searchButton} type="button" className="dsh-chat-search-button" aria-label={t("搜索官网对话")} aria-expanded={searching} onClick={()=>setSearching(true)}><IconSearchOutlineRegular size={searching ? 11 : 14}/></button></Tooltip>
+            <input ref={searchInput} className="dsh-chat-search-input" type="text" aria-label={t("搜索已加载的官网对话标题")} placeholder={t("搜索会话名称")} maxLength={300} value={query} tabIndex={searching ? 0 : -1} onChange={event=>setQuery(event.target.value)} onKeyDown={event=>{if(event.key==='Escape' && !event.nativeEvent.isComposing){event.preventDefault();event.stopPropagation();closeSearch();searchButton.current?.focus({preventScroll:true})}}}/>
+            {searching && <button type="button" className="dsh-chat-search-clear" aria-label={t("关闭官网对话搜索")} onClick={event=>{event.stopPropagation();closeSearch()}}><IconCloseFillRegular/></button>}
           </div>
         </div>
-        <div className="dsh-chat-search-actions"><Tooltip label={refreshing ? '正在刷新官网对话列表…' : '刷新官网对话列表'} delayMs={500}><button type="button" className="dsh-chat-icon-button" aria-label="刷新官网对话列表" aria-busy={refreshing} disabled={refreshDisabled} onClick={()=>bridge.refreshWebsiteNavigation()}><IconRefreshOutlineRegular size={14} className={refreshing ? 'dsh-chat-refreshing' : undefined}/></button></Tooltip></div>
+        <div className="dsh-chat-search-actions"><Tooltip label={t(refreshing ? '正在刷新官网对话列表…' : '刷新官网对话列表')} delayMs={500}><button type="button" className="dsh-chat-icon-button" aria-label={t("刷新官网对话列表")} aria-busy={refreshing} disabled={refreshDisabled} onClick={()=>bridge.refreshWebsiteNavigation()}><IconRefreshOutlineRegular size={14} className={refreshing ? 'dsh-chat-refreshing' : undefined}/></button></Tooltip></div>
       </header>
       <div className="dsh-chat-navigation-list">
-        {refreshing && <p className="dsh-chat-navigation-status" role="status">正在刷新官网对话列表…</p>}
+        {refreshing && <p className="dsh-chat-navigation-status" role="status">{t("正在刷新官网对话列表…")}</p>}
         {navigation.authenticated===true && navigation.status==='ready' ? <>
           {[...groups].map(([label, rows]) => <section key={label} className="dsh-chat-conversation-group" aria-label={label}>
             <h3>{label}</h3>
-            {rows.map(item => <DshChatConversationRow key={item.href} bridge={bridge} item={item} selected={navigation.selectedHref===item.href} disabled={Boolean(refreshDisabled)} onRename={()=>setRenameTarget(item)}/>)}
+            {rows.map(item => <DshChatConversationRow key={item.href} bridge={bridge} language={state.language} item={item} selected={navigation.selectedHref===item.href} disabled={Boolean(refreshDisabled)} onRename={()=>setRenameTarget(item)}/>)}
           </section>)}
-          {groups.size === 0 && <p className="dsh-chat-navigation-status">{query ? '没有匹配的对话' : '暂无对话'}</p>}
-          {!query && navigation.conversations.length > 0 && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.commandWebsite({type:'more'})}>加载更早的对话</button>}
-        </> : <p className="dsh-chat-navigation-status" role="status">{navigation.status === 'sign-in' ? 'CHAT 尚未登录。请在右侧点击登录 DeepSeek，完成后自动显示官网对话。' : navigation.status === 'unsupported' ? '暂未识别官网列表，请使用右侧官网导航。' : '正在加载官网对话…'}</p>}
-        {navigation.error && <p className="dsh-chat-navigation-status" role="alert">{navigation.error}</p>}
-        {state.websiteNavigationRefreshError && <p className="dsh-chat-navigation-status" role="alert">{state.websiteNavigationRefreshError}</p>}
-        {state.websiteNavigationRefreshError==='官网对话列表同步超时，请点击「重新加载」。' && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.reloadWebsite()} disabled={!state.modeEnabled || !state.desktopAvailable || ['signing-in','signing-out'].includes(state.websiteAuthenticationStatus)}>重新加载</button>}
+          {groups.size === 0 && <p className="dsh-chat-navigation-status">{t(query ? '没有匹配的对话' : '暂无对话')}</p>}
+          {!query && navigation.conversations.length > 0 && <button type="button" className="dsh-chat-text-button" onClick={() => bridge.commandWebsite({type:'more'})}>{t("加载更早的对话")}</button>}
+        </> : <p className={`dsh-chat-navigation-status${navigation.status==='sign-in' ? ' dsh-chat-navigation-sign-in' : ''}`} role="status">{t(navigation.status === 'sign-in' ? 'CHAT 尚未登录，请在右侧登录' : navigation.status === 'unsupported' ? '暂未识别官网列表，请使用右侧官网导航。' : '正在加载官网对话…')}</p>}
+        {navigation.error && <p className="dsh-chat-navigation-status" role="alert">{t(navigation.error)}</p>}
+        {state.websiteNavigationRefreshError && <p className="dsh-chat-navigation-status" role="alert">{t(state.websiteNavigationRefreshError)}</p>}
+        {state.websiteNavigationRefreshError==='官网对话列表同步超时，请点击「重新加载」。' && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.reloadWebsite()} disabled={!state.modeEnabled || !state.desktopAvailable || ['signing-in','signing-out'].includes(state.websiteAuthenticationStatus)}>{t("重新加载")}</button>}
       </div>
     </>}
   </section>
@@ -328,6 +336,7 @@ export function DshChatChatNavigation({ bridge, wide, expandSidebar }: PropsRunt
 /** Measures only this plugin's own element; website content lives in the retained overlay. */
 export function DshChatChatPanel({ bridge }: PropsRuntime<'main'> & DshChatBridgeProps) {
   const state = useDshChat(bridge)
+  const t = (text: string | null | undefined) => translate(state.language, text)
   const anchor = useRef<HTMLDivElement>(null)
   useLayoutEffect(() => {
     const element = anchor.current
@@ -348,23 +357,26 @@ export function DshChatChatPanel({ bridge }: PropsRuntime<'main'> & DshChatBridg
       bridge.updateViewport(null)
     }
   }, [bridge])
-  return <div className="dsh-chat-main-anchor" ref={anchor} aria-label="DeepSeek 官网聊天视图">
+  return <div className="dsh-chat-main-anchor" ref={anchor} aria-label={t("DeepSeek 官网聊天视图")}>
     <DshChatStyles />
-    {!state.desktopAvailable && <div className="dsh-chat-unavailable"><h2>需要 DSH 桌面版</h2><p>当前环境未提供官方内嵌浏览器能力。</p><button type="button" onClick={() => bridge.selectMode('harness')}>返回 HARNESS</button></div>}
+    {!state.desktopAvailable && <div className="dsh-chat-unavailable"><h2>{t("需要 DSH 桌面版")}</h2><p>{t("当前环境未提供官方内嵌浏览器能力。")}</p><button type="button" onClick={() => bridge.selectMode('harness')}>{t("返回 HARNESS")}</button></div>}
   </div>
 }
 
 /** Same public primitive icons, geometry and tooltip behavior as native rc.2 chrome. */
 export function DshChatLeadingControls({bridge}: PropsRuntime<'shell.leading'> & DshChatBridgeProps) {
   const state = useDshChat(bridge)
+  const t = (text: string | null | undefined) => translate(state.language, text)
   return <div className="dsh-chat-leading"><DshChatStyles />
-    <Tooltip label="展开侧边栏" delayMs={500}><button type="button" aria-label="展开侧边栏" onClick={() => bridge.toggleSidebar()}><IconPanelLeftOutlineRegular size={16}/></button></Tooltip>
-    <Tooltip label="新建对话" delayMs={500}><button type="button" aria-label="新建官网对话" disabled={!state.modeEnabled || !state.websiteNavigation.canCreate} onClick={() => bridge.commandWebsite({type:'new'})}><IconNewChatOutlineRegular size={16}/></button></Tooltip>
+    <Tooltip label={t("展开侧边栏")} delayMs={500}><button type="button" aria-label={t("展开侧边栏")} onClick={() => bridge.toggleSidebar()}><IconPanelLeftOutlineRegular size={16}/></button></Tooltip>
+    <Tooltip label={t("新建对话")} delayMs={500}><button type="button" aria-label={t("新建官网对话")} disabled={!state.modeEnabled || !state.websiteNavigation.canCreate} onClick={() => bridge.commandWebsite({type:'new'})}><IconNewChatOutlineRegular size={16}/></button></Tooltip>
   </div>
 }
 
 export function DshChatChatSettings({bridge,close}: PropsRuntime<'settings.section'> & DshChatBridgeProps) {
   const state = useDshChat(bridge)
+  const t = (text: string | null | undefined) => translate(state.language, text)
+  const accountHeading = useId()
   const enabled = state.desktopAvailable
   useLayoutEffect(() => {
     if (!enabled) { bridge.setSettingsOpen(false); return }
@@ -376,29 +388,32 @@ export function DshChatChatSettings({bridge,close}: PropsRuntime<'settings.secti
     close()
     bridge.beginWebsiteSignIn()
   }
-  const navigation=state.websiteNavigation
-  const settings=navigation.settings
-  const showAccount=enabled && navigation.authenticated===true && !['signed-out','signing-in','signing-out'].includes(state.websiteAuthenticationStatus)
-  const language=/中文|Chinese/i.test(settings?.language ?? '') ? 'zh-CN' : /English|英语/i.test(settings?.language ?? '') ? 'en' : /^(System|跟随系统|系统|Follow system)$/i.test(settings?.language ?? '') ? 'system' : ''
-  return <section className="dsh-chat-settings"><DshChatStyles/><h2>CHAT设置</h2>
-    {showAccount && <div className="dsh-chat-settings-card">
-      <div className="dsh-chat-settings-account" role="group" aria-label="DeepSeek 官网账号"><div><strong title={navigation.accountName || 'DeepSeek Chat'}>{navigation.accountName || 'DeepSeek Chat'}</strong><p>已登录</p></div><button type="button" disabled={navigation.status!=='ready'} onClick={()=>bridge.logoutWebsite()}>退出登录</button></div>
-      {state.websiteSessionStatus==='saved' && <p role="status">已记住网页登录。下次启动会由官网验证并恢复；授权失效时需重新登录。</p>}
-      {navigation.status!=='ready' && <p className="dsh-chat-settings-progress" role="status">正在重新识别官网页面，账号登录状态保持不变。</p>}
-      <label className="dsh-chat-settings-language">系统语言<span className="dsh-chat-settings-select"><select aria-label="CHAT系统语言" value={language} disabled={navigation.status!=='ready' || settings?.pending || state.websiteAuthenticationStatus==='error'} onChange={event=>bridge.commandWebsite({type:'setting',key:'language',value:event.target.value})}>
-        {!language && <option value="" hidden></option>}<option value="system">跟随系统</option><option value="zh-CN">简体中文</option><option value="en">English</option>
-      </select><svg className="dsh-chat-settings-select-arrow" viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none"><path d="m2 4 4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></span></label>
-      {!language && navigation.status==='ready' && !settings?.pending && !settings?.error && <p className="dsh-chat-settings-progress" role="status">尚未读取到官网语言。<button type="button" onClick={()=>bridge.commandWebsite({type:'settings-read'})}>重试</button></p>}
-      {navigation.status==='ready' && settings?.pending && <p className="dsh-chat-settings-progress" role="status">正在同步网页设置…</p>}
-      {navigation.status==='ready' && settings?.error && <p className="dsh-chat-settings-error" role="alert">{settings.error} <button type="button" onClick={()=>bridge.commandWebsite({type:'settings-read'})}>重试</button></p>}
-      {state.preferenceError && <p className="dsh-chat-settings-error" role="alert">{state.preferenceError}</p>}
-      {state.websiteSessionError && <p className="dsh-chat-settings-error" role="alert">{state.websiteSessionError} {state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError) && <button type="button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button>}</p>}
-    </div>}
-    {!enabled && <p role="status">需要 DSH 桌面版的官方网页容器。</p>}
-    {enabled && state.websiteAuthenticationStatus==='signed-out' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong>CHAT 尚未登录</strong><p>登录会打开 CHAT 对话页面。完成官网登录后，这里的账号与官网对话会自动同步。</p><button type="button" className="dsh-chat-primary-button" onClick={signIn}>登录 DeepSeek</button></div>}
-    {enabled && state.websiteAuthenticationStatus==='signing-in' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong role="status">正在登录 DeepSeek</strong><p>请在 CHAT 对话页面完成官网登录。登录成功后，账号和登录记忆会自动同步。</p><button type="button" className="dsh-chat-primary-button" onClick={signIn}>继续登录</button></div>}
-    {enabled && state.websiteAuthenticationStatus==='signing-out' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong role="status">正在退出登录</strong><p>正在清除登录记忆并退出官网…</p></div>}
-    {enabled && state.websiteAuthenticationStatus==='error' && !showAccount && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong>登录状态暂时无法同步</strong><p className="dsh-chat-settings-error" role="alert">{state.websiteSessionError || state.webError || '暂时无法确认官网登录状态，请重试。'}</p>{/退出/.test(state.websiteSessionError ?? '') ? <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.logoutWebsite()}>重试退出登录</button> : <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.reloadWebsite()}>重新加载</button>}</div>}
-    {enabled && !showAccount && state.websiteAuthenticationStatus==='loading' && <div className="dsh-chat-settings-card dsh-chat-settings-status"><strong role="status">正在同步官网账号</strong><p>{state.webError || (navigation.status==='unsupported' ? '官网页面已打开，正在同步账号和对话列表…' : '正在识别 DeepSeek 官网登录状态…')}</p><button type="button" className="dsh-chat-text-button" onClick={()=>bridge.reloadWebsite()}>重新加载</button></div>}
+  const navigation = state.websiteNavigation
+  const settings = navigation.settings
+  const showAccount = enabled && navigation.authenticated===true && !['signed-out','signing-in','signing-out'].includes(state.websiteAuthenticationStatus)
+  const logoutError = state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError ?? '')
+  const accountError = state.websiteSessionError || state.webError || state.error || (state.websiteAuthenticationStatus==='error' ? "暂时无法确认官网登录状态，请重试。" : null)
+  const accountName = navigation.accountName || 'DeepSeek Chat'
+  const showSignIn = enabled && ['signed-out','signing-in'].includes(state.websiteAuthenticationStatus)
+  const accountBusy = enabled && !accountError && ['loading','signing-out'].includes(state.websiteAuthenticationStatus)
+  return <section className="dsh-chat-settings">
+    <DshChatStyles/>
+    <header className="dsh-chat-settings-heading"><h2>{t("Chat 设置")}</h2><p>{t("管理 DeepSeek 官网账号和登录状态。")}</p></header>
+    <section className="dsh-chat-settings-card" aria-labelledby={accountHeading}>
+      <header className="dsh-chat-settings-card-heading"><h3 id={accountHeading}>{t("官网账号")}</h3><p>{t("CHAT 使用独立的 DeepSeek 官网登录。")}</p></header>
+      {showAccount ? <>
+        <div className="dsh-chat-settings-account" role="group" aria-label={t("DeepSeek 官网账号")}>
+          <div className="dsh-chat-settings-identity"><strong title={accountName}>{accountName}</strong><span className="dsh-chat-settings-badge">{t("已登录")}</span></div>
+          <Button className="dsh-chat-settings-logout" variant="outline" disabled={!logoutError && (navigation.status!=='ready' || settings?.pending)} onClick={()=>bridge.logoutWebsite()}>{t(logoutError ? "重试退出登录" : "退出登录")}</Button>
+        </div>
+        {state.websiteSessionStatus==='saved' && <div className="dsh-chat-settings-saved" role="status"><strong>{t("已记住网页登录")}</strong><p>{t("重启后由官网验证并恢复；登录失效时需重新登录。")}</p></div>}
+      </> : showSignIn ? <Button variant="primary" onClick={signIn}>{t(state.websiteAuthenticationStatus==='signing-in' ? "继续登录" : "登录 DeepSeek")}</Button> : accountBusy ? <div className="dsh-chat-settings-loading" role="status" aria-busy="true">
+        <span>{t(state.websiteAuthenticationStatus==='signing-out' ? "正在退出登录" : "加载中")}</span><IconLoadingOutlineRegular size={14} className="dsh-chat-refreshing"/>
+      </div> : null}
+      {accountError && <div className="dsh-chat-settings-error" role="alert"><p>{t(accountError)}</p>
+        {enabled && <Button variant="outline" onClick={()=>logoutError ? bridge.logoutWebsite() : state.webError ? bridge.reloadWebsite() : bridge.refreshAuthorization()}>{t(logoutError ? "重试退出登录" : state.webError ? "重试网页" : "重试连接")}</Button>}
+      </div>}
+      {enabled && showAccount && settings?.error && <div className="dsh-chat-settings-error" role="alert"><p>{t(settings.error)}</p><Button variant="outline" disabled={Boolean(settings.pending)} onClick={()=>bridge.commandWebsite({type:'settings-retry'})}>{t("重试同步")}</Button></div>}
+    </section>
   </section>
 }

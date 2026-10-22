@@ -6,7 +6,8 @@ import type {} from '@deepseek-ai/dsh-api-gateway/client'
 import type {} from '@deepseek-ai/dsh-client-ui-settings/client'
 import type { DesktopBrowserBridge } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { CHAT_PANEL, ModeController } from './core/mode.js'
-import { HOST_ENTRY_ID, DEFAULT_WEBSITE_LANGUAGE } from './identity.js'
+import { readHostLanguage, type ChatLanguage } from './website-settings.js'
+import { translate } from './i18n.js'
 import { authorizationSchema, DSH_CHAT_REMOTE_CONTRIBUTION } from './protocol.js'
 import type { AuthorizationState, DshChatClientMetadata, WebsiteSession } from './protocol.js'
 import { acquireChatStyles } from './styles.js'
@@ -47,13 +48,7 @@ export function apply(ctx: Context): void {
   let webError: string | null = null
   let connectionError: string | null = null
   let settingsOpen = false
-  let settingsReadRequested=false
-  let preferenceError: string | null = null
-  let preferences: {language:string} | null = null
-  let preferenceForm: import('@deepseek-ai/dsh-client-ui-settings/client').ConfigForm<{language:string}> | null = null
-  let preferencesGeneration = -1
-  let restoringPreferences = false
-  let restorationSeen = false
+  let language: ChatLanguage | null = typeof document === 'undefined' ? null : readHostLanguage(document)
   let websiteSignedOut = false
   let restorationBlocked = false
   let websiteAuthenticationStatus: DshChatViewState['websiteAuthenticationStatus'] = 'loading'
@@ -70,7 +65,6 @@ export function apply(ctx: Context): void {
   let pendingSessionSave: Promise<boolean> | null = null
   let pendingSessionSaveRevision=-1
   let pendingSessionClear: Promise<boolean> | null = null
-  const pendingPreferences = new Map<string,string>()
   let viewport: DshChatViewportRect | null = null
   let brandAnchor: DshChatViewportRect | null = null
   let brandAnchorOwner: HTMLElement | null = null
@@ -107,7 +101,7 @@ export function apply(ctx: Context): void {
       error: state.error ?? connectionError ?? (state.authorization.error === 'profile-context-unavailable'
         ? '当前 DSH 未提供可信配置上下文，网页登录可用，但不能保存登录记忆。'
         : state.authorization.error ? 'CHAT 登录保存服务暂时不可用，请重试连接。' : null),
-      desktopAvailable: Boolean(nativeBrowser), webLoading, webError, settingsOpen, preferenceError, viewport, brandAnchor, sidebarAdapted,
+      desktopAvailable: Boolean(nativeBrowser), webLoading, webError, settingsOpen, language, viewport, brandAnchor, sidebarAdapted,
       websiteSessionStatus, websiteSessionError, websiteAuthenticationStatus, websiteAuthenticationRevision,
       accountStorageKey: state.authorization.status === 'authorized' && state.authorization.accountId
         ? `dsh-deepseek-chat:website:${state.authorization.accountId}` : null,
@@ -126,7 +120,7 @@ export function apply(ctx: Context): void {
     const previous = mode.getSnapshot().authorization
     if (next.accountId !== previous.accountId || next.epoch !== previous.epoch) {
       resetNavigationRefresh()
-      authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; showWebsiteNavigation = false;websiteSignedOut=false;restorationBlocked=false;logoutRequested=false;websiteHadSession=false;preferencesGeneration=-1
+      authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; showWebsiteNavigation = false;websiteSignedOut=false;restorationBlocked=false;logoutRequested=false;websiteHadSession=false
       websiteSessionStatus='idle';websiteSessionError=null;websiteAuthenticationStatus='loading';websiteAuthenticationRevision++;websiteSignInRequested=false;logoutFailed=false;logoutVaultCleared=false
       forgettingWebsiteSession=false
       clearTimeout(logoutTimer);logoutTimer=undefined
@@ -136,7 +130,7 @@ export function apply(ctx: Context): void {
     publish()
   }
   const metadata: DshChatClientMetadata = {
-    version: '0.2.0-rc.2', locale: globalThis.navigator?.language ?? 'zh-CN',
+    version: '0.2.0-rc.2', locale: globalThis.navigator?.language ?? 'und',
     timezoneOffsetSeconds: -new Date().getTimezoneOffset() * 60,
   }
   function authorizationFailed(message: string): void {
@@ -336,7 +330,7 @@ export function apply(ctx: Context): void {
       if (disposed || !mode.canEnter() || !nativeBrowser || websiteNavigationRefreshing || webLoading
         || websiteNavigation.authenticated!==true || logoutRequested || logoutFailed
         || ['signing-in','signing-out'].includes(websiteAuthenticationStatus)
-        || restoringPreferences || websiteNavigation.settings?.pending) return
+        || websiteNavigation.settings?.pending) return
       if (!navigationHandler) {websiteNavigationRefreshError='官网页面尚未就绪，请稍后刷新。';publish();return}
       const requestId=++websiteNavigationRefreshRequest
       const generation=authorizationGeneration
@@ -354,15 +348,6 @@ export function apply(ctx: Context): void {
       let next: typeof websiteNavigation
       try { next=parseWebsiteNavigation(value) } catch { next={status:'unsupported',conversations:[],selectedHref:null,canCreate:false,error:null} }
       const previousNavigation=websiteNavigation
-      if (next.status==='unsupported' && !logoutRequested && !logoutFailed) {
-        // Fallback cancels unfinished public settings phases in the guest.
-        // Resume the preference/read request only after its profile is ready.
-        if (restoringPreferences || previousNavigation.settings?.pending) preferencesGeneration=-1
-        restoringPreferences=false;restorationSeen=false;settingsReadRequested=false
-      }
-      if (newDocument || next.status==='sign-in') {
-        preferencesGeneration=-1;restoringPreferences=false;restorationSeen=false;settingsReadRequested=false
-      }
       if (newDocument && next.authenticated!==true && next.status!=='sign-in' && !logoutRequested && !logoutFailed) {
         websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'loading'
       }
@@ -373,12 +358,11 @@ export function apply(ctx: Context): void {
         clearTimeout(logoutTimer);logoutTimer=undefined
         logoutRequested=false;logoutFailed=false;forgettingWebsiteSession=false;websiteHadSession=false;websiteSignedOut=true
         websiteAuthenticationStatus=websiteSignInRequested ? 'signing-in' : 'signed-out'
-        preferenceError=null
         // Public navigation and nickname are cleared together for both surfaces.
         websiteNavigation=next
       } else if (logoutRequested) {
         // The site's old sidebar can survive briefly after its logout click.
-        // Never republish that account, replay preferences or save its grant.
+        // Never republish that account or save its grant.
         websiteNavigation=emptyNavigation()
         if (next.settings?.error && !next.settings.pending && logoutTimer!==undefined) failWebsiteLogout('官网退出未完成，请重试退出登录。此设备已清除登录记忆。')
         publish();return
@@ -400,35 +384,22 @@ export function apply(ctx: Context): void {
       }
       if (websiteNavigation.status==='ready' && websiteNavigation.authenticated===true && !websiteNavigationRefreshing
         && websiteNavigationRefreshError==='官网对话列表同步超时，请点击「重新加载」。') websiteNavigationRefreshError=null
-      const settings=websiteNavigation.settings
-      if (restoringPreferences && settings?.restored===false) restorationSeen=true
-      if (restorationSeen && settings?.restored && !settings.pending) restoringPreferences=false
-      if (settings?.error && !settings.pending) restoringPreferences=false
-      restorePreferences()
-      readSettingsWhenReady()
-      if (websiteNavigation.status==='ready' && !restoringPreferences && settings?.restored && !settings.pending && !settings.error && !logoutFailed) {
-        const language=/中文|Chinese/i.test(settings.language ?? '') ? 'zh-CN' : /English|英语/i.test(settings.language ?? '') ? 'en' : /^(System|跟随系统|系统|Follow system)$/i.test(settings.language ?? '') ? 'system' : ''
-        if (language) persistPreference('language',language)
-      }
       publish()
     },
     bindWebsiteNavigation: (generation, handler) => {
       if (generation !== authorizationGeneration) return () => {}
       navigationHandler = handler
-      restorePreferences()
-      readSettingsWhenReady()
       return () => { if (navigationHandler === handler) navigationHandler = null }
     },
     commandWebsite: command => {
       if (disposed || !mode.canEnter() || !navigationHandler) return
       if ((logoutRequested || logoutFailed) && command.type!=='logout' && command.type!=='snapshot') return
-      if (websiteNavigationRefreshing && !['logout','snapshot','restore','settings-close'].includes(command.type)) return
+      if (websiteNavigationRefreshing && !['logout','snapshot','restore'].includes(command.type)) return
       if (websiteNavigation.status!=='ready' && command.type!=='logout' && command.type!=='snapshot' && command.type!=='restore') return
-      if (command.type==='settings-read' && (restoringPreferences || websiteNavigation.settings?.pending)) return
+      if (command.type==='settings-retry' && websiteNavigation.settings?.pending) return
       if ((command.type === 'open' || command.type === 'conversation-action') && !websiteNavigation.conversations.some(item => item.href === command.href)) return
-      // Native settings needs the adapter's multi-step command to stay active;
-      // restoring the original navigation would cancel it at the next poll.
-      if (command.type==='settings-read' || command.type==='setting' || command.type==='preferences' || command.type==='logout') {
+      // Keep automatic website settings or logout actions on the adapted view.
+      if (command.type==='settings-retry' || command.type==='logout') {
         showWebsiteNavigation=false; publish()
       }
       if(command.type==='conversation-action') {
@@ -443,7 +414,7 @@ export function apply(ctx: Context): void {
       const handler=navigationHandler
       if(disposed || !mode.canEnter() || mode.getSnapshot().mode!=='chat' || !handler || conversationActionPending
         || logoutRequested || logoutFailed || websiteNavigationRefreshing || webLoading || settingsOpen
-        || websiteNavigation.settings?.pending || restoringPreferences || websiteNavigation.authenticated!==true
+        || websiteNavigation.settings?.pending || websiteNavigation.authenticated!==true
         || websiteNavigation.status!=='ready' || !trimmed || trimmed.length>300
         || !websiteNavigation.conversations.some(item=>item.href===href)) throw new Error('官网对话尚未就绪，请稍后重试。')
       const generation=authorizationGeneration, revision=websiteAuthenticationRevision
@@ -458,11 +429,7 @@ export function apply(ctx: Context): void {
     toggleWebsiteNavigation: () => { showWebsiteNavigation = !showWebsiteNavigation; publish() },
     setSettingsOpen: next => {
       if (settingsOpen === next) return
-      const opening = !settingsOpen && next
-      if(opening) settingsReadRequested=false
       settingsOpen=next;publish()
-      if(!next && navigationHandler) void navigationHandler({type:'settings-close'})
-      else readSettingsWhenReady()
     },
     logoutWebsite: () => {
       if (logoutRequested || !navigationHandler || (!websiteHadSession && !logoutFailed)) return
@@ -473,8 +440,7 @@ export function apply(ctx: Context): void {
       clearTimeout(logoutTimer);logoutTimer=undefined
       logoutRequested=true;restorationBlocked=true;logoutFailed=false;logoutVaultCleared=false;forgettingWebsiteSession=true;websiteSignInRequested=false
       websiteAuthenticationStatus='signing-out';websiteAuthenticationRevision++
-      websiteNavigation=emptyNavigation();websiteSessionError=null;preferenceError=null
-      settingsReadRequested=false;restoringPreferences=false;restorationSeen=false;preferencesGeneration=-1
+      websiteNavigation=emptyNavigation();websiteSessionError=null
       publish()
       void clearWebsiteSession(generation).then(cleared=>{
         if (disposed || generation!==authorizationGeneration || !logoutRequested) return
@@ -550,38 +516,6 @@ export function apply(ctx: Context): void {
     websiteAuthenticationStatus='error';websiteSessionStatus='error';websiteSessionError=message
     publish()
   }
-  function readSettingsWhenReady(): void {
-    if(!settingsOpen || !navigationHandler || websiteNavigation.status!=='ready' || websiteNavigation.authenticated!==true || settingsReadRequested || restoringPreferences || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
-    settingsReadRequested=true
-    // Preference restoration already reads the public language value; reuse it.
-    if (websiteNavigation.settings?.language && !websiteNavigation.settings.error) return
-    void navigationHandler({type:'settings-read'})
-  }
-  function restorePreferences(): void {
-    if (!preferences || !navigationHandler || websiteNavigation.status!=='ready' || websiteNavigation.authenticated!==true || preferencesGeneration===authorizationGeneration || logoutRequested || logoutFailed || websiteNavigation.settings?.pending) return
-    const language = preferences.language || DEFAULT_WEBSITE_LANGUAGE
-    preferencesGeneration=authorizationGeneration;restoringPreferences=true;restorationSeen=false
-    void navigationHandler({type:'preferences',language})
-  }
-  function persistPreference(key:'language', value:string): void {
-    if (!preferenceForm || !preferences || preferences[key]===value || pendingPreferences.get(key)===value) return
-    pendingPreferences.set(key,value)
-    void preferenceForm.set(key,value).then(accepted=>{if(!accepted) throw new Error('refused');preferenceError=null},()=>{preferenceError='CHAT偏好未能保存，请检查DSH设置连接。'}).catch(()=>{preferenceError='CHAT偏好未能保存，请检查DSH设置连接。'}).finally(()=>{if(pendingPreferences.get(key)===value) pendingPreferences.delete(key);publish()})
-  }
-  ctx.inject(['configForms'], child => {
-    child.effect(() => {
-      const form=child.configForms.get<{language:string}>(HOST_ENTRY_ID)
-      preferenceForm=form
-      const read=()=>{
-        const snapshot=form.getSnapshot()
-        if(snapshot.status==='ready' && snapshot.value){preferences=snapshot.value;preferenceError=snapshot.writable===false ? '当前DSH连接不能持久保存CHAT偏好。' : null;restorePreferences()}
-        else if(snapshot.status==='unavailable') preferenceError='DSH未提供CHAT偏好配置，当前修改不能跨重启保存。'
-        publish()
-      }
-      const stop=form.subscribe(read);read()
-      return ()=>{stop();preferenceForm=null;preferences=null}
-    })
-  })
   sidebar = createSidebarBinding(() => {
     const state = mode.getSnapshot()
     return { chat: state.mode === 'chat', canCreate: mode.canEnter() && websiteNavigation.canCreate }
@@ -604,7 +538,28 @@ export function apply(ctx: Context): void {
     guardSearch()
     const stopSearchGuard = ctx.slots.subscribe('sidebar.workspaces',guardSearch)
     const releaseStyles = typeof document === 'undefined' ? () => {} : acquireChatStyles(document)
-    ctx.slots.inject('settings.section', () => ctx.slots.register({name:'settings.section',id:'dsh-deepseek-chat.chat-settings',order:80,label:'CHAT设置',inject:()=>({bridge})}, DshChatChatSettings))
+    ctx.slots.inject('settings.section', () => {
+      let label = ''
+      let release = () => {}
+      const syncLabel = () => {
+        const next = translate(language, 'Chat 设置')
+        if (next === label) return
+        label = next
+        release()
+        release = ctx.slots.register({name:'settings.section',id:'dsh-deepseek-chat.chat-settings',order:80,label,inject:()=>({bridge})}, DshChatChatSettings)
+      }
+      syncLabel()
+      listeners.add(syncLabel)
+      return () => { listeners.delete(syncLabel); release() }
+    })
+    const syncLanguage = () => {
+      const next = readHostLanguage(document)
+      if (next === language) return
+      language = next; publish()
+    }
+    const languageObserver = typeof document === 'undefined' ? null : new MutationObserver(syncLanguage)
+    languageObserver?.observe(document.documentElement, {attributes:true,attributeFilter:['lang']})
+    if (languageObserver) syncLanguage()
     ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: CHAT_PANEL, inject: () => ({ bridge }) }, DshChatChatPanel))
     ctx.slots.inject('sidebar.brand.name', () => ctx.slots.register({ name: 'sidebar.brand.name', priority: -100, inject: () => ({ bridge }) }, DshChatBrandName))
     ctx.slots.inject('shell.overlay', () => [
@@ -617,6 +572,7 @@ export function apply(ctx: Context): void {
     void refreshAuthorization()
     return () => {
       clearTimeout(logoutTimer)
+      languageObserver?.disconnect()
       stopSearchGuard(); for (const cleanup of guardedEntries.values()) cleanup(); guardedEntries.clear()
       mode.dispose(); sidebar?.dispose(); releaseStyles(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
       globalThis.removeEventListener('focus', refreshOnFocus)
