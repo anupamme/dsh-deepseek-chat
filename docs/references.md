@@ -1,5 +1,24 @@
 # 官方资料与调研记录
 
+## 0.2.7 / DSH 0.2.1-rc.3 依据（2026-10-24）
+
+### 续步：外侧间距与明确版本复核
+
+- 官方WorkspaceBrowser同版`lib/client.js:2721`的root右padding/listArea负margin/list2px右margin共同决定外侧留白，list右padding为inset−5px−2px。新fixture使用这一真实布局链；旧样式0/2px对照失败，修后CHAT/HARNESS均2px、默认行尾均12px，34项通过。此前26项仅覆盖皮肤及图标，不能据其声称已覆盖间距。
+- 本地semver检查已明确加入`0.2.1-rc.4`，共18版本×4字段：rc.1/rc.3/rc.4/0.2.1正式版均放行，0.2.2-rc.1拒绝。rc.1早于当前rc.3。
+- 子代理匿名核对[官方npm元数据](https://registry.npmjs.org/@deepseek-ai%2Fdsh)：当时rc.1/rc.3存在，未查到rc.4版本/发布时间。因此rc.4只证明当前范围预留，不声称已取得rc.4接口或实机通过。
+- rc.1静态核对使用官方tarball，如[app-boot](https://registry.npmjs.org/@deepseek-ai/dsh-app-boot/-/dsh-app-boot-0.2.1-rc.1.tgz)、[Browser](https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-sidebar-browser/-/dsh-client-ui-sidebar-browser-0.2.1-rc.1.tgz)、[primitives](https://registry.npmjs.org/@deepseek-ai/dsh-client-ui-primitives/-/dsh-client-ui-primitives-0.2.1-rc.1.tgz)。15包仅在内存解压比较；Browser/layout/slots/credentials/Typert/gateway/renderer/settings/account/store/app-boot所比代码声明一致。primitives/sidebar整包有差异，但插件全部已用导出/props、brand/workspaces owner和模块表键在rc.1存在。未安装或运行rc.1，不能写成rc.1实机验收。
+
+### 首候选依据
+
+本轮没有live Cordis Inspect。先只读核对本机官方DSH0.2.1-rc.3分发源码，再安装npm已发布的同版本开发SDK作TypeScript与构建验证；两种证据不冒充真实账号运行。
+
+- 官方 `@deepseek-ai/dsh-app-boot@0.2.1-rc.3/lib/index.js:251–325`：276–277为`includePrerelease:true`；280–297有engines时优先其单项准入，否则回退DSH peers。插件管理器同版本`lib/index.js:402–431,708–758`复用此评估；不必每次RC精确枚举，不使用豁免代替兼容。
+- 官方 `@deepseek-ai/dsh-client-ui-theme@0.2.1-rc.3/lib/client.js:1421–1422` 的scrollbar.css：WebKit共享皮肤宽5px、圆角thumb与hover token，非WebKit才用标准thin。Workspace同版本`lib/client.js:2721`列表使用stable gutter；CHAT局部thin覆盖造成差异，本轮只撤掉覆盖。
+- 官方 `@deepseek-ai/dsh-client-ui-settings-general@0.2.1-rc.3/lib/client.js:243–268,295–317`：未知设置id固定齿轮，button的直接子级为SVG和label span，无图标registrant参数。用户授权后才增加仅本插件行的可撤回外观适配；不修改上述官方文件。
+- 子代理静态对照：rc.3与开工rc.2的credentials/typert-protocol、registry service、gateway client、ui-renderer、ui-settings所核对分发文件逐字节相同；layout/sidebar/browser整包有变化，但panelInfo/selectPanel、相关Slot owner、browser protocolVersion1/acquire/release/onOpenRequested、html.lang及已解析主题投影的所用契约保持。此有限核查不等于整包无变更或全功能实机通过。
+- 主线程真实安装开发SDK0.2.1-rc.3后typecheck与production build/distribution成功。semver7.8.5开发检查用与官方相同的includePrerelease选项，17版本×4字段验证排除0.2.2所有预发；独立Chrome155虚构fixture26项验证滚动条主题/动态宽度、图标中英/唯一结构/动态双dialog降级恢复/清理，不加载真实DSH或官网。复现入口为`pnpm check:compatibility`与`pnpm check:shell-ui`（后者打开打印的本地URL），结果见handoff。
+
 ## 0.2.6语言依据（2026-10-22）
 
 本轮账号卡加载反馈另核对本地官方SDK：IconLoadingOutlineRegular提供aria-hidden图标；纯状态div使用标准role=status/aria-busy，与原生Button无关。文字后置图标，旋转复用插件现有CSS，未增加运行时模块或live接口。

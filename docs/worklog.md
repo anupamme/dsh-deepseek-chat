@@ -820,3 +820,35 @@ bbf924ed6e9c包32文件同项目，SHA256=bbf924ed6e9c3b9ca6e0c40a8ec08bb1e195ff
 ### 0.2.6 npm公开可用确认（2026-10-23）
 
 在npm publish成功并提示processing后，首次匿名索引仍latest0.2.5且无0.2.6；等待官方处理后重新匿名查询完整与install-v1元数据，两者latest均0.2.6且版本存在。实际公开下载32文件tgz与已验收bbf924ed6e9c包逐字节相同，SHA256=bbf924ed6e9c3b9ca6e0c40a8ec08bb1e195ff0f49163875e2a9627a20848857，公开发布完成。原desktop已装此验收包，本轮不重建或加号，不新增测试/新环境、不Git提交推送；源码/lib/locale/文档留本地，之后新修复从0.2.6递增补丁号。
+
+## 0.2.7 · 2026-10-24 · T02/T05/T06/T08/T12/T13 · 滚动条、设置图标与rc.3
+
+- 触发：用户要求实施前日只记录的滚动条/设置页签图标问题，并解决DSH从rc.2更新rc.3后的不适配，询问是否必须每次DSH更新发插件。开工main/HEAD/origin/main均000aded、fetch成功且干净；0.2.6→0.2.7只递增一次。主线程改代码/依赖/文档，两个子代理只读核对和审查，不写文件。
+- 根因与选择：局部scrollbar-width:thin会覆盖Chromium宿主统一WebKit皮肤，删除后直接沿用主题token与stable gutter，不复制一套滚动条。官方rc.3设置壳按固定id硬编码图标、无公开参数；先向用户说明并取得“允许限定适配”，只为唯一已确认Chat设置行做可撤回16px聊天气泡mask，不改其它行/事件/宿主安装包。未知结构与歧义降级原齿轮。
+- 版本：旧engines.dsh逐个枚举至rc.2而被官方检查拒绝；静态核对所用接口未发现破坏。官方includePrerelease:true下裸<0.2.2会误放行0.2.2-rc，故engines/3peer采用0.2.0-rc.2 || >=0.2.1-rc.1 <0.2.2-0。只自动放行同0.2.1发布线版本检查，不宣称未来API自动适配或所有0.2.x稳定patch可用；超界/接口破坏再核对。开发SDK精确rc.3，Cordis4.0.5/React18.3.1；新增semver7.8.5仅开发，无新增运行依赖。
+- 过程：pnpm首次因无TTY拒绝重建node_modules，核实该目录为当前项目真实目录后用CI=true正常安装；网络慢重试最终exit0，未批准安装hook（esbuild平台二进制可用，后续构建成功）。官方网页文档抓取受限，依据安装版公开JS与发布SDK，未伪称live Inspect。首次22项fixture通过后，独立审查发现同一overlay内动态双dialog不重识别的观察盲区；改为仅观察已确认设置overlay，补4项后最终26/26通过。
+- 验证：pnpm typecheck、release:prepare/分发25文件与4共享模块、check:compatibility的17版本×4范围、Host ESM import和git diff --check通过；独立Chrome155只运行虚构fixture，26项/0 page errors，已核视明暗气泡截图。未跑含旧授权门槛的全套历史tests、Git直装矩阵、真实官网/账号/跨平台流程，不将模拟或文件一致性当实机验收。
+- 交付：pnpm pack的33文件与项目一致，候选artifacts/dsh-deepseek-chat-0.2.7-d085fc868ad5.tgz为163332bytes，SHA256=d085fc868ad578093d8e4b237f7d4dc519a8d96e048f3825b5dc7880d26b664c。用户明确选择安装原desktop、稍后自行重启。首次通用CLI入口被保留profile限制拒绝；改用已核对的官方Desktop carrier runtime/cli/bin/dsh，不绕过准入、不设豁免。普通沙箱写profile锁被拒后，经用户批准同一命令正常安装exit0，原desktop0.2.6→0.2.7，安装33/33同包、持久依赖/lock引用d085候选。
+- 警告与边界：已有归档插件@michengai/dsh-archive-manager@1.1.6不兼容rc.3及peer/deprecation告警保留，未更改其它插件或豁免。没有重启/退出DSH、另建home/profile、读取或清除凭据、操作个人对话；官网会话/语言/主题/分享业务源码未变。用户下一步完整退出重开，验收0.2.7的滚动条、设置气泡和模式/网页登录；公开npm仍0.2.6，不自动发布或Git提交推送。源码/lib及上下文保留本地。
+
+### 0.2.7续修 · 2026-10-24 · 滚动条外侧留白与rc.1/rc.4核查
+
+用户复验指出HARNESS右侧有留白而CHAT没有，首候选未通过这一点。根因是上一轮只去掉thin覆盖、fixture又用平面列表而没复现原生布局链，检查范围不足。重读官方root/listArea/treeBody/list样式，确认外侧2px与inset−5px gutter−2px右padding公式。先新增8项几何回归，在旧样式复现CHAT gap0/HARNESS gap2、7项失败（预期红测）；再仅改自有list CSS，最终34/34、0 page errors，两边gap2及默认行尾12px一致，覆盖宽窄、宿主padding20、长标题、无溢出与重新溢出。保留同一未验收0.2.7，不重复加号。
+
+用户同时要求检查rc.4与“0.2.1-rc.1”。semver脚本明确补rc.4，共18版本×4字段通过；两者均被当前范围放行，rc.1比实际已装rc.3旧，0.2.2-rc.1仍不放行。只读子代理匿名查官方npm索引，目前没有rc.4；比较官方rc.1/rc.3的15包并核对已用Browser/layout/slots/credentials/Typert/primitives与共享模块键，所用静态契约兼容，但未装/运行rc.1，不伪称rc.4接口或实机已验。后续RC不需要单为编号重发，不等于未来API变化可自动修复。构建/新包/本机更新结果以handoff顶部为准，仍不自动重启、npm或Git发布。
+
+续修交付：release:prepare（25编译文件/4共享模块）、18版本×4兼容矩阵、34项fixture及diff格式检查通过。最终b6c67751c43f包163433bytes、33文件，SHA256=b6c67751c43fac9d73c4c899160969f011dcd15fda4635d704c6fd3fbd306d61，包内33/33同项目；官方carrier更新原desktopexit0，安装33/33同包、持久依赖/lock均引用b6c。普通沙箱写锁被拒后只对同一命令取得权限，不修改宿主或豁免；旧归档插件不兼容及peer告警保留。未重启DSH，等用户完整退出重开复验，不把虚构几何检查冒充真实GUI验收。仍同一0.2.7，不npm/Git发布。
+
+### 0.2.7 npm发布 · 2026-10-24 · 用户本轮明确授权
+
+用户要求发布当前npm版本。保留0.2.7和b6c候选业务代码/整个lib，仅同步两份README的正式版文案与安装命令；不重建或新增测试。正式包23564ed32fef（163211bytes、33文件，SHA256=23564ed32fefe39293881e558ada1365b64f630dbe372b0dc125a21f3ccddb53）相对本机b6c只有README.md与README.en.md不同，其余31文件逐字节相同；分发25编译文件/4共享模块、18版本×4范围与diff格式检查通过。npm原latest0.2.6且无0.2.7。
+
+npm原登录401；采用临时配置而非改写用户原npm配置。首次网页登录链接等待过期，用户要求重新打开，取消旧等待后重新生成官方登录链接；用户完成网页登录，whoami=xingxingbk。单独官方发布2FA完成后，同一正式包npm publish退出0并返回+dsh-deepseek-chat@0.2.7，提示processing。匿名完整/install-v1索引初次仍旧版，不能把受理当公开可安装；继续只查索引/下载，不重复发布。临时会话随后正常logout并删除私有临时目录、关闭终端，无令牌/密码进入项目或工具输出，无Git提交推送。最终公开核验结果以handoff顶部为准。
+
+0.2.7公开核验完成：在npm后台处理期间只做匿名查询、从未重复publish；最终官方完整/install-v1索引latest均0.2.7且版本存在，精确版本HTTP200。公开下载33文件、163211bytes，SHA256=23564ed32fefe39293881e558ada1365b64f630dbe372b0dc125a21f3ccddb53、SHA1=51362bdfa82db0e46a21d849fabaef5469993ddd，SHA512 integrity匹配registry，整个tgz逐字节同本地23564正式包。公开包与本机b6c仅中英README不同，31个运行/元数据文件相同。临时登录已logout并删除、终端关闭，原npm配置未改；无Git提交推送、没有重装/重启DSH或增加测试。此后新修复从已发布0.2.7递增，不能覆盖0.2.7。
+
+### 0.2.7 GitHub交付 · 2026-10-24 · 用户另行授权提交推送
+
+npm发布完成后，用户明确要求提交并推送GitHub。主线程继承当前全部22个本轮改动，main/HEAD/origin/main基线000aded、暂存区为空；fetch后0 ahead/0 behind，无远端冲突，不覆盖或强推。提交范围为源码、自有检查与fixture、package/lock、完整预编译lib和使用/上下文文档，排除安装包、node_modules、提取副本和凭据。保持已发布0.2.7，不再增号、重建或npm发布。
+
+提交前重新typecheck、分发25编译文件/4共享模块、18版本×4范围及diff检查通过；本次不运行新的实机/全套历史测试。提交号由包含本条的Git历史定位，推送后须以远端refs/heads/main精确匹配HEAD及工作树干净验证；不创建tag或PR，本轮授权不用于后续改动。

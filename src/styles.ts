@@ -53,7 +53,13 @@ export const chatStyles = String.raw`
 .dsh-chat-search-clear:hover{background:var(--dsw-alias-interactive-bg-hover)}
 .dsh-chat-icon-button{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary,#8b8d91);cursor:pointer;font-size:21px!important}.dsh-chat-icon-button:hover{background:var(--dsw-alias-interactive-bg-hover,#ffffff0d)}.dsh-chat-icon-button:disabled{opacity:.4;cursor:default}
 .dsh-chat-refreshing{animation:dsh-chat-refresh-spin .8s linear infinite}@keyframes dsh-chat-refresh-spin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.dsh-chat-refreshing{animation:none}.dsh-chat-search,.dsh-chat-search-label,.dsh-chat-search-slot,.dsh-chat-search-input,.dsh-chat-search-actions{transition:none}}
-.dsh-chat-navigation-list{flex:1;min-height:0;overflow:auto;padding:0 12px 12px;scrollbar-width:thin}
+/* Do not set scrollbar-width here: Chromium's standard override bypasses DSH's
+   shared WebKit scrollbar skin. Inherit the host's width, thumb and hover tokens. */
+/* WorkspaceBrowser leaves 2px outside its native 5px gutter; subtract both
+   from the row inset rather than adding empty space on top of the old padding. */
+.dsh-chat-navigation-list{flex:1;min-height:0;overflow:auto;margin-right:2px;padding:0 calc(var(--dsh-sidebar-inline-padding,12px) - 5px - 2px) 12px 12px;scrollbar-gutter:stable}
+[data-dsh-chat-settings-icon="chat"] > svg{display:none}
+[data-dsh-chat-settings-icon="chat"]::before{content:"";display:block;flex:none;width:16px;height:16px;background:currentColor;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 3.25h8A1.75 1.75 0 0 1 13.75 5v5A1.75 1.75 0 0 1 12 11.75H7l-3.75 2v-2.2A1.75 1.75 0 0 1 2.25 10V5A1.75 1.75 0 0 1 4 3.25Z M5 6.25h6 M5 8.75h4' fill='none' stroke='black' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px 16px no-repeat}
 .dsh-chat-conversation-group h3{font-size:12px;font-weight:400;color:var(--dsw-alias-label-secondary,#8b8d91);margin:15px 4px 6px}
 .dsh-chat-conversation-row{display:block;flex:1;min-width:0;width:100%;min-height:32px;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 10px;border:0;border-radius:8px;background:transparent;color:inherit;font-size:13px;cursor:pointer}.dsh-chat-conversation-item{display:flex;align-items:center;border-radius:8px;padding-right:4px;min-width:0}
 .dsh-chat-conversation-item:hover,.dsh-chat-conversation-item[data-menu-open]{background:var(--dsw-alias-interactive-bg-hover,#ffffff0d)}

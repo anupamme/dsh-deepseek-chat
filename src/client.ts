@@ -16,6 +16,7 @@ import type { DshChatUIBridge, DshChatViewState, DshChatViewportRect } from './u
 import { DshChatWebSurface } from './web-surface.js'
 import { emptyNavigation, parseWebsiteNavigation, type WebsiteCommand } from './website-navigation.js'
 import { createSidebarBinding } from './sidebar-adapter.js'
+import { bindChatSettingsIcon } from './settings-icon.js'
 
 export const name = 'dsh-deepseek-chat'
 export const inject = ['slots', 'layout', 'remote']
@@ -538,6 +539,7 @@ export function apply(ctx: Context): void {
     guardSearch()
     const stopSearchGuard = ctx.slots.subscribe('sidebar.workspaces',guardSearch)
     const releaseStyles = typeof document === 'undefined' ? () => {} : acquireChatStyles(document)
+    const releaseSettingsIcon = typeof document === 'undefined' ? () => {} : bindChatSettingsIcon(document)
     ctx.slots.inject('settings.section', () => {
       let label = ''
       let release = () => {}
@@ -574,7 +576,7 @@ export function apply(ctx: Context): void {
       clearTimeout(logoutTimer)
       languageObserver?.disconnect()
       stopSearchGuard(); for (const cleanup of guardedEntries.values()) cleanup(); guardedEntries.clear()
-      mode.dispose(); sidebar?.dispose(); releaseStyles(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
+      mode.dispose(); sidebar?.dispose(); releaseSettingsIcon(); releaseStyles(); stopPanel(); stopMode(); disposed = true; lifetime.abort(); listeners.clear()
       globalThis.removeEventListener('focus', refreshOnFocus)
     }
   }, 'dsh-deepseek-chat reversible website UI')

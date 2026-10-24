@@ -1,3 +1,42 @@
+## 0.2.7 GitHub main同步交付（2026-10-24）
+
+- 用户在npm公开后明确要求“提交并推送到github”，授权本轮普通commit及origin/main推送，不授权force、覆盖远端历史、建tag/PR或再发npm。
+- 本提交交付已发布0.2.7的源码、完整lib（包含新增settings-icon声明及build-manifest）、rc.3 SDK锁、README、18版本兼容检查/34项UI fixture及上下文文档。安装包/公开下载副本/提取参考/node_modules/临时凭据不纳入Git；不重复递增或重新构建业务产物。
+- 开工main/HEAD/origin/main=000aded、索引为空；fetch成功后0 ahead/0 behind，继承本轮22个改动文件，不覆盖其它工作。重新typecheck、check:distribution（25文件/4共享模块）、check:compatibility（18版本×4范围）及diff格式检查均通过。此前34项fixture结果保留，不冒充本轮新增GUI验收；旧授权历史全测未运行。
+- 准确提交号取包含本节的Git提交，推送完成必须独立核对GitHub refs/heads/main与本地HEAD一致、工作树干净，不能只依据命令受理。npm公开证据和本机来源保持下节记录；以后新修复从0.2.7递增、Git/npm操作不沿用本次授权。
+
+## 0.2.7 已公开发布npm（2026-10-24，Git同步前记录）
+
+- 用户本轮明确要求发布当前0.2.7，已正常发布；没有再次递增或重建业务代码。正式发布包artifacts/dsh-deepseek-chat-0.2.7-23564ed32fef.tgz为163211bytes、33文件，SHA256=23564ed32fefe39293881e558ada1365b64f630dbe372b0dc125a21f3ccddb53。
+- 正式包相对本机b6c候选仅README.md/README.en.md两文件不同（移除候选说明、名称安装改0.2.7），其余31文件含Host/Client/types/manifest/locale逐字节相同；没有改兼容范围或运行逻辑。check:distribution（25编译文件/4模块）、18版本×4范围、包内容对照和diff检查通过，无新增构建/测试/实机验收。
+- 原npm登录401，首个网页登录链接等待过期；按用户要求重新生成官方链接并完成登录，whoami=xingxingbk。用户完成本轮单独发布2FA后，绝对路径同一正式包publish退出0、返回+dsh-deepseek-chat@0.2.7并提示processing。只提交一次发布，不因索引短暂旧版而重复publish。
+- 独立匿名核验完成：官方完整索引与install-v1索引latest均0.2.7且版本存在，精确版本URL HTTP200；公开33文件tgz全部字节同本地正式发布包，上述SHA256一致，registry SHA1=51362bdfa82db0e46a21d849fabaef5469993ddd和SHA512 integrity也匹配。初次两索引仍0.2.6的处理期已结束，可以按dsh-deepseek-chat@0.2.7名称安装。
+- 本机保留已安装b6c来源（运行代码与公开版完全一致，仅README文案不同），不为文案再安装/重启DSH，不操作官网账号/用户数据、不新增DSH环境。原归档插件不兼容告警与本次发布无关，未修改它。
+- 临时npm会话已logout撤销、私有临时目录已删除、交互终端关闭，原npm配置未改；没有令牌/密码进入项目、日志或工具输出。
+- 源码/整个lib/locale/文档仍留本地供用户审查，未stage/commit/push、未建Git tag/PR。npm发布不代表Git同步。后续新修复须从已发布0.2.7递增补丁号，不可覆盖0.2.7；未来发布/Git操作仍需用户当轮明确授权。
+
+## 0.2.7 续修已本机安装：补齐2px留白，待用户重启复验（2026-10-24）
+
+- 用户实测首候选d085右侧留白缺失，本轮仅修改自有list CSS：右margin2px，右padding=宿主侧栏inset−5px gutter−2px，默认对话行仍距右边12px。图标/官网/授权/语言等业务保持，继续未验收0.2.7，不重复递增。
+- 几何证据：fixture改成官方root/listArea/treeBody/list真实布局链，旧样式复现CHAT gap0/HARNESS gap2，7项预期红测失败；修后34/34、0 page errors，gap2/2且行尾12/12，包含宽窄、padding20、长标题、短列表与溢出恢复。pnpm release:prepare（25 compiled files/4共享模块）、check:compatibility（18版本×4字段）及diff检查通过，不等于真实DSH视觉已通过。
+- 用户问的版本已明确复核：0.2.1-rc.1/rc.3/rc.4及0.2.1正式版均被当前engines/3peer范围放行，0.2.2-rc.1不放行。rc.1比当前rc.3早；官方rc.1 tarball所用Browser/layout/slots/credentials/Typert/primitive导出及props、共享模块静态契约已核对，未装/实机运行rc.1。查询官方npm时未查到rc.4，不把范围预留写成未来接口已实测；后续同0.2.1 RC无需单为编号发插件，接口若破坏仍需修复。
+- 最新包artifacts/dsh-deepseek-chat-0.2.7-b6c67751c43f.tgz，163433bytes、33文件，SHA256=b6c67751c43fac9d73c4c899160969f011dcd15fda4635d704c6fd3fbd306d61，33/33同项目。原desktop通过官方carrier更新exit0，安装33/33逐字节同包，持久依赖与lock引用b6c候选；旧d085已被替代，不再作为最终验收包。
+- 沿用本轮用户选择的安装后自行重启，不退出/重启DSH、不另建home/profile、不读清凭据或个人对话。普通沙箱写锁被拒后，经批准同一官方命令完成安装；原归档插件不兼容与peer/deprecation告警仍在，未修改或豁免其它插件。
+- 继承未提交成果，HEAD/origin/main仍000aded、fetch成功。主线程修改/集成，只读子代理完成指定版本核查。下一步用户完整退出重开并复验右侧2px留白；本轮未真实GUI验收、npm发布或Git提交推送，公开版仍0.2.6。
+
+## 0.2.7 首候选已安装（d085，右侧留白未通过用户复验）
+
+- 范围（T02/T05/T06/T08/T12/T13）：修复CHAT列表滚动条、Chat设置页签图标，并适配实际DSH0.2.1-rc.3。0.2.6→0.2.7仅递增一次，未公开npm、未Git stage/commit/push。用户明确选择“安装，稍后由我重启”，本轮没有退出或重启DSH。
+- 基线：main/HEAD/origin/main均000aded，fetch成功、开工干净。主线程Node v24.14.1/pnpm10.33.2；目标DSH0.2.1-rc.3/Cordis4.0.5/React18.3.1，官方安装器Node24.21.0/pnpm11.28.5。两个子代理仅只读调研/审查，全部改动由lead集成；无live Cordis Inspect。
+- 滚动条：删除CHAT局部scrollbar-width:thin（会覆盖Chromium宿主皮肤），使用stable gutter并沿用宿主共享宽度、thumb和hover token，不另造颜色/滚动条。
+- 图标：rc.3设置壳无公开图标参数，已获本轮明确许可新增settings-icon.ts单行装饰例外。仅识别官方直接body portal、唯一设置dialog/nav与精确中英文标签的标准行，标记后CSS mask显示16px聊天气泡/currentColor；不改标签/原SVG节点/点击/键盘或其它设置行。未知/歧义回退、停用精确恢复。独立审查指出同overlay动态双dialog盲区，已改为只观察已确认overlay并补4项回归，最终26项通过。
+- 兼容：官方检查使用includePrerelease:true，0.2.6仅枚举到rc.2导致拒绝；所核对公开接口未见破坏。engines和3个Host peer统一为0.2.0-rc.2 || >=0.2.1-rc.1 <0.2.2-0，后续同0.2.1发布线不再仅因RC号变化被拒。未知0.2.2预发布及以上仍拒绝；范围不是未来API自动修复保证。全部开发SDK精确升级rc.3，semver7.8.5仅开发检查，无新增运行依赖。
+- 已执行：pnpm typecheck、release:prepare（25 compiled files/4共享模块）、check:compatibility（17版本×4字段）、Host ESM实际import、git diff --check均通过。pnpm check:shell-ui的独立Chrome155虚构fixture最终26/26通过、0 page errors（中英/主题/动态宽度/正常点击/歧义及双dialog/清理），未加载真实DSH或官网。旧tests含已取消授权门槛，本轮未运行/宣称整套历史测试通过；未运行Git直装全矩阵。
+- 最终包：artifacts/dsh-deepseek-chat-0.2.7-d085fc868ad5.tgz，163332 bytes、33文件，SHA256=d085fc868ad578093d8e4b237f7d4dc519a8d96e048f3825b5dc7880d26b664c。包内33/33同项目（package.json按pnpm的packageManager标准化比较），源码与整个lib保留本地。
+- 本机安装：首次误用通用CLI入口返回“desktop managed exclusively”，没有改配置；核对随桌面安装的正式runtime/cli/bin/dsh后正常使用该入口。普通沙箱写profile锁被拒，用户批准同一官方命令扩大权限后安装exit0、0.2.6→0.2.7；安装33/33逐字节同候选，原desktop持久依赖及lock均引用d085哈希包。不另建profile/home，不手改宿主/用户配置、不读清凭据、不操作真实网页账号或对话。
+- 安装警告：既有@michengai/dsh-archive-manager@1.1.6不兼容rc.3及其它peer/deprecation告警保留；CLI exit0且本插件更新成功，未给其它插件豁免或改动其代码，不能报告无告警。
+- 下一步：用户完整退出再打开DSH，确认0.2.7与滚动条/气泡图标、CHAT/HARNESS往返及原网页登录状态；本轮没有重启/实机视觉或真实官网流程验收，不将fixture/文件一致性冒充实机通过。验收后仍须明确当轮发布指令才能npm发布；当前公开仍0.2.6，Git也未同步。
+
 ## 0.2.6 已发布npm（2026-10-23）
 
 - 用户确认本轮验收合格并明确授权发布；沿用已安装/验收的bbf924ed6e9c包和0.2.6，没有再次加号或重建。范围包括官网与插件语言跟随DSH、清理旧语言偏好、中英文案、精简无头像账号卡、居中未登录提示及纯状态“加载中＋转圈”。

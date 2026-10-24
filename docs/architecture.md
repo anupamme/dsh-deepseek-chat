@@ -1,5 +1,14 @@
 # 架构与可行性
 
+## 0.2.7 滚动条、设置图标与兼容发布线（2026-10-24）
+
+- 原 CHAT 列表设置 `scrollbar-width:thin`，Chromium 会优先使用该标准属性而绕过宿主 `::-webkit-scrollbar` 皮肤。现移除这项局部覆盖，列表增加与 HARNESS 相同的 `scrollbar-gutter:stable`；宽度、thumb、hover 全部沿用官方 ui-theme 的全局规则与 `--dsh-scrollbar-*` / `--dsw-alias-scrollbar-*`，不复制另一套颜色或修改官网。
+- 用户复验指出首候选遗漏外侧间距：官方WorkspaceBrowser通过root的右padding、listArea负margin和list的2px右margin让滚动条距侧栏边缘2px，list内侧padding为侧栏inset−5px原生gutter−2px。CHAT续修采用同样的2px右margin和`calc(var(--dsh-sidebar-inline-padding,12px) - 5px - 2px)`右padding，保持默认行尾12px内缩，不把空白叠加挤窄内容。fixture由平面列表改为官方root/listArea/treeBody/list层级，覆盖宽窄/长标题/短列表/溢出恢复；旧样式实测CHAT gap0/HARNESS gap2，修正后均gap2、行尾均12px。
+- rc.3 的 settings-general `navIcon(id)` 只按固定内置 id 选图标，未知项齿轮回退，`settings.section` 没有图标参数。用户已明确许可限定例外：新增 `settings-icon.ts`，只识别 `[data-shortcut-modal=settings][role=dialog][aria-modal=true]` 下唯一直接 nav、标准 button/svg/span 且标签精确为本插件中英文的单行。仅加自有标记，用 CSS mask 绘制16px聊天气泡、继承 currentColor、视觉隐藏原装饰 SVG；原标签、SVG节点、点击/键盘行为都不改。重复标签或未知结构撤回，body仅观察portal直接子级、已识别设置overlay仅观察其自身结构/标签（覆盖同overlay的动态双dialog），无全树轮询；Client卸载断开观察并精确恢复已有标记值。
+- 旧 0.2.6 兼容声明精确列举到 rc.2，导致官方准入拒绝 0.2.1-rc.3。官方 app-boot 使用 `semver.satisfies(runtimeVersion,range,{includePrerelease:true})`，有 `engines.dsh` 时该准入不再同时用 DSH peers 决定；仍将 engines 与三个Host peer同步为 `0.2.0-rc.2 || >=0.2.1-rc.1 <0.2.2-0`，避免元数据分歧。`-0` 用于排除 0.2.2 的整个预发布区间，不能写成裸 `<0.2.2`；不使用无上界或强制豁免。
+- 这允许同一 0.2.1 release train 的后续 RC 及正式版通过版本检查，不表示未来接口能自动修复，也不自动放行所有 0.2.x 补丁（0.2.1→0.2.2 本身就是 patch）。API/网页DOM实变或跨上界时仍需核对。开发 SDK 精确升到已发布的0.2.1-rc.3；Cordis4.0.5/React18.3.1保持共享，新增semver7.8.5仅为开发检查，不增加运行依赖。
+- 官网会话、授权保存、语言/主题同步、分享/正文模块未改。rc.3 SDK类型、生产构建/分发与无账号浏览器fixture结果见handoff；不是live Inspect或真实官网/所有平台验收。此前按用户选择由官方安装器更新原desktop且33/33同b6c候选。用户本轮随后明确要求npm发布，0.2.7已公开；正式包仅两份README不同，其余31文件同本机候选。本轮发布不重装/重启DSH或新增实机验证，结果与边界见handoff。
+
 ## 官网及插件语言随DSH与Chat设置（0.2.6，按用户最新决定）
 
 目标是内嵌官网实际Language设置同步：DSH中文→官网简体中文，DSH英文→官网English。DSH 0.2.1-rc.2的 @deepseek-ai/dsh-client-locale LocaleRuntime/getSnapshot/subscribe、locale/change 及 syncDocumentLanguage 将当前实际语言写入公开html.lang（zh→zh-CN），插件只读这一投影并仅监听lang属性，不写DSH或推断系统语言。未识别宿主语言时返回null且不写官网语言目标；DSH选跟随系统时仍只使用其解析后的中/英文。
