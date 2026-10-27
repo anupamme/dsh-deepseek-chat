@@ -1,5 +1,22 @@
 # 架构与可行性
 
+## 0.2.8 拖拽重做：先保持 0.2.7 的 HARNESS（2026-10-27）
+
+- 以发布0.2.7/HEAD4f8a2b4为对照，两者Client逐字相同；旧Portal、保留guest、settings隐藏flex及模式恢复本就存在，不能当新增根因。a715/7f68的旧拖拽模块相同，恒定338px空白禁区和测试left>=362均被认作实现/验收标准错误；HARNESS原生触发链仍未实证，不再归咎宿主默认设定。
+- 常驻WebSurface恢复0.2.7的职责：保留guest和200/1200ms导航，不渲染原生拖动DOM、不持有旧drag state/lease，也不在导航空档主动扫几何。移除7f68额外tabIndex，正常网页不显式改pointerEvents；识别失败的遮蔽/inert/禁鼠标及严格身份修复独立保留。新增只读sampler由当前guest注册，受owner/document/origin/viewport/认证代次及CHAT epoch双向检查。
+- 原生拖动层作为单独shell.overlay occupant，仅在mountChatNavigation中注册。离开/停用先AbortController.abort，组件同步只对自己的ref设置display:none并移除data-window-drag，再释放Slot；旧异步结果不能在再次进入CHAT后复活。HARNESS冷态没有该occupant或拖动节点，原CoreMode与原生会话标题不改。
+- 新层为稳定40px单行正drag及真实控件几何补集no-drag洞，全部pointer-events:none，把网页控件点击交还真实guest。行宽/位置只随viewport/native caption变化，不随标题/洞变化，避免旧多岛数量/矩形持续改动原生表；Windows caption用实际top/height矩形裁剪，不用clipPath推断原生边界。编辑/弹窗/不确认/全屏时撤回；非编辑态不再预留假想最大编辑宽度。
+- 几何读取独立于原导航串行队列，仅CHAT存在时采样、严格一个物理在途。同几何不重复发布或拆DOM；500ms只是当前读取deadline，成功几何没有周期租约。失败/超时撤回，迟到拒绝，refresh合并且不制造并发。普通Chrome/虚构Bridge检查不等于Electron原生命中；最终命令、候选hash和实机待验边界见[handoff](handoff.md)。
+- 用户随后明确要求发布0.2.8；正式eb669包仅中英README不同于5c56本机候选，33个运行/元数据文件不变，公开35文件包及完整/install-v1 latest0.2.8均核验一致。没有以发布为由重建、重装/重启或补造原生/Windows验收；用户随后另行授权Git提交推送，交付包含同版源码与完整lib，准确提交/远端核验见handoff。
+
+## 0.2.8 首轮拖动岛方案历史（2026-10-26，已由上节替代）
+
+- guest仍铺满原主区，clearance保持0；不新增顶栏或移动网页。自有[window-drag模块](../src/window-drag.ts)仅读取已适配顶部的公开控件/文本盒几何，不读取文字、输入值或存储；生成最多8个顶部空白区域，并保守预留完整标题编辑lane、分享/参考按钮及leading/native控件。host在guest上方放绝对定位小区域，Mac复用官方data-window-drag，Win仅平台内声明app-region；菜单/弹窗/编辑、结构未知、全屏、隐藏模式及缺少安全间隔时撤回。
+- 复用已有200ms串行队列/timer采样顶部几何，正常官网导航仍用原200/1200ms节奏，不重建guest或新增私有IPC。几何严格验证尺寸、顺序、有限数值与视口边界；500ms有效期从请求开始计算，命令/load/error/abort失效epoch，返回后二次核对原点、文档、viewport、认证代次和owner，旧guest不能清理新guest区域。并未把CSS/Chrome检查当作跨webview原生拖窗验收。
+- Issue #3可证两处缺陷：原来主区boundedContent先于footer证明，主区仅越界2 CSS px亦可阻断账号保存；另合法侧栏但profile未知会无限ready/unknown、隐藏原侧栏而不提示。现将完全相同的footer-v1证明前移到镜像边界之前；布局失败可保留独立证明的账号，但不发布历史/新建权限。2026-10-27用户否定自动恢复原官网侧栏。未知账号独立5秒宽限后给identityUnconfirmed及明确提示；当前严格验证的隐藏侧栏布局可保留layoutReady并继续使用CHAT，只有布局无法证明才保持/设置guest遮蔽，host用既有错误卡片替代，不让原侧栏露出。重新识别只取同guest快照，不reload/新建lease或清登录/草稿；自动异常与SPA sign-in不调用restore，legacy showOriginal不再揭示原导航。
+- 额外收紧footer自身及祖先dialog/menu排除，防止弹窗头像或移动后的旧proof误认；不放宽单头像、单昵称叶、几何或存储白名单。刷新保护补齐已有支持的plaintext-only编辑器。Host凭据/profile/epoch及三key内容未改，不读取实际凭据。报告的静态字符串证据不能排除运行时DOM差异；用户Win11正常不代表另一尺寸/账户结构无bug，尚不能确认当事人根因或归咎网络。
+- 10-27修正验证为14项现行契约、Chrome155的55项×5视口/DPR组合（实际Settings/WebSurface条件渲染，SDK视觉primitive/Browser桥为stub）、rc.3类型/构建/分发。原shell34项是前阶段通过，历史整套tests仍有已撤销授权/旧RPC替身，不声称全套通过。7f68修正包已按用户10-27明确选择替换本机a715且34/34同包，持久dependency/lock同hash，未退出/重启或Git/npm；原生窗口及对方Win环境仍待验收，证据见[handoff](handoff.md)。
+
 ## 0.2.7 滚动条、设置图标与兼容发布线（2026-10-24）
 
 - 原 CHAT 列表设置 `scrollbar-width:thin`，Chromium 会优先使用该标准属性而绕过宿主 `::-webkit-scrollbar` 皮肤。现移除这项局部覆盖，列表增加与 HARNESS 相同的 `scrollbar-gutter:stable`；宽度、thumb、hover 全部沿用官方 ui-theme 的全局规则与 `--dsh-scrollbar-*` / `--dsw-alias-scrollbar-*`，不复制另一套颜色或修改官网。

@@ -9,6 +9,10 @@ export interface WebsiteNavigation {
     readonly status: 'loading' | 'ready' | 'sign-in' | 'unsupported';
     /** Public profile presence only; independent of layout/settings readiness. */
     readonly authenticated?: boolean;
+    /** Current public account proof is unavailable; never means signed-out. */
+    readonly identityUnconfirmed?: boolean;
+    /** A currently verified CHAT layout still hides the original website sidebar. */
+    readonly layoutReady?: boolean;
     readonly conversations: readonly WebsiteConversation[];
     readonly selectedHref: string | null;
     readonly canCreate: boolean;

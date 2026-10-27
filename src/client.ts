@@ -14,6 +14,8 @@ import { acquireChatStyles } from './styles.js'
 import { guardHarnessSearchReplay, DshChatBrandName, DshChatChatNavigation, DshChatChatPanel, DshChatLeadingControls, DshChatChatSettings } from './ui.js'
 import type { DshChatUIBridge, DshChatViewState, DshChatViewportRect } from './ui.js'
 import { DshChatWebSurface } from './web-surface.js'
+import { DshChatWindowDragSurface } from './window-drag-surface.js'
+import type { WindowDragRegion } from './window-drag.js'
 import { emptyNavigation, parseWebsiteNavigation, type WebsiteCommand } from './website-navigation.js'
 import { createSidebarBinding } from './sidebar-adapter.js'
 import { bindChatSettingsIcon } from './settings-icon.js'
@@ -74,6 +76,8 @@ export function apply(ctx: Context): void {
   let showWebsiteNavigation = false
   let conversationActionPending = false
   let navigationHandler: ((command: WebsiteCommand) => Promise<void>) | null = null
+  let windowDragSampler: { generation: number; handler: (viewport: DshChatViewportRect) => Promise<readonly WindowDragRegion[]> } | null = null
+  let windowDragEpoch = 0
   let bridge: DshChatUIBridge
   let cached: DshChatViewState
   let sidebar: ReturnType<typeof createSidebarBinding> | undefined
@@ -83,9 +87,25 @@ export function apply(ctx: Context): void {
     mountChatNavigation: () => {
       const navigation = ctx.slots.inject('sidebar.workspaces', () => ctx.slots.register({ name: 'sidebar.workspaces', priority: -100, inject: () => ({ bridge }) }, DshChatChatNavigation))
       const leading = ctx.slots.inject('shell.leading', () => ctx.slots.register({name:'shell.leading',priority:-100,inject:()=>({bridge})}, DshChatLeadingControls))
-      return () => { leading(); navigation() }
+      const dragLifetime = new AbortController()
+      windowDragEpoch++
+      let drag: () => void
+      try {
+        drag = ctx.slots.inject('shell.overlay', () => ctx.slots.register({
+          name:'shell.overlay',id:'dsh-deepseek-chat.window-drag',order:91,
+          inject:()=>({bridge,signal:dragLifetime.signal}),
+        }, DshChatWindowDragSurface))
+      } catch (error) {
+        windowDragEpoch++; dragLifetime.abort(); leading(); navigation(); throw error
+      }
+      return () => {
+        // Cancel our native rectangles synchronously, before React disposes the
+        // CHAT-only occupant. The retained 0.2.7 website surface is not changed.
+        if (dragLifetime.signal.aborted) return
+        windowDragEpoch++; dragLifetime.abort(); drag(); leading(); navigation()
+      }
     },
-    cancelAccount: () => { authorizationGeneration++; resetNavigationRefresh(); webLoading = false; webError = null; websiteNavigation = emptyNavigation(); navigationHandler = null; publish() },
+    cancelAccount: () => { authorizationGeneration++; resetNavigationRefresh(); webLoading = false; webError = null; websiteNavigation = emptyNavigation(); navigationHandler = null; windowDragSampler = null; publish() },
   }, Boolean(nativeBrowser))
   function availability(): string {
     if (!nativeBrowser) return '网页嵌入需要 DSH 桌面版的官方浏览器能力。'
@@ -121,7 +141,7 @@ export function apply(ctx: Context): void {
     const previous = mode.getSnapshot().authorization
     if (next.accountId !== previous.accountId || next.epoch !== previous.epoch) {
       resetNavigationRefresh()
-      authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; showWebsiteNavigation = false;websiteSignedOut=false;restorationBlocked=false;logoutRequested=false;websiteHadSession=false
+      authorizationGeneration++; websiteNavigation = emptyNavigation(); navigationHandler = null; windowDragSampler = null; showWebsiteNavigation = false;websiteSignedOut=false;restorationBlocked=false;logoutRequested=false;websiteHadSession=false
       websiteSessionStatus='idle';websiteSessionError=null;websiteAuthenticationStatus='loading';websiteAuthenticationRevision++;websiteSignInRequested=false;logoutFailed=false;logoutVaultCleared=false
       forgettingWebsiteSession=false
       clearTimeout(logoutTimer);logoutTimer=undefined
@@ -391,6 +411,26 @@ export function apply(ctx: Context): void {
       if (generation !== authorizationGeneration) return () => {}
       navigationHandler = handler
       return () => { if (navigationHandler === handler) navigationHandler = null }
+    },
+    bindWindowDragSampler: (generation, handler) => {
+      if (disposed || generation !== authorizationGeneration) return () => {}
+      const binding = {generation, handler}
+      windowDragSampler = binding
+      return () => { if (windowDragSampler === binding) windowDragSampler = null }
+    },
+    readWindowDrag: async expectedViewport => {
+      const binding = windowDragSampler
+      if (!binding) return []
+      const generation = authorizationGeneration, revision = websiteAuthenticationRevision, ownerEpoch = windowDragEpoch
+      const allowed = () => !disposed && ownerEpoch === windowDragEpoch && binding === windowDragSampler && binding.generation === generation
+        && generation === authorizationGeneration && revision === websiteAuthenticationRevision
+        && mode.getSnapshot().mode === 'chat' && mode.canEnter() && !settingsOpen && !webLoading
+        && !conversationActionPending && !websiteNavigationRefreshing && !logoutRequested && !logoutFailed
+        && cached.viewport === expectedViewport && cached.authorizationStatus === 'authorized'
+        && websiteAuthenticationStatus === 'signed-in' && websiteNavigation.status === 'ready' && websiteNavigation.authenticated === true
+      if (!allowed()) return []
+      const regions = await binding.handler(expectedViewport)
+      return allowed() ? regions : []
     },
     commandWebsite: command => {
       if (disposed || !mode.canEnter() || !navigationHandler) return

@@ -10,7 +10,9 @@
 
 **CHAT** embeds the real [DeepSeek Chat website](https://chat.deepseek.com/), including its chat interface and account history. **HARNESS** returns you to the original DSH workspace.
 
-Current version: **0.2.7** · Built for **DSH Desktop** · The CHAT website’s language, appearance and text size follow DSH.
+Current version: **0.2.8** · Built for **DSH Desktop** · The CHAT website’s language, appearance and text size follow DSH.
+
+Version 0.2.8 rebuilds window dragging from the 0.2.7 baseline: a stable, CHAT-only header layer leaves holes around the actual title and controls without adding header height. Its native regions are revoked synchronously on leaving CHAT; HARNESS receives no added drag nodes. Title editing, sharing, dialogs and native window controls remain protected; cross-mode native dragging depends on the actual desktop environment. If the website account or layout cannot be recognized, CHAT keeps its own navigation and offers an error/retry state. Unsafe website presentation is concealed; the original website sidebar is never exposed, and this does not reload the page or sign out. A mirrored-layout failure no longer blocks saving an independently verified account; arbitrary website layouts are not guaranteed to be mirrored.
 
 ## Preview
 
@@ -51,13 +53,13 @@ Open the native DSH **Settings → Chat settings** page to view your website acc
 Enter the package name and version below in the DSH plugin installer to install the current latest release:
 
 ```text
-dsh-deepseek-chat@0.2.7
+dsh-deepseek-chat@0.2.8
 ```
 
 Or use the CLI:
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.2.7
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.8
 ```
 
 Use the same method for a first installation or an existing plugin. If DSH’s release age policy temporarily blocks a new version, retry later or use the GitHub option below.
@@ -83,7 +85,7 @@ This installs the version already pushed to the repository, which includes prebu
 Install a `.tgz` package using the DSH plugin manager, or run:
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.7.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.8.tgz
 ```
 
 Replace the path with your actual package location.
@@ -132,7 +134,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-This produces `artifacts/dsh-deepseek-chat-0.2.7.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
+This produces `artifacts/dsh-deepseek-chat-0.2.8.tgz`, containing Host and Client code, declarations, the icon, locale metadata and the bundle patch. The plugin-manager icon is `assets/icon.svg`; replace it and rebuild to change the icon. The SVG must be self-contained and no larger than 256 KiB.
 
 After source changes, run `pnpm release:prepare` and commit the source together with the complete `lib/` directory. `pnpm check:distribution` checks the compiled files against the source, version and installation entry. Stale or missing output fails the check. People installing the plugin do not need these development commands.
 

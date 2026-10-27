@@ -852,3 +852,61 @@ npm原登录401；采用临时配置而非改写用户原npm配置。首次网�
 npm发布完成后，用户明确要求提交并推送GitHub。主线程继承当前全部22个本轮改动，main/HEAD/origin/main基线000aded、暂存区为空；fetch后0 ahead/0 behind，无远端冲突，不覆盖或强推。提交范围为源码、自有检查与fixture、package/lock、完整预编译lib和使用/上下文文档，排除安装包、node_modules、提取副本和凭据。保持已发布0.2.7，不再增号、重建或npm发布。
 
 提交前重新typecheck、分发25编译文件/4共享模块、18版本×4范围及diff检查通过；本次不运行新的实机/全套历史测试。提交号由包含本条的Git历史定位，推送后须以远端refs/heads/main精确匹配HEAD及工作树干净验证；不创建tag或PR，本轮授权不用于后续改动。
+
+### 0.2.8候选 · 2026-10-26 · 顶部拖窗及Issue #3
+
+用户白天仅要求对话记录；晚间明确要求实施拖窗，并先审代码、再对照报告检查Windows问题，自己的Win11正常。开工main/HEAD/origin/main=4f8a2b4、fetch后0/0、干净；逐行读取用户提供的md，但不复制其凭据文件内容或scope标识。三个只读子代理分别核查桌面契约、状态链、集成风险，写入全部由lead完成，无真实账户/凭据访问。
+
+调研确认guest覆盖整个main、clearance0，给背后header标drag或新增顶栏会失效/改变现布局。核实官方data-window-drag、body portal no-drag、Mac leading/灯及Win40px caption后，在现有顶部明确空白放host自有绝对小区域，避让完整编辑lane和按钮；geometry无文本/存储读取。复用200ms串行timer并添加请求起点500ms失效lease，command/load/owner/视口/代次二次核对，避免旧结果复活或旧guest清新层。未知/弹窗/编辑/全屏撤回；尚未以真实Electron跨webview拖动验收。
+
+报告的早退永久loading推断不符原版5s降级。内存虚构对照证明两处实际缺口：缺profile60秒仍ready/unknown、隐藏原侧栏且无错误；合法footer仅main右越界2 CSS px即在profile检查前早退，阻断账号保存。现将原样严格footer-v1证明前移，镜像失败时独立证明可保存但不发布历史/新建；unknown5s原界面与明确错误/只取快照重新识别，不假认退出或放宽白名单。集成审查补main+profile同时失败、缺sidebar、弹窗祖先头像/旧proof误用、保留旧身份仍显示错误，并补plaintext-only未保存编辑刷新保护。未查明Issue作者真实命中分支，不归因网络/设备或声称所有Windows已修好。
+
+验证经历：Playwright缓存工具期待的headless1247不存在，未下载/改依赖，改用已安装Chrome155隔离临时profile。初版fixture两个恢复断言失败，原因是虚构theme-complete缺配套settings-theme-target，补齐真实已完成偏好契约而非放宽生产代码后通过。最终13项现行契约、46项×5视口/DPR（含实际Settings组件条件，SDK视觉stub）、原shell34项均过；typecheck、18版本×4范围、release:prepare/分发26编译文件/4共享模块、diff检查通过。历史全套tests有已废授权/RPC替身，未伪称全通过；没有Win实机/真实官网或原生拖窗测试。
+
+0.2.7→0.2.8只递增一次；源码/整个lib/locale/README与接力文档在本地。a715ebad2cab候选166746bytes、34文件，SHA256=a715ebad2cabfa9e13d7a757d174c90bec3d35d558f8f480ffb0753f30b704cf，34/34同项目。尚未安装/重启DSH、npm/Git或Issue操作；下一步按用户选择安装原desktop后复验原生拖动与交互，未获授权不动本机安装。失败方需要的是不含账号/对话信息的几何/状态分支，不是原始vault或storage。
+
+用户随后明确选择“安装，由我自行重启”。官方carrier的plugin帮助确认参数原样交给pnpm；首次调用add --help漏profile报错后按帮助正确传desktop。安装普通沙箱写package.json.lock被拒，经批准同一命令扩大权限后exit0，原desktop依赖0.2.7→0.2.8；Node24.21.0/pnpm11.28.5，既有peer/deprecation告警保留，不做其它插件适配或豁免。安装34/34文件逐字节同a715包，持久dependency和lock均引用a715哈希路径。没有退出或重启DSH、网页登录/凭据或Git/npm操作；下一步用户自行完整重开复验原生拖动与点击，仍未把Chrome证据写成原生验收。
+
+### 0.2.8续修 · 2026-10-27 · 用户否定原官网侧栏降级
+
+用户指出“5秒后恢复官网侧栏”是核心功能bug；接受纠正，a715方案明确废弃，不为降级辩解。自动fallback/catch不再restore视觉样式，legacy showOriginal忽略，SPA登录过渡也保留原侧栏抑制。CHAT自有导航始终保留；已知安全隐藏布局在仅账号未识别时继续呈现，布局不明才遮蔽原guest并用既有错误卡/快照重新识别，隐藏guest禁鼠标/Tab。相同lease、草稿、路由、登录存储和模式均不主动改变，严格footer证明与布局解耦仍保留，不新增认证推断。
+
+实际适配器/Settings/WebSurface+虚构Browser桥的55项在5视口/DPR组合全部通过，14现行Node契约、类型、18版本×4兼容和26编译文件/4模块构建分发通过；native/Win实机仍未测。并行git diff曾撞上build暂删manifest报128，独立重跑通过，不能把该流水线说成一次exit0。中间53/54项为过程验证，最终55项才是本次交付证据。
+
+修正7f68包167351bytes/34文件，SHA256=7f68a3dad917efdd9602f6356d76ce2b08e18f20962be1a637e31bd2636a48dc；34/34同项目。仍是同一未验收0.2.8，不再次增号；未公开npm、未Git或重启。本机先前安装的a715未擅自替换，待用户明确选择安装修正版并自行重启；不可误报本机已加载修正版。需求/架构/README及接力记录同步纠正，旧记录明确标为否定历史。
+
+10-27早间用户明确选择“替换，不要重启”。7f68已通过同一官方carrier安装到原desktop，exit0，34/34安装文件逐字节同包，持久dependency与lock均引用7f68哈希路径而非a715。普通沙箱锁写被拒后获批准重试原命令；既有peer/deprecation告警保留，不改其它插件。未退出/重启、未Git/npm；进程是否加载及真实拖窗仍待用户自行重启复验，不从磁盘安装成功推断原生验收。
+
+### 0.2.8拖拽重做 · 2026-10-27 · T16/0.2.7行为基线
+
+用户实报标题后空白不可拖，HARNESS也曾发生；仅凭一次resize恢复就偏向原生刷新是过早推测。用户重新给出停用重启/启用/普通新会话对照，并要求回看0.2.7：当时HARNESS正常、CHAT全不可拖。精确对比正式0.2.7与HEAD、a715和7f68，确认旧Portal/settings hidden flex/retained guest/Slot/Mode都是基线已有，旧拖窗模块两候选相同。CHAT至少338px预留是新增静态盲区，fixture又以left>=362为通过条件，不能以此作为修复成功；HARNESS间歇原生触发链尚未实证。只读审查没有安装或改码，随后用户明确批准从基线重做。
+
+本轮由lead集成，drag-geometry写纯几何/tracker/Node和真实控制器集成，drag-surface写新组件/Browser fixture，写范围分离。原Mode/侧栏/标题/同guest与导航节奏保留，旧多岛及上一帧500ms租约从常驻WebSurface删除；只在CHAT注册稳定正行/真实控件补集洞，离开先Abort同步隐藏自己的native矩形/去标记再释放。请求deadline与成功几何分离，一个物理在途、同几何无DOM拆装。实际client集成发现快速HARNESS→CHAT复用同viewport/gen可让旧reply重新allowed，lead补ownerEpoch，内存删去条件的mutation恰好检出该用例。脱离导航串行队列后另发现leading CSS延迟竞态，增加纯数值宿主inset，CSS24/host160仍保留原生按钮安全区；不重新放回魔法标题宽度。
+
+正常guest撤回额外tabIndex，恢复基线焦点属性；错误识别时仅inert/禁鼠标，严格证明与不露官网侧栏修复独立保持。实际生产Host字节同0.2.7，导航适配源码哈希同7f68；没读真实凭据/正文，没有改宿主安装包、私有IPC或其它插件。新组件body观察只看直接子节点，避免全树正文变化唤醒；补同React batch中imperative revoke后有效节点复用时的幂等恢复。
+
+最终typecheck、46/46定向Node（4导航+27几何tracker身份+15实际client/ModeController与虚构remote schema）、18版本×4兼容、27编译文件/4共享模块构建分发和diff检查通过。Chrome156.0.8078.48的95项×5视口/DPR、0 page errors：短长标题真实留白、输入/分享、单正矩形稳定超过旧lease、同步abort零节点、两次模式往返/新signal/同guest、不露侧栏与错误inert均覆盖；真实Browser与SDK视觉部分仍为替身，不能声称Electron/OS/Windows或完整历史全套通过。第一次包比对因pnpm省略packageManager报断言，检查唯一差异后仅允许该标准化省略，未放宽其它字段/文件；最终重新构建打包核对35/35。
+
+最终候选[5c56029b319e](../artifacts/dsh-deepseek-chat-0.2.8-5c56029b319e.tgz)，170411bytes/35文件，SHA256=5c56029b319e9fe79d3fcfa2ce8b88a3651f296387925ac56fb5258ad322a351；中间827为未交付过程包。仍同一未验收0.2.8，不再次增号。此次未安装、重启、Git或npm；保留原包及本机依赖不动。下一步待用户确认安装，先HARNESS与0.2.7行为一致，再CHAT与快速往返原生实测，不能从代码节点零残留推断OS命中已验收。
+
+用户在源码/候选交付后单独明确选择“安装候选，由我自行重启”。以最终5c56全SHA再次校验，调用前轮已核官方desktop carrier plugin add --save-exact；普通沙箱拒写profile锁后，按批准原命令一次扩大权限重试成功（exit0，pnpm11.28.5/Node24.21.0）。35/35实际安装文件逐字节同包，持久dependency与pnpm-lock importer都引用5c56，未残留根依赖指向7f68。原有无关deprecation/peer告警不处理、不做全局豁免。没有退出/重启DSH、npm发布或Git写入，也未重新读真实网页/凭据；仍待用户自行完整重开并按先HARNESS后CHAT顺序实机验收，不将“安装完成”当作“已加载/已修好”。
+
+### 0.2.8 npm发布 · 2026-10-27 · 用户本轮明确授权
+
+用户先要求解释Issue #3的处理和拟回复，明确自己同为Win11环境但未复现；回复仅归纳根据报告所作的账号/布局解耦、识别失败提示和不误判退出调整，未代发评论或关闭Issue。之后用户明确要求“发布一下npm新版本”，本轮即发布已有0.2.8，不再次增号或推送Git。未收到或补造新增原生/Windows验收明细。
+
+开工HEAD4f8a2b4，保留既有未提交修改。仅将中英README改为正式版本说明、0.2.8安装及打包示例；未改业务源码或重建lib。正式[eb669d985d97包](../artifacts/dsh-deepseek-chat-0.2.8-eb669d985d97.tgz)170357bytes/35文件，SHA256=eb669d985d9707da607fb39ebb42d617d6bcfdd684da656ea7ae912290816c1b，SHA1=13293df4a0ccc18aea332c448964e4e9b9bdb8b4；相对本机5c56仅两份README不同，其余33运行/元数据文件逐字节相同，包内文件与项目也核对一致（仅packageManager省略作标准化）。typecheck、27编译文件/4共享模块分发、18版本×4兼容及diff检查通过，没有重新运行浏览器或旧全套测试。
+
+默认npm cache第一次EPERM，npm给出root-owned泛化建议；未执行sudo/chown或改用户原配置，而创建0700私有临时目录、0600独立npmrc与cache后查询正常。npm11.11.0/Node24.14.1；匿名官方发布前latest0.2.7且无0.2.8，独立认证最初ENEEDAUTH。用户正常完成官方网页登录，再完成本次发布单独验证，唯一一次npm publish返回+dsh-deepseek-chat@0.2.8、exit0及processing提示。后续只查索引/下载，未重复publish。
+
+最终匿名官方完整与install-v1索引latest均0.2.8且版本存在，精确版本HTTP200；公开下载整个tgz字节同本地正式包，SHA256、SHA1、完整SHA512 integrity均匹配，35文件一致。[公开核验摘要](../artifacts/npm-release-0.2.8-20261027/public-proof.json)记录05:52:05Z确认时间。临时npm认证已正常logout(exit0)，关闭终端，并验证明确绝对目标后删除私有目录/配置/cache；没有令牌、验证码或认证链接写入项目文档，原npm配置不变。
+
+本轮未重装或重启DSH、未Git写入、未Issue操作。npm0.2.8已可按名称安装；刚发布可能暂受DSH发布时间策略拦截，不能因此绕过全局安全策略。GitHub仍需用户另行提交/推送全部源码、lib及上下文记录，不能误称已同步；此后新修复从0.2.8递增0.2.9，不覆盖已发布版本，下一次npm/Git操作重新等待明确授权。
+
+### 0.2.8 GitHub交付 · 2026-10-27 · 用户另行授权提交推送
+
+npm0.2.8公开后，用户明确要求“提交并推送代码”。开工main/HEAD/origin/main=4f8a2b4、暂存区为空，fetch后0 ahead/0 behind；继承此前完整32项已知修改，不覆盖用户工作、不force、不建tag/PR，也不重复增号/发布npm或安装重启DSH。
+
+本提交交付0.2.8源码与完整预编译lib，包括新拖窗组件/几何控制器、桥接与识别保护、中英locale/README、定向Node/浏览器脚本与虚构fixture，以及需求/架构/路线/资料/交接记录；安装包、artifacts、node_modules、临时认证和下载副本不纳入Git，依赖锁沿用既有内容。当前35个分发文件逐项同npm公开eb669包（仅packageManager标准化），未改已发布运行代码或重建业务产物。
+
+提交前重新运行typecheck、分发27编译文件/4模块、18版本×4兼容、46项现行Node契约与diff检查，全部通过；此前95项×5浏览器是实现阶段结果，本次未新增浏览器/原生/Windows或旧全套测试。准确提交号取包含本条的Git记录，推送完成必须以GitHub refs/heads/main与本地HEAD完全一致且工作树干净核验，不能只依据命令受理。未来新修复从0.2.9开始，未来npm/Git操作须新的明确授权。

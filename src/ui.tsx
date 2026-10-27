@@ -12,6 +12,7 @@ import { translate } from './i18n.js'
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js'
 import type { ChatLanguage } from './website-settings.js'
 import type { WebsiteSession } from './protocol.js'
+import type { WindowDragRegion } from './window-drag.js'
 
 export type DshChatMode = 'chat' | 'harness'
 
@@ -69,6 +70,9 @@ export interface DshChatUIBridge {
   reportWebsiteState(generation: number, state: { readonly loading: boolean; readonly error: string | null }): void
   reportWebsiteNavigation(generation: number, value: unknown, newDocument?: boolean): void
   bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void
+  /** Read-only, current-document geometry; only a CHAT-owned overlay consumes it. */
+  readWindowDrag(viewport: DshChatViewportRect): Promise<readonly WindowDragRegion[]>
+  bindWindowDragSampler(generation: number, handler: (viewport: DshChatViewportRect) => Promise<readonly WindowDragRegion[]>): () => void
   commandWebsite(command: WebsiteCommand): void
   renameWebsiteConversation(href: string, title: string): Promise<void>
   toggleWebsiteNavigation(): void
@@ -393,9 +397,10 @@ export function DshChatChatSettings({bridge,close}: PropsRuntime<'settings.secti
   const showAccount = enabled && navigation.authenticated===true && !['signed-out','signing-in','signing-out'].includes(state.websiteAuthenticationStatus)
   const logoutError = state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError ?? '')
   const accountError = state.websiteSessionError || state.webError || state.error || (state.websiteAuthenticationStatus==='error' ? "暂时无法确认官网登录状态，请重试。" : null)
+  const recognitionError = navigation.identityUnconfirmed===true ? navigation.error : null
   const accountName = navigation.accountName || 'DeepSeek Chat'
-  const showSignIn = enabled && ['signed-out','signing-in'].includes(state.websiteAuthenticationStatus)
-  const accountBusy = enabled && !accountError && ['loading','signing-out'].includes(state.websiteAuthenticationStatus)
+  const showSignIn = enabled && !recognitionError && ['signed-out','signing-in'].includes(state.websiteAuthenticationStatus)
+  const accountBusy = enabled && !accountError && !recognitionError && ['loading','signing-out'].includes(state.websiteAuthenticationStatus)
   return <section className="dsh-chat-settings">
     <DshChatStyles/>
     <header className="dsh-chat-settings-heading"><h2>{t("Chat 设置")}</h2><p>{t("管理 DeepSeek 官网账号和登录状态。")}</p></header>
@@ -413,6 +418,7 @@ export function DshChatChatSettings({bridge,close}: PropsRuntime<'settings.secti
       {accountError && <div className="dsh-chat-settings-error" role="alert"><p>{t(accountError)}</p>
         {enabled && <Button variant="outline" onClick={()=>logoutError ? bridge.logoutWebsite() : state.webError ? bridge.reloadWebsite() : bridge.refreshAuthorization()}>{t(logoutError ? "重试退出登录" : state.webError ? "重试网页" : "重试连接")}</Button>}
       </div>}
+      {!accountError && recognitionError && <div className="dsh-chat-settings-error" role="alert"><p>{t(recognitionError)}</p><Button variant="outline" onClick={()=>bridge.commandWebsite({type:'snapshot',showOriginal:false})}>{t("重新识别")}</Button></div>}
       {enabled && showAccount && settings?.error && <div className="dsh-chat-settings-error" role="alert"><p>{t(settings.error)}</p><Button variant="outline" disabled={Boolean(settings.pending)} onClick={()=>bridge.commandWebsite({type:'settings-retry'})}>{t("重试同步")}</Button></div>}
     </section>
   </section>

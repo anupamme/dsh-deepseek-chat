@@ -10,7 +10,9 @@
 
 CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，使用官网的聊天功能和账号历史；HARNESS模式 为原 DSH 工作区。
 
-当前版本 **0.2.7** · 适配 **DSH 桌面版** · CHAT 网页的语言、外观和字号跟随 DSH。
+当前版本 **0.2.8** · 适配 **DSH 桌面版** · CHAT 网页的语言、外观和字号跟随 DSH。
+
+0.2.8 以 0.2.7 为基线重做拖窗：仅在 CHAT 挂载稳定的顶部拖动层，按真实标题和控件边界留出可操作区域，不新增顶栏高度；离开 CHAT 同步撤回，不向 HARNESS 添加拖动节点。标题编辑、分享、弹窗及原生窗口控件受保护，跨模式原生拖动效果需以实际桌面环境为准。官网账号或布局暂无法识别时，保留 CHAT 自有导航并显示错误/重新识别；无法安全呈现的网页会被遮蔽，不会显示官网原侧栏，也不刷新或退出登录。主区镜像失败不再阻断已严格确认账号的登录保存，不保证任意官网布局都能镜像。
 
 ## 功能预览
 
@@ -51,13 +53,13 @@ CHAT模式 加载真实的 [DeepSeek Chat 官网](https://chat.deepseek.com/)，
 在 DSH 的插件安装输入框中输入下方名称和版本号，安装当前最新发布版本：
 
 ```text
-dsh-deepseek-chat@0.2.7
+dsh-deepseek-chat@0.2.8
 ```
 
 也可以使用命令行：
 
 ```bash
-dsh plugin --profile desktop add dsh-deepseek-chat@0.2.7
+dsh plugin --profile desktop add dsh-deepseek-chat@0.2.8
 ```
 
 首次安装和更新已有插件均使用这一方式。若新版本被 DSH 的发布时间策略暂时拦截，可稍后重试，或使用下方 GitHub 安装方式。
@@ -83,7 +85,7 @@ dsh plugin --profile desktop add https://github.com/xingxingbk-git/dsh-deepseek-
 将 `.tgz` 安装包交给 DSH 插件管理器安装，或使用命令行：
 
 ```bash
-dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.7.tgz
+dsh plugin --profile desktop add /absolute/path/dsh-deepseek-chat-0.2.8.tgz
 ```
 
 将路径替换为实际安装包位置。
@@ -132,7 +134,7 @@ pnpm install --frozen-lockfile
 pnpm package:plugin
 ```
 
-生成 `artifacts/dsh-deepseek-chat-0.2.7.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
+生成 `artifacts/dsh-deepseek-chat-0.2.8.tgz`，包含 Host、Client、类型声明、图标和 bundle patch。插件管理列表的图标位于 `assets/icon.svg`，替换后重新打包安装即可；SVG 须自包含且不超过 256 KiB。
 
 修改源码后执行 `pnpm release:prepare`，并将源码与整个 `lib/` 一起提交。`pnpm check:distribution` 会检查编译产物与源码、版本及安装入口是否一致；旧产物或缺失文件会使检查失败。安装用户不需要执行这些开发命令。
 

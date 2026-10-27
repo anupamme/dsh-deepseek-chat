@@ -4,6 +4,7 @@ import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import type { DesktopBrowserBridge, DesktopBrowserReservation } from '@deepseek-ai/dsh-client-ui-sidebar-browser/types'
 import { DshChatStyles, useDshChat, type DshChatBridgeProps } from './ui.js'
 import { translate } from './i18n.js'
+import { parseWindowDragGeometry, websiteWindowDragScript } from './window-drag.js'
 import { emptyNavigation, parseWebsiteNavigation, websiteCommandScript, type WebsiteCommand } from './website-navigation.js'
 import { parseWebsiteSession, websiteSessionCaptureScript, websiteSessionRestoreScript } from './website-session.js'
 
@@ -17,7 +18,7 @@ function websiteRefreshReadiness(doc: Document, origin: string): 'ready' | 'draf
     const style=doc.defaultView?.getComputedStyle(node)
     return rect.width>0 && rect.height>0 && style?.display!=='none' && style?.visibility!=='hidden'
   }
-  for (const field of doc.querySelectorAll('textarea,input[type="text"],input:not([type]),[contenteditable="true"]')) {
+  for (const field of doc.querySelectorAll('textarea,input[type="text"],input:not([type]),[contenteditable="true"],[contenteditable="plaintext-only"]')) {
     if (!visible(field)) continue
     if (field instanceof HTMLTextAreaElement || field instanceof HTMLInputElement) {
       if (field.value.trim().length>0) return 'draft'
@@ -241,6 +242,23 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         } catch { if(sameLogin()) bridge.reportWebsiteSessionError(generation,'网页登录保存暂时不可用。当前网页可继续使用，请稍后重试。') }
       })().finally(()=>{pendingSessionCapture=null})
     }
+    // This persistent owner only provides fenced, read-only geometry. Native
+    // drag DOM and sampling lifetime belong to the CHAT-only overlay occupant.
+    const stopDragSampler = bridge.bindWindowDragSampler(generation, async viewport => {
+      const snapshot=bridge.getSnapshot(), revision=documentRevision
+      const authenticationRevision=snapshot.websiteAuthenticationRevision
+      if (!active() || !approvedOrigin() || snapshot.viewport!==viewport || snapshot.mode!=='chat' || snapshot.settingsOpen
+        || snapshot.webLoading || snapshot.websiteNavigation.status!=='ready' || snapshot.websiteNavigation.authenticated!==true) return []
+      const leading=document.querySelector('.dsh-chat-leading')?.getBoundingClientRect()
+      const nativeInset=Math.max(headerInset(viewport),leading && leading.width>0 ? Math.ceil(leading.right-viewport.left)+16 : 0)
+      const geometry=await executeScript(websiteWindowDragScript(nativeInset))
+      const latest=bridge.getSnapshot()
+      if (!active() || !approvedOrigin() || revision!==documentRevision || latest.viewport!==viewport || latest.mode!=='chat' || latest.settingsOpen
+        || latest.webLoading || latest.websiteNavigation.status!=='ready' || latest.websiteNavigation.authenticated!==true
+        || latest.websiteAuthenticationRevision!==authenticationRevision) return []
+      return parseWindowDragGeometry(geometry,viewport)
+    })
+    events.signal.addEventListener('abort', stopDragSampler, {once:true})
     const adapt = async (command: WebsiteCommand) => {
       const snapshot = bridge.getSnapshot()
       const requestDocumentRevision=documentRevision
@@ -263,7 +281,7 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
           if(result.status!=='loading') documentPresented=true
           // Publish account/login/navigation before vault I/O. Both login surfaces
           // observe the same website state without waiting for a save or Settings open.
-          bridge.reportWebsiteNavigation(generation,result);if(result.status!=='loading' || !documentPresented) setPresentationReady(result.status!=='loading')
+          bridge.reportWebsiteNavigation(generation,result);if(result.status!=='loading' || !documentPresented) setPresentationReady(result.status==='ready' || result.status==='sign-in' || result.layoutReady===true)
           if (navigationRefresh && requestDocumentRevision>navigationRefresh.documentRevision) {
             if (result.status==='ready' && result.authenticated===true) finishNavigationRefresh(null)
             else if (result.status==='sign-in') finishNavigationRefresh('官网登录已失效，请重新登录后刷新列表。')
@@ -282,12 +300,10 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         if (currentProjection()) {
           documentPresented=true
           // A failed DOM projection cannot prove that the website signed out.
-          // Drop only unconfirmed navigation and keep the real website usable.
-          bridge.reportWebsiteNavigation(generation, { status: 'unsupported', conversations: [], selectedHref: null, canCreate: false, error: null })
-          setPresentationReady(!snapshot.settingsOpen)
-          if (currentProjection()) {
-            try { await execute({type:'restore'}) } catch { /* Polling probes the recovered page without restarting its first paint. */ }
-          }
+          // Keep the CHAT shell and conceal an unrecognized guest. Never clear
+          // its adapter styles to expose the website's original sidebar.
+          bridge.reportWebsiteNavigation(generation, { status: 'unsupported', conversations: [], selectedHref: null, canCreate: false, error: '暂未识别官网界面，请稍后重新识别。' })
+          setPresentationReady(false)
         }
       }
     }
@@ -435,6 +451,10 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
     && reservation.storageKey === state.accountStorageKey ? reservation : null
   const clearance = 0
   const logoutError=state.websiteAuthenticationStatus==='error' && /退出/.test(state.websiteSessionError ?? '')
+  const projectionError=state.websiteNavigation.status==='unsupported' && state.websiteNavigation.layoutReady!==true ? state.websiteNavigation.error || '暂未识别官网界面，请稍后重新识别。' : null
+  const guestUsable=presentationReady && !projectionError && state.websiteAuthenticationStatus!=='signed-out' && state.websiteAuthenticationStatus!=='signing-out' && !logoutError
+  const websiteStatusMessage=state.webError || (logoutError ? state.websiteSessionError : projectionError)
+    || (nativeBrowser===undefined ? '需要提供官方浏览器能力的 DSH 桌面版。' : state.websiteAuthenticationStatus==='signing-out' ? '正在清除登录记忆并退出官网。' : 'CHAT 使用独立的官网登录，登录后自动同步账号和官网对话。')
   return createPortal(<section id="dsh-chat-website-surface" className="dsh-chat-web-surface" aria-label={t("DeepSeek 官网网页")} aria-hidden={!visible} style={{
     zIndex: inSettings ? 0 : 14,
     visibility: visible ? 'visible' : 'hidden',
@@ -455,7 +475,10 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         key: activeReservation.native.lease,
         ref: attachGuest,
         className: 'dsh-chat-webview',
-        style: { opacity: presentationReady && state.websiteAuthenticationStatus!=='signed-out' && state.websiteAuthenticationStatus!=='signing-out' && !logoutError ? 1 : 0 },
+        // Keep the normal 0.2.7 focus attributes; only concealed, unsafe content
+        // is inert, so it cannot retain keyboard/Tab interaction behind an error.
+        inert: guestUsable ? undefined : '',
+        style: { opacity: guestUsable ? 1 : 0, pointerEvents: guestUsable ? undefined : 'none' },
         name: activeReservation.native.lease,
         partition: activeReservation.native.partition,
         src: `about:blank#${activeReservation.native.lease}`,
@@ -463,9 +486,10 @@ export function DshChatWebSurface({ bridge, nativeBrowser }: PropsRuntime<'shell
         'data-sidebar-browser-frame': 'webview',
         'aria-label': t('DeepSeek 官网，登录、聊天和历史由网页提供'),
       })}
-      {(nativeBrowser === undefined || state.webError !== null || activeReservation === null || !presentationReady || state.websiteAuthenticationStatus==='signed-out' || state.websiteAuthenticationStatus==='signing-out' || logoutError) && <div className={`dsh-chat-web-status${state.webError !== null ? ' dsh-chat-web-status-error' : ''}`} role={state.webError !== null ? 'alert' : 'status'}>
-        <strong>{t(nativeBrowser === undefined ? '当前环境无法内嵌网页' : state.webError !== null ? '网页暂时无法使用' : logoutError ? '退出登录未完成' : state.websiteAuthenticationStatus==='signed-out' ? '登录 DeepSeek Chat' : state.websiteAuthenticationStatus==='signing-out' ? '正在退出登录' : '正在打开 DeepSeek 官网')}</strong>
-        <p>{t(state.webError || (logoutError ? state.websiteSessionError : nativeBrowser === undefined ? '需要提供官方浏览器能力的 DSH 桌面版。' : state.websiteAuthenticationStatus==='signing-out' ? '正在清除登录记忆并退出官网。' : 'CHAT 使用独立的官网登录，登录后自动同步账号和官网对话。'))}</p>
+      {(nativeBrowser === undefined || state.webError !== null || activeReservation === null || !presentationReady || projectionError || state.websiteAuthenticationStatus==='signed-out' || state.websiteAuthenticationStatus==='signing-out' || logoutError) && <div className={`dsh-chat-web-status${state.webError !== null || projectionError ? ' dsh-chat-web-status-error' : ''}`} role={state.webError !== null || projectionError ? 'alert' : 'status'}>
+        <strong>{t(nativeBrowser === undefined ? '当前环境无法内嵌网页' : state.webError !== null ? '网页暂时无法使用' : logoutError ? '退出登录未完成' : projectionError ? 'CHAT 界面识别失败' : state.websiteAuthenticationStatus==='signed-out' ? '登录 DeepSeek Chat' : state.websiteAuthenticationStatus==='signing-out' ? '正在退出登录' : '正在打开 DeepSeek 官网')}</strong>
+        <p>{t(websiteStatusMessage)}</p>
+        {projectionError && !logoutError && !state.webError && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.commandWebsite({type:'snapshot',showOriginal:false})} disabled={!state.modeEnabled}>{t("重新识别")}</button>}
         {logoutError && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.logoutWebsite()}>{t("重试退出登录")}</button>}
         {state.websiteAuthenticationStatus==='signed-out' && <button type="button" className="dsh-chat-primary-button" onClick={()=>bridge.beginWebsiteSignIn()}>{t("登录 DeepSeek")}</button>}
         {state.authorizationStatus!=='authorized' && nativeBrowser!==undefined && <button type="button" className="dsh-chat-text-button" onClick={()=>bridge.refreshAuthorization()}>{t("重试连接")}</button>}

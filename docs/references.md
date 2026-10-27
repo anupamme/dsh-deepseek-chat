@@ -1,5 +1,26 @@
 # 官方资料与调研记录
 
+## 0.2.8 npm公开分发核验（2026-10-27）
+
+- 用户当轮明确授权并完成官方登录/单次发布验证，npm唯一一次publish退出0。匿名[精确版本接口](https://registry.npmjs.org/dsh-deepseek-chat/0.2.8)HTTP200，完整及Accept=application/vnd.npm.install-v1+json的官方索引均latest0.2.8；公开下载35文件包逐字节同eb669d985d97正式包，SHA256=eb669d985d9707da607fb39ebb42d617d6bcfdd684da656ea7ae912290816c1b，SHA1与SHA512 integrity同时匹配，详见[公开核验摘要](../artifacts/npm-release-0.2.8-20261027/public-proof.json)。
+- 正式包仅中英README不同于已安装5c56候选，其余33运行/元数据文件同字节；此次不是新增实机/浏览器验收，未Git同步或重装/重启。临时npm认证已logout/删除，原配置不改；下次修复须新版本和新的明确发布授权。
+
+## 0.2.8 基线复查与重做依据（2026-10-27）
+
+- 精确0.2.7正式包SHA23564ed32fef的Client逐字节同HEAD4f8a2b4；a715/7f68的旧拖窗模块及CSS相同。body Portal、settings隐藏flex、retained guest、Slot及核心Mode均基线已存在，不能独自解释新增回归；新增native区域/采样生命周期先隔离。旧338预留右界是至少、并非至多；旧fixture甚至把left>=362当通过，本轮已按真实短长title占位替换。
+- 原生会话头的data-window-drag整行标记与交互控件no-drag仍是官方机制；普通/新会话确有titleCluster/controls分支，但静态源码不证明用户偶发现场的唯一根因。官方Darwin drag-recall基于data-window-drag矩形/数量签名变化短暂标记body，稳定后撤回；不能把observer或timer存在本身等同永久禁拖。
+- 原生CSS亦让[tabindex]成为no-drag，但隔离Chrome实测基线webview已从body Portal继承no-drag，添加tabIndex前后computed app-region都相同，不能据此单独定责。重做恢复正常guest的基线焦点属性，错误状态用inert/禁鼠标保护，未改SDK或宿主DOM。
+- 新实现仅通过已核公开Slot、AbortSignal、React Portal与自有bridge仅读几何；未调用猜测的Native IPC或真正UI Inspect。46项Node含实际client/ModeController及虚构remote契约，95项×5 Chrome156组合含真实WebSurface/WindowDragSurface+视觉SDK/Browser替身；均只到逻辑/CSS/DOM边界，不是Electron/OS或Win实机证据。原生未验项与候选见[handoff](handoff.md)。
+
+## 0.2.8首轮拖窗及Issue #3依据历史（2026-10-26，10-27修正）
+
+- 2026-10-27用户明确拒绝“失败显示官网原侧栏”，旧a715策略已撤回。新增/修正回归直接验证保留隐藏样式、已知CHAT布局可继续使用、未知布局遮蔽、草稿/路由不变、legacy showOriginal及SPA sign-in不露原侧栏；实际WebSurface组件+虚构Browser桥还验证错误卡片、禁用隐藏guest点击/Tab、相同lease重新识别及无reload/logout/mode切换。最终55项×5组合、14项Node契约通过；以下46/13是首候选历史，不代表现行策略。没有真实原生窗口/Win实机或实际账号操作。
+
+- 同版本官方layout README第36–43行及sidebar Client第395–402行：data-window-drag标记行的实际盒子，Darwin由ui-web映射；leading/top clearance由官方投影。实际preload-app.cjs第50–69行提供data-platform/data-fullscreen，573–579行提供Win标题栏40px token；main.js第11935–11967行确认Mac hiddenInset交通灯与Win titleBarOverlay。
+- 实核本机官方frontend assets/index-BNyAYEM7.css：Darwin的[data-window-drag]为drag、[data-window-drag-recall]为no-drag、body>:not(#root)为no-drag。仅给guest背后的root header加标记不可靠，故用自有前置小区域，不改原包。Browser公开桥只有acquire/release/onOpenRequested，没有假设window.startDrag。
+- 用户提供的[Issue #3](https://github.com/xingxingbk-git/dsh-deepseek-chat/issues/3)报告已读。只读子代理对0.2.7做内存虚构DOM对照：缺sidebar约5秒后unsupported（不是报告所称永久loading）；缺profile60秒仍ready/unknown且镜像空；合法footer配main右侧越界2px也完全跳过profile检查。会话Map provider/三key形状和win32路径仅为虚构验证，未读实际vault或运行Windows。
+- 新Chrome155 fixture为实际适配器/几何/刷新函数与Settings条件渲染，SDK按钮/图标为惰性stub；46项在1280×800的DPR1/1.25/1.5/2及760×600 DPR1通过。现行13项Node契约涵盖失效epoch/请求起点TTL/旧尺寸/不明身份及独立证明；旧shell34项回归通过。没有把同CSS viewport的DPR测试写成真实系统缩放或Electron原生命中验证。复现入口为pnpm check:window-contracts、pnpm check:window-recognition（打开打印URL）与pnpm check:shell-ui。
+
 ## 0.2.7 / DSH 0.2.1-rc.3 依据（2026-10-24）
 
 ### 续步：外侧间距与明确版本复核

@@ -3,6 +3,7 @@ import type { PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots';
 import type { WebsiteCommand, WebsiteNavigation } from './website-navigation.js';
 import type { ChatLanguage } from './website-settings.js';
 import type { WebsiteSession } from './protocol.js';
+import type { WindowDragRegion } from './window-drag.js';
 export type DshChatMode = 'chat' | 'harness';
 export interface DshChatViewportRect {
     readonly left: number;
@@ -63,6 +64,9 @@ export interface DshChatUIBridge {
     }): void;
     reportWebsiteNavigation(generation: number, value: unknown, newDocument?: boolean): void;
     bindWebsiteNavigation(generation: number, handler: (command: WebsiteCommand) => Promise<void>): () => void;
+    /** Read-only, current-document geometry; only a CHAT-owned overlay consumes it. */
+    readWindowDrag(viewport: DshChatViewportRect): Promise<readonly WindowDragRegion[]>;
+    bindWindowDragSampler(generation: number, handler: (viewport: DshChatViewportRect) => Promise<readonly WindowDragRegion[]>): () => void;
     commandWebsite(command: WebsiteCommand): void;
     renameWebsiteConversation(href: string, title: string): Promise<void>;
     toggleWebsiteNavigation(): void;
